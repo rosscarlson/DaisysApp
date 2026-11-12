@@ -376,6 +376,8 @@ internal sealed class SessionsView
             // (since 4.10.3 off the chart: the cursor's moment again)
             bool off = double.IsNaN(x);
             lineMap.HoverAt(off ? compareChart.PlayX : x);
+            // (since 4.14.1) the friction circle's dot at that moment too
+            if (lastA != null) FrictionAt(off ? player.Position : lastA.From + lastA.IndexAt(x));
             // (since 4.8.0) the race's video at that moment (since 4.10.3 not while it plays)
             if (player.Playing || lastA == null) return;
             if (!off) video.ShowSample(lastA.From + lastA.IndexAt(x));
@@ -389,7 +391,7 @@ internal sealed class SessionsView
             double x = lastA.XAt(i);
             compareChart.PlayAt(x);
             if (rate != 0) compareChart.Follow(x, rate > 0);
-            if (!compareChart.IsMouseOver) lineMap.HoverAt(x);
+            if (!compareChart.IsMouseOver) { lineMap.HoverAt(x); FrictionAt(i); }
             if (!fromVideo) video.Follow(i, rate, jumped);
             if (videoRun == null) return;
             double vx = videoRun.XAt(i);
@@ -403,6 +405,15 @@ internal sealed class SessionsView
             compareChart.SetLoop(X(lastA, player.LoopFrom), X(lastA, player.LoopTo));
             videoChart.SetLoop(X(videoRun, player.LoopFrom), X(videoRun, player.LoopTo));
         };
+        // (since 4.14.1) a pause hidden or shown on either chart: both laid out again, the cursor kept at its moment
+        void Relaid()
+        {
+            compareChart.Relayout();
+            videoChart.Relayout();
+            player.Relaid();
+        }
+        compareChart.PausesChanged += Relaid;
+        videoChart.PausesChanged += Relaid;
         LoopMenu(compareChart, () => compareChart.MenuX, () => lastA);
         LoopMenu(videoChart, () => videoChart.MenuX, () => videoRun);
         // (since 4.10.9) the Video's timeline as Compare's chart: a click puts the cursor there, the mouse shows the
@@ -1307,6 +1318,10 @@ internal sealed class SessionsView
         ShowCompare();
     }
 
+    /// <summary>(since 4.14.1) The friction circle's dot at a moment of Session 1 (a sample; NaN: none).</summary>
+    private void FrictionAt(double sample) =>
+        friction.At = lastA != null && friction.Analysis == lastA.Analysis ? sample : double.NaN;
+
     private static Run? RunOf(PedalAnalysis? a, object? part, string label) =>
         a != null && part is Part p && p.To > p.From ? new Run { Analysis = a, From = p.From, To = p.To, Label = label } : null;
 
@@ -1322,6 +1337,7 @@ internal sealed class SessionsView
         videoChart.Highlight = null;
         videoChart.Show(videoRun, null);
         player.Show(a);
+        friction.At = double.NaN;
         lineMap.Show(a, b);
         video.Show(mine?.Data, mineItem == null || mineItem.Imported ? null : mineItem.Key);
         ShowLegend(a, b);

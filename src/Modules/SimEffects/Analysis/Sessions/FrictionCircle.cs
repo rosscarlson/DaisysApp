@@ -8,15 +8,33 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// The friction circle (a g-g diagram): the car's sideways g across, braking down and accelerating up, a dot every few
 /// hundredths of a second, red while braking, green on the throttle, grey coasting, with rings each half g and the
 /// peaks. A smooth driver's dots join up round the edge (braking into the turn, then the throttle out of it); jerky
-/// pedals leave them in a cross. Brake and throttle can be hidden.
+/// pedals leave them in a cross. Brake and throttle can be hidden. Since 4.14.1 a large white dot at Compare's cursor
+/// (<see cref="At"/>), moving as it plays; the rest drawn once and kept.
 /// </summary>
 internal sealed class FrictionCircle : FrameworkElement
 {
     private PedalAnalysis? a;
     private double maxG = 1.5;
+    private bool showBrake = true, showThrottle = true;
+    private double at = double.NaN;
+    /// <summary>(since 4.14.1) The dots, rings and peaks, drawn for a size and theme (null: again).</summary>
+    private DrawingGroup? cache;
+    private (Size, Brush) cacheFor;
 
-    public bool ShowBrake { get; set; } = true;
-    public bool ShowThrottle { get; set; } = true;
+    public bool ShowBrake { get => showBrake; set { showBrake = value; cache = null; } }
+    public bool ShowThrottle { get => showThrottle; set { showThrottle = value; cache = null; } }
+
+    /// <summary>(since 4.14.1) The moment of the session the dot is at (a sample, fractional; NaN: none).</summary>
+    public double At
+    {
+        get => at;
+        set
+        {
+            if (value.Equals(at) || (double.IsNaN(value) && double.IsNaN(at))) return;
+            at = value;
+            InvalidateVisual();
+        }
+    }
 
     public PedalAnalysis? Analysis
     {
@@ -24,6 +42,8 @@ internal sealed class FrictionCircle : FrameworkElement
         set
         {
             a = value;
+            cache = null;
+            at = double.NaN;
             maxG = 1.5;
             if (a != null && a.Data.HasG)
             {
@@ -42,10 +62,30 @@ internal sealed class FrictionCircle : FrameworkElement
     protected override void OnRender(DrawingContext dc)
     {
         double w = ActualWidth, h = ActualHeight;
-        var dim = PedalColours.Theme(this, "TextSecondaryBrush");
         dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, w, h));
         double r = Math.Max(10, Math.Min(w, h - 20) / 2 - 8);
         var c = new Point(w / 2, r + 8);
+        var key = (new Size(w, h), PedalColours.Theme(this, "RoomBrush"));
+        if (cache == null || !cacheFor.Equals(key))
+        {
+            cache = new DrawingGroup();
+            using (var g = cache.Open()) Draw(g, w, r, c);
+            cache.Freeze();
+            cacheFor = key;
+        }
+        dc.DrawDrawing(cache);
+        // (since 4.14.1) the cursor's moment
+        if (a == null || !a.Data.HasG || double.IsNaN(at)) return;
+        int i = Math.Clamp((int)Math.Round(at), 0, a.Data.Count - 1);
+        double x = a.Data.LatG[i], y = a.Data.LonG[i];
+        if (double.IsNaN(x) || double.IsNaN(y)) return;
+        var pt = new Point(c.X + Math.Clamp(x / maxG, -1, 1) * r, c.Y - Math.Clamp(y / maxG, -1, 1) * r);
+        dc.DrawEllipse(Brushes.White, PedalColours.Pen(Brushes.Black, 1.5, 0.7), pt, 7, 7);
+    }
+
+    private void Draw(DrawingContext dc, double w, double r, Point c)
+    {
+        var dim = PedalColours.Theme(this, "TextSecondaryBrush");
         dc.DrawEllipse(PedalColours.Theme(this, "RoomBrush"), null, c, r, r);
         for (double g = 0.5; g <= maxG + 0.001; g += 0.5)
         {

@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.14.1**
+- **SimEffects → Analysis → Compare**: a pause in a session (the game paused: no data for a second or more) is marked
+  above the chart with an icon and how long it was, and starts hidden: cut out of the chart's time, the clock and
+  Delta, and playback jumps over it, the race video with it, so the video keeps up with the data. A click on its icon
+  shows it again (shaded; the video plays through it), another hides it.
+- The **friction circle** under the chart has a large white dot at the cursor, moving with playback (and with the
+  mouse on the chart).
+
 **4.14.0**
 - **Plex** (new module, its own tab): admin tools for a Plex Media Server. The setup wizard asks how to connect: this
   PC's Plex (its token from the registry), a plex.tv sign-in in the browser and a server of the account, or an

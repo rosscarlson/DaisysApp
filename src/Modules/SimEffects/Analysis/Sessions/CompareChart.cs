@@ -13,9 +13,11 @@ internal sealed class Run
     public required int To { get; init; }
     public required string Label { get; init; }
     public double[] Xs { get; private set; } = Array.Empty<double>();
+    /// <summary>(since 4.14.1) The time from its start at each sample, less the hidden pauses (seconds).</summary>
+    public double[] Ts { get; private set; } = Array.Empty<double>();
     public SessionData Data => Analysis.Data;
     public double Length => Xs.Length == 0 ? 0 : Xs[^1];
-    public double Seconds => (To - From) * SessionData.Dt;
+    public double Seconds => Ts.Length == 0 ? (To - From) * SessionData.Dt : Ts[^1];
 
     /// <summary>Has the distance all along it.</summary>
     public bool HasDistance
@@ -29,21 +31,35 @@ internal sealed class Run
         }
     }
 
-    /// <summary>Lays it out along the distance (never going back) or the time.</summary>
+    /// <summary>Lays it out along the distance (never going back) or the time (since 4.14.1 less the hidden pauses).</summary>
     public void Layout(bool byDistance)
     {
         int n = To - From + 1;
         var xs = new double[n];
-        double d0 = double.NaN, last = 0;
+        var ts = new double[n];
+        double d0 = double.NaN, last = 0, played = 0;
         for (int k = 0; k < n; k++)
         {
-            if (!byDistance) { xs[k] = k * SessionData.Dt; continue; }
+            if (k > 0 && Data.HiddenAt(From + k) == null) played += SessionData.Dt;
+            ts[k] = played;
+            if (!byDistance) { xs[k] = played; continue; }
             double d = Data.Distance[From + k];
             if (double.IsNaN(d0) && !double.IsNaN(d)) d0 = d;
             if (!double.IsNaN(d) && !double.IsNaN(d0)) last = Math.Max(last, d - d0);
             xs[k] = last;
         }
         Xs = xs;
+        Ts = ts;
+    }
+
+    /// <summary>(since 4.14.1) The time from its start at a moment of the session (a sample, fractional), less the
+    /// hidden pauses.</summary>
+    public double TimeAt(double sample)
+    {
+        if (Ts.Length == 0) return 0;
+        double f = Math.Clamp(sample - From, 0, Ts.Length - 1);
+        int i = (int)f;
+        return i >= Ts.Length - 1 ? Ts[^1] : Ts[i] + (Ts[i + 1] - Ts[i]) * (f - i);
     }
 
     /// <summary>The sample at <paramref name="x"/> along it (fractional), or NaN past its ends.</summary>
@@ -164,6 +180,22 @@ internal sealed class CompareChart : FrameworkElement
     public event Action<double>? Clicked;
     /// <summary>(since 4.10.3) The cursor moved.</summary>
     public event Action? PlayMoved;
+    /// <summary>(since 4.14.1) A pause's icon clicked: it's hidden or shown (the runs to be laid out again).</summary>
+    public event Action? PausesChanged;
+    /// <summary>(since 4.14.1) Where each pause's icon was drawn, for a click.</summary>
+    private readonly List<(Rect Area, Pause Pause)> pauseIcons = new();
+
+    /// <summary>(since 4.14.1) The first run's pauses.</summary>
+    private IEnumerable<Pause> Pauses() => a == null ? Enumerable.Empty<Pause>() : a.Data.Pauses.Where(p => p.End > a.From && p.From < a.To);
+
+    /// <summary>(since 4.14.1) Lays the runs out again (a pause hidden or shown), keeping the part shown where it can.</summary>
+    public void Relayout()
+    {
+        a?.Layout(ByDistance);
+        b?.Layout(ByDistance);
+        delta = ByDistance && a != null && b != null ? Delta(a, b) : null;
+        SetView(x0, x1);
+    }
 
     /// <summary>The part shown: from, its span, and the whole length (metres or seconds).</summary>
     public double ViewFrom => x0;
@@ -229,7 +261,7 @@ internal sealed class CompareChart : FrameworkElement
         for (int k = 0; k < d.Length; k++)
         {
             double f = b.IndexAt(a.Xs[k]);
-            d[k] = double.IsNaN(f) ? double.NaN : f * SessionData.Dt - k * SessionData.Dt;
+            d[k] = double.IsNaN(f) ? double.NaN : b.TimeAt(b.From + f) - a.Ts[k];
         }
         return d;
     }
@@ -299,6 +331,7 @@ internal sealed class CompareChart : FrameworkElement
         MouseMove += (_, e) =>
         {
             hover = e.GetPosition(this);
+            Cursor = pauseIcons.Any(i => i.Area.Contains(hover.Value)) ? Cursors.Hand : Cursors.Cross;
             Hovered?.Invoke(hover.Value.X >= Left && hover.Value.X <= Left + PlotWidth && (a != null || b != null) ? XAt(hover.Value.X) : double.NaN);
             if (dragFrom is { } from && e.LeftButton == MouseButtonState.Pressed)
             {
@@ -324,7 +357,7 @@ internal sealed class CompareChart : FrameworkElement
             ReleaseMouseCapture();
             // (since 4.10.3 a click puts the cursor there; a zone's number picks it; lines from their names in the rows)
             var p = e.GetPosition(this);
-            if (dragFrom != null && !dragged && !ClickZone(p) && p.X >= Left && p.X <= Left + PlotWidth) Clicked?.Invoke(XAt(p.X));
+            if (dragFrom != null && !dragged && !ClickPause(p) && !ClickZone(p) && p.X >= Left && p.X <= Left + PlotWidth) Clicked?.Invoke(XAt(p.X));
             dragFrom = null;
         };
         MouseRightButtonDown += (_, e) =>
@@ -425,6 +458,19 @@ internal sealed class CompareChart : FrameworkElement
         double m = 0.2;
         if (delta != null) foreach (double v in delta) if (Math.Abs(v) > m) m = Math.Abs(v);
         return m * 1.1;
+    }
+
+    /// <summary>(since 4.14.1) A pause's icon clicked: hidden or shown.</summary>
+    private bool ClickPause(Point p)
+    {
+        foreach (var (area, pause) in pauseIcons)
+        {
+            if (!area.Contains(p)) continue;
+            pause.Hidden = !pause.Hidden;
+            PausesChanged?.Invoke();
+            return true;
+        }
+        return false;
     }
 
     /// <summary>The first run's brake zone whose number (at the top of the lanes) is clicked, picked.</summary>
@@ -545,6 +591,15 @@ internal sealed class CompareChart : FrameworkElement
             dc.DrawLine(PedalColours.Pen(PedalColours.Theme(this, "AccentBrush"), 2), new Point(mx, top0 - 2), new Point(mx, bottom));
         }
         if (!double.IsNaN(LoopFrom) || !double.IsNaN(LoopTo)) DrawLoop(dc, this, Px(LoopFrom), Px(LoopTo), top0, bottom);
+        // (since 4.14.1) the pauses: shown, shaded; hidden (cut out), a dashed line where they were
+        var pausePen = PedalColours.Pen(dim, 1, 0.8);
+        foreach (var pause in Pauses())
+        {
+            double pa = Px(a.XAt(pause.From)), pb = Px(a.XAt(pause.End));
+            if (!pause.Hidden && pb - pa > 1) dc.DrawRectangle(PedalColours.Frozen(Colors.Gray, 0x38), null, new Rect(new Point(pa, top0), new Point(pb, bottom)));
+            for (double y = top0; y < bottom; y += 6) dc.DrawLine(pausePen, new Point(pa, y), new Point(pa, Math.Min(bottom, y + 3)));
+            if (!pause.Hidden && pb - pa > 1) for (double y = top0; y < bottom; y += 6) dc.DrawLine(pausePen, new Point(pb, y), new Point(pb, Math.Min(bottom, y + 3)));
+        }
         if (!double.IsNaN(playX))
         {
             double px = Px(playX);
@@ -568,6 +623,27 @@ internal sealed class CompareChart : FrameworkElement
             dc.DrawGeometry(MarkerBrush(mk.Kind), null, g);
             if (hover is { } hp && dragFrom == null && Math.Abs(hp.X - mx) < 8 && hp.Y < MarkerRow + 8
                 && (near == null || Math.Abs(hp.X - mx) < Math.Abs(hp.X - Px(a.XOf(near.At))))) near = mk;
+        }
+
+        // their icons above them (with how long), a click hides or shows one
+        pauseIcons.Clear();
+        var icons = TryFindResource("IconFont") as FontFamily ?? new FontFamily("Segoe MDL2 Assets");
+        Pause? overPause = null;
+        double overX = 0;
+        foreach (var pause in Pauses())
+        {
+            double cx = (Px(a.XAt(pause.From)) + Px(a.XAt(pause.End))) / 2;
+            if (cx < Left - 6 || cx > Left + PlotWidth + 6) continue;
+            var glyph = new FormattedText(pause.Hidden ? "" : "", System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
+                new Typeface(icons, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), 12, PedalColours.Frozen(PedalColours.Warning), VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            var secs = PedalColours.Text(this, SessionChart.Clock(pause.Seconds), 9.5, dim);
+            double wide = glyph.Width + 3 + secs.Width, left = cx - wide / 2;
+            var area = new Rect(left - 3, 0, wide + 6, MarkerRow + 3);
+            dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Frozen(PedalColours.Warning), 1, 0.6), area, 3, 3);
+            dc.DrawText(glyph, new Point(left, (area.Height - glyph.Height) / 2));
+            dc.DrawText(secs, new Point(left + glyph.Width + 3, (area.Height - secs.Height) / 2));
+            pauseIcons.Add((area, pause));
+            if (hover is { } ph && area.Contains(ph)) { overPause = pause; overX = cx; }
         }
 
         // the axis
@@ -610,7 +686,14 @@ internal sealed class CompareChart : FrameworkElement
             dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(bx, lanes[0].Area.Top + 4, ft.Width + 12, ft.Height + 8), 4, 4);
             dc.DrawText(ft, new Point(bx + 6, lanes[0].Area.Top + 8));
         }
-        if (near != null) MarkerTip(dc, near, Px(a.XOf(near.At)));
+        if (near != null && overPause == null) MarkerTip(dc, near, Px(a.XOf(near.At)));
+        if (overPause != null)
+        {
+            var tip = PedalColours.Text(this, overPause.Hidden ? F("Paused {0} (cut out): show", SessionChart.Clock(overPause.Seconds)) : F("Paused {0}: hide", SessionChart.Clock(overPause.Seconds)), 11, text);
+            double tx = Math.Clamp(overX - tip.Width / 2 - 6, 0, Math.Max(0, w - tip.Width - 12));
+            dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(tx, MarkerRow + 6, tip.Width + 12, tip.Height + 8), 4, 4);
+            dc.DrawText(tip, new Point(tx + 6, MarkerRow + 10));
+        }
     }
 
     /// <summary>(since 4.13.0) A run's timeline, combined: every channel it shows drawn over each other, each on its own

@@ -286,6 +286,8 @@
   "-{0:0.0} s": "-{0:0.0} s",
   "Lap {0}": "Lap {0}",
   "Delta {0:+0.00;-0.00;0.00} s": "Delta {0:+0.00;-0.00;0.00} s",
+  "Paused {0} (cut out): show": "Paused {0} (cut out): show",
+  "Paused {0}: hide": "Paused {0}: hide",
   "mph": "mph",
   "km/h": "km/h",
   "Crash": "Crash",

@@ -89,6 +89,14 @@ internal sealed class CompareOverview : FrameworkElement
             double lx = Px(a.XOf(lap.Start));
             dc.DrawLine(PedalColours.Pen(dim, 1, 0.4), new Point(lx, 0), new Point(lx, h));
         }
+        // (since 4.14.1) the pauses: a line where one is cut out, shown ones shaded
+        foreach (var p in d.Pauses)
+        {
+            if (p.End <= a.From || p.From >= a.To) continue;
+            double pa = Px(a.XAt(p.From)), pb = Px(a.XAt(p.End));
+            if (!p.Hidden) dc.DrawRectangle(PedalColours.Frozen(Colors.Gray, 0x38), null, new Rect(new Point(pa, 0), new Point(Math.Max(pa + 1, pb), h)));
+            dc.DrawLine(PedalColours.Pen(PedalColours.Frozen(PedalColours.Warning), 1, 0.7), new Point(pa, 0), new Point(pa, h));
+        }
         // the part the chart shows, framed; the rest dimmed
         double fa = Px(chart.ViewFrom), fb = Math.Max(fa + 3, Px(chart.ViewFrom + chart.ViewSpan));
         var shade = PedalColours.Frozen(Colors.Black, 0x70);
@@ -173,11 +181,20 @@ internal sealed class Playback
     public void Seek(double sample)
     {
         if (run == null || double.IsNaN(sample)) return;
+        // (since 4.14.1 not in a hidden pause: just after it)
+        if (run.Data.HiddenAt(sample) is { } gap) sample = gap.End;
         position = Math.Clamp(sample, run.From, run.To);
         startedAt = position;
         watch.Restart();
         Changed?.Invoke();
         Moved?.Invoke(position, rate, true);
+    }
+
+    /// <summary>(since 4.14.1) The run laid out again (a pause hidden or shown): the cursor put where it is again.</summary>
+    public void Relaid()
+    {
+        if (double.IsNaN(position)) { Changed?.Invoke(); return; }
+        Seek(position);
     }
 
     /// <summary>Plays at a rate (negative: back; 0: pauses).</summary>
@@ -209,6 +226,16 @@ internal sealed class Playback
             position = startedAt = rate > 0 ? LoopFrom : LoopTo;
             watch.Restart();
             Moved?.Invoke(position, rate, true);
+            return;
+        }
+        // (since 4.14.1) over a hidden pause: on from its other side, a jump for the video
+        if (run.Data.HiddenAt(p) is { } gap)
+        {
+            p = rate > 0 ? gap.End : gap.From - 1;
+            position = startedAt = Math.Clamp(p, run.From, run.To);
+            watch.Restart();
+            Moved?.Invoke(position, rate, true);
+            if (p >= run.To || p <= run.From) Play(0);
             return;
         }
         bool end = p >= run.To || p <= run.From;
@@ -312,7 +339,7 @@ internal sealed class PlaybackBar : DockPanel
     {
         var run = playback.Run;
         if (run == null) { clock.Text = ""; return; }
-        double at = double.IsNaN(playback.Position) ? 0 : (playback.Position - run.From) * SessionData.Dt;
+        double at = double.IsNaN(playback.Position) ? 0 : run.TimeAt(playback.Position);
         clock.Text = $"{SessionChart.Clock(at, true)} / {SessionChart.Clock(run.Seconds, true)}";
     }
 }

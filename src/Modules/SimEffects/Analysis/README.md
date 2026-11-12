@@ -277,11 +277,17 @@ not; those older files aren't listed (they name no race), and stay in the folder
     and **Set End** (a start after the end swaps them) and **Clear Loop**; the section is tinted between two lines.
     The Loop button left of Play (greyed out until both ends are set) plays it round from its start, lit while it
     does; the other speeds keep to it (going back, from its end again); Loop again stops. A new Session 1 clears it.
+  - **Pauses** (since 4.14.1): a gap of a second or more in Session 1's log (the game paused, or a rewind) has an
+    amber icon over it, above the chart, with how long it was. Hidden at first: cut out of the chart's time (a dashed
+    line where it was), the clock and Delta, and playback jumps over it, the video with it. A click on its icon shows
+    it (shaded, the eye open; the video plays through it), again hides it. Not kept: a session opened again starts
+    with its pauses hidden. The Video's timeline has the same icons.
   - After Session 1's channels: the lap times and the gap, and *Not the same track?* when their starts are over 500 m
     apart or the laps' lengths differ by over 6%.
   - Under the chart (since 4.10.9 450 px high): the race's **Video** (since 4.8.0, below; half the row), the **Track
     Map** (an eighth, taller than wide) and the **friction circle** (since 4.13.0, the rest, with its own **Brake** and
-    **Throttle**; a table of Corners, 4.6.9–4.12.0, was there). Since 4.13.3 the gaps between them are grips: drag one
+    **Throttle**; a table of Corners, 4.6.9–4.12.0, was there; since 4.14.1 a large white dot on it at the cursor,
+    moving as it plays, or at the mouse on the chart). Since 4.13.3 the gaps between them are grips: drag one
     to widen one side and narrow the other (120 px at least), kept.
     The Video and the Track Map each have a pop-out icon at their top right: a window of their own, moved and sized
     anywhere (a second one opens a little lower right); closing it, or the icon again, puts it back.

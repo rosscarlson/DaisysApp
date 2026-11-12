@@ -45,6 +45,11 @@ Read only when working in this folder. Current state and lessons; history is in 
   then 30 s of loading, then the race on the grid: the grid's "entry" was the grid itself, Tunnel Run's place 100 m off
   (radius 50). `LapTracker.Intro` keeps a nothing-driven race's entry for a race starting within 10 s. Harness:
   `%TEMP%	rk4136\TrkTest`.
+- **4.14.1 (pauses):** `SessionData.Pauses` (gaps ≥ 1 s in the log's ms, after `Rewinds`), `Pause.Hidden` (true at
+  first, not saved); `Run.Ts`/`TimeAt` = time less hidden pauses (the time axis, Delta, the clock); `Playback` skips a
+  hidden one (a jump for the video); `CompareChart.PausesChanged` → `Relayout` both charts + `Playback.Relaid`.
+  `FrictionCircle` caches its dots in a `DrawingGroup`, `At` = the dot. `strings.py --prune` drops keys used through
+  variables (`T(name)`) and reorders: add new keys to `en.json` by hand.
 - **Next:** the user tries 4.10.8 in FH5, then 4.10.0 in each game, then 4.7.0, 4.6.10, 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
   (only Done went), and whether the Trace's "Both pedals" marks, the zones' "throttle on too" note and the
   split's "Both together" go too (left-foot braking; only the tip went in 4.6.5). Ordinal suffixes ("1st") are English-only.

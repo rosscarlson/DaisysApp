@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.14.1 (pauses, friction dot):** in Analysis → Compare, a session with a pause (11/12 12:55 Oyashirazu Trail has
+  three): play through one at 1× and watch the video jump over it with the data; click its icon to show it and play
+  through again; try it popped out (the Video's timeline). Tried in the test copy: the three pauses found and hidden
+  (2:10 of 3:15), the dot moving with playback; the playback's jump over a pause and the icons' click not seen.
 - **4.14.0 (Plex):** on PLEX: the wizard's This PC's Plex / Tautulli; every sub-tab. Try **Stop** on a test stream;
   **Sign in with Plex…**; on a quiet moment **Repair** (closes Plex ~5 min; keeps "Before repair …") and a **Restore**
   of a backup; switch **Back up on a schedule** on and see the next morning's `Backups.log`. Then Optimize Database

@@ -13,6 +13,16 @@ internal sealed record Lap(int Number, int Start, int End, double Seconds, doubl
     public static string LapClock(double s) => double.IsNaN(s) ? "–" : $"{(int)(s / 60)}:{s % 60:00.000}";
 }
 
+/// <summary>(since 4.14.1) A pause in a session's log: samples <see cref="From"/> to <see cref="End"/> (not included),
+/// no rows logged. Hidden (at first) it's cut out of Compare's time, playback and the video.</summary>
+internal sealed class Pause(int from, int end)
+{
+    public int From { get; } = from;
+    public int End { get; } = end;
+    public bool Hidden { get; set; } = true;
+    public double Seconds => (End - From) * SessionData.Dt;
+}
+
 /// <summary>
 /// A session log read back, resampled to an even 100 samples a second (straight lines between the logged rows; a gap
 /// of more than a quarter of a second in the log is left as NaN). Pedals 0–1; steering 0.5 is straight ahead. Since
@@ -48,6 +58,8 @@ internal sealed class SessionData
     /// <summary>The engine's power, kW.</summary>
     public required double[] Power { get; init; }
     public string? Car { get; init; }
+    /// <summary>(since 4.14.1) The pauses in the log (the game paused: no rows for a second or more), in order.</summary>
+    public List<Pause> Pauses { get; } = new();
     public string? Driver { get; init; }
     public string? Name { get; init; }
     public List<Lap> Laps { get; } = new();
@@ -62,6 +74,15 @@ internal sealed class SessionData
     public Lap? BestLap => Laps.Where(l => l.Complete).MinBy(l => l.Seconds);
 
     private const int Columns = 18;
+    /// <summary>(since 4.14.1) A gap in the log this long is a pause (the game paused, or rewound).</summary>
+    private const long PauseMs = 1000;
+
+    /// <summary>(since 4.14.1) The hidden pause a moment (a sample, fractional) is in, or null.</summary>
+    public Pause? HiddenAt(double sample)
+    {
+        foreach (var p in Pauses) if (p.Hidden && sample >= p.From && sample < p.End) return p;
+        return null;
+    }
     // columns kept as they were between rows rather than drawn between them: the lap and the gear
     private static readonly bool[] Step = { false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false };
 
@@ -122,6 +143,13 @@ internal sealed class SessionData
             }
         }
         Rewinds(ms, cols);
+        var pauses = new List<Pause>();
+        for (int k = 1; k < ms.Count; k++)
+        {
+            if (ms[k] - ms[k - 1] < PauseMs) continue;
+            int from = (int)(ms[k - 1] / (1000 / Hz)) + 1, end = (int)Math.Ceiling(ms[k] / (1000.0 / Hz));
+            if (end > from) pauses.Add(new Pause(from, end));
+        }
         int n = ms.Count == 0 ? 0 : (int)(ms[^1] / (1000 / Hz)) + 1;
         var outs = new double[Columns][];
         for (int c = 0; c < Columns; c++)
@@ -173,6 +201,7 @@ internal sealed class SessionData
         data.HasG = data.LatG.Any(v => !double.IsNaN(v));
         data.HasDistance = data.Distance.Any(v => !double.IsNaN(v));
         data.HasGear = data.Gear.Any(v => v >= 1) && data.Rpm.Any(v => v > 0);
+        data.Pauses.AddRange(pauses);
         data.FindLaps();
         return data;
     }
