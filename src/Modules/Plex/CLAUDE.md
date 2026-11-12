@@ -32,3 +32,6 @@ Past work on this module (Claude Code reads this file only when it works in this
   a banner added to and removed from one title (100 Nights of Hero: original poster selected again, byte-identical;
   its poster list keeps the upload). **Not tested:** Repair and Restore end to end (they close Plex; users were
   streaming), Stop on a stream, Sign in with Plex, a remote server, a scheduled run at its time.
+- **Now:** 4.14.0 released (Release run green, installer only). **Next:** the user tries `docs/UNTESTED.md`'s 4.14.0
+  entry; fix what they report. Ideas not done: delete uploaded banner images from a title's poster list; a title
+  bubble while streams transcode; Tautulli graphs.
