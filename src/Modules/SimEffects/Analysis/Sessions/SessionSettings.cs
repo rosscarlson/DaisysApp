@@ -28,6 +28,10 @@ public sealed class SessionSettings
     public double VideoVolume { get; set; } = 1;
     public bool VideoMuted { get; set; }
 
+    /// <summary>(since 4.15.0) Session 2's video's, beside Session 1's (muted at first: one race heard).</summary>
+    public double Video2Volume { get; set; } = 1;
+    public bool Video2Muted { get; set; } = true;
+
     /// <summary>(since 4.13.0) Compare's chart: one timeline per session, every channel on it.</summary>
     public bool CompareCombined { get; set; }
 

@@ -177,12 +177,15 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
 - **Shared code** in Core: `DaisysApp.Shared.Hotkeys` (the above, and its pieces: `HotkeyManager` for system-wide
   keys, `ControllerButtons` for wheel / controller buttons), `DaisysApp.Shared.Charts` (`LineGraph`, the time graph
   Performance and Sensors use), `DaisysApp.Shared.Network` (`SpeedTester`, the speed test Performance and Support
-  run, reading an `ISpeedTestSettings` of the module's) and `DaisysApp.Shared.Csv`.
+  run, reading an `ISpeedTestSettings` of the module's; since 4.15.0 `YouTube`, the app's one YouTube account: `SignIn`,
+  `Upload` (resumable, with progress), `Delete`, `IdOf` / `WatchUrl`, and `YouTubeAccountView`, its settings rows) and
+  `DaisysApp.Shared.Csv`.
 - **More shared code** in **DaisysApp.Shared** (`src/DaisysApp.Shared`; reference it from your `.csproj`):
   `DaisysApp.Shared.Audio` (playback and recording devices, speaker layouts, mic volume, with NAudio),
   `DaisysApp.Shared.Voicemeeter` (Voicemeeter's Remote API, and the banner shown when it isn't running) and
   `DaisysApp.Shared.Hardware` (NVIDIA's GPU library, Windows' performance counters, HDR monitors' SDR brightness,
-  and `SensorHub`, the app's one LibreHardwareMonitor connection). It's kept out of Core so the wrapper, with
+  and `SensorHub`, the app's one LibreHardwareMonitor connection) and (since 4.15.0) `DaisysApp.Shared.YouTube`
+  (`YouTubePlayer`: a YouTube video played in Edge's WebView2, seeked and played by the module). It's kept out of Core so the wrapper, with
   modules that don't use it, doesn't carry it.
 - **The title bar and notifications**: `TitleBadges.Set("MyModule", "Running", tip, color)` shows a bubble after the
   app's name and version while something of yours is running (green, or `TitleBadges.Amber` / `TitleBadges.Red`, or a colour

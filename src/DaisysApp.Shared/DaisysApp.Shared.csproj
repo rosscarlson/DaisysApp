@@ -8,13 +8,15 @@
     <AssemblyName>DaisysApp.Shared</AssemblyName>
     <RootNamespace>DaisysApp</RootNamespace>
     <!-- kept apart from the release number, as Core's is: raise it when something modules use changes -->
-    <AssemblyVersion>0.27.0.0</AssemblyVersion>
+    <AssemblyVersion>0.28.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- supplied by the app -->
     <ProjectReference Include="..\DaisysApp.Core\DaisysApp.Core.csproj" Private="false" />
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <!-- (since 4.15.0) YouTubePlayer: a YouTube video in the page Edge's WebView2 shows (the runtime's Windows' own) -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
   </ItemGroup>
 
 </Project>

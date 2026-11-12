@@ -2,6 +2,17 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.15.0 (YouTube, two videos, time axis, same-session laps):** make a Google Cloud project with the YouTube Data
+  API v3 on, a Desktop app OAuth client (add yourself as a test user), and in Analysis Manager → YouTube put in its ID
+  and secret, **Sign In**; **Upload to YouTube** a race's video (Unlisted), watch the column go to On YouTube; then
+  **Delete Video Files** for it and see Compare play it from YouTube (seek with the mouse, play at 1×, ½×, 2×, the sync
+  buttons popped out). Note: an unaudited project's uploads are made private by YouTube, and private ones can't play in
+  the app. Switch **Upload each race's video** on and race. Export a lap of an uploaded session and import it (another
+  PC, or the test copy): its video should play. Compare two sessions with video: side by side, the map and friction
+  circle gone, each muted on its own. Pick Session 1's own session in S2 (two laps or more). The time row under the
+  distance axis. Tried: it builds; the YouTube player headless (an offscreen window: loads YouTube's sample video,
+  seeks to a frame, plays at 1×, survives moving to another window and a scrolled view); the link parsing. Not tried:
+  sign-in, upload, delete, anything in the app's window (the PC was in use).
 - **4.14.1 (pauses, friction dot):** in Analysis → Compare, a session with a pause (11/12 12:55 Oyashirazu Trail has
   three): play through one at 1× and watch the video jump over it with the data; click its icon to show it and play
   through again; try it popped out (the Video's timeline). Tried in the test copy: the three pauses found and hidden

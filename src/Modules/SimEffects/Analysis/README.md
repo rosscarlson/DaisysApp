@@ -211,8 +211,21 @@ not; those older files aren't listed (they name no race), and stay in the folder
   controller icon left of it (since 4.13.3) binds **Previous Event** and **Next Event** to a key or a controller button
   (Core's shortcuts; also in Settings → Shortcuts). **Load** (or a double-click, or Enter)
   analyses the session behind, the window staying open; **Show in Folder** and **Show Video in Folder** open
-  Explorer with its log or video picked; **Delete** deletes it and its video (a second click on Confirm?). "Missing":
-  its video was linked but the file's gone.
+  Explorer with its log or video picked; **Delete** deletes it and its video (a second click on Confirm?; its copy on
+  YouTube stays). "Missing": its video was linked but the file's gone.
+  - **YouTube** (since 4.15.0): the YouTube mark left of the controller icon opens the YouTube window: the app's
+    YouTube account (Core's, for any module: your own Google Cloud project's **OAuth client ID** and **Client secret**,
+    a Desktop app client with the YouTube Data API v3 switched on; a link to where one's made; **Sign In** in the
+    browser, **Sign Out**), then **Upload each race's video** (when its recording is saved, once the race is kept),
+    **Upload as** Unlisted (at first), Private or Public, and **Delete the video file once it's uploaded** (watched from
+    YouTube; no room taken). Kept in `AnalysisVideos.json`. Named from the session: track · car · best lap · game, the
+    details in its description; category Gaming. One at a time, in 8 MB pieces (a dropped connection picks up where it
+    was); one waiting when the app closes goes at the next start. A **YouTube** column says *On YouTube*, *Uploading
+    n%*, *Waiting* or *Failed* (why in its tooltip; the link when it's up). With rows picked: **Upload to YouTube**
+    (those with a file not up yet; not signed in, it opens the window), **Delete Video Files (kept on YouTube)** (those
+    on YouTube with a file; Confirm?), **Open on YouTube** (one). A Google project that YouTube hasn't audited has its
+    uploads made private, which can't play in the app; Google's sign-in for a project in testing runs out after a week
+    (sign in again).
 - **A click** on a row of the All Sessions table, or a time on a Best Times tile, opens its race here with that lap
   in Compare's **Session 1** (a race: its best lap). Since 4.13.0 the table's rows leave the page where it is, and since 4.13.2 the table
   is held in its place on screen while the cards above change height as the session loads (a Best Times tile still
@@ -235,7 +248,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
   None, or only races on Session 1's track (any car; yours, then other drivers'; before 4.6.5 every race, the same
   track's first): the same track, or for one with no track (someone else's) a start within the start radius of
   Session 1's start or a lap's; then its lap. Since 4.13.0 never Session 1's own session: *-- No Matches --* when
-  that leaves none. **Compare With** from the table puts a race in Session 2 even if it's elsewhere, or another lap
+  that leaves none; since 4.15.0 Session 1's own session is there when it has two laps or more (another of its laps to
+  compare with), so a track with one session can still be compared. **Compare With** from the table puts a race in Session 2 even if it's elsewhere, or another lap
   of Session 1's own. The session boxes are 140 px wide (their lines whole when open, the title as a tooltip; since
   4.13.0 an icon after a session with a race video, the date without the year), the lap boxes a fixed width, and each
   row's channels are at its right end (since 4.9.1), so both rows line up.
@@ -252,7 +266,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
     its icon blue while some are hidden, here and in the Video's timeline), **Previous Event** and **Next Event**: the
     cursor (from where it is, else the start or end) to the next mark shown, the video and Track Map with it, the
     mark's tooltip shown until the cursor moves or the mouse comes onto the chart. The axis' values are twice as far
-    apart since 4.13.3 (up to five across). A zone, throttle move or
+    apart since 4.13.3 (up to five across). Since 4.15.0, along the distance, Session 1's time at each value is under
+    it (to the hundredth zoomed in under 200 m), and the readout has the time at the mouse (both sessions'); the
+    popped-out Video's timeline the same. A zone, throttle move or
     gear change picked anywhere (Brake Point, Brake Release, Throttle, Shifting) shows here with a line at it, Session 1 switched to the lap it's in if another was picked (the
     Trace did this before 4.7.0).
   - A lane each, along the lap's distance: **Delta** (the other's time less this one's at each point: above the
@@ -290,7 +306,11 @@ not; those older files aren't listed (they name no race), and stay in the folder
     moving as it plays, or at the mouse on the chart). Since 4.13.3 the gaps between them are grips: drag one
     to widen one side and narrow the other (120 px at least), kept.
     The Video and the Track Map each have a pop-out icon at their top right: a window of their own, moved and sized
-    anywhere (a second one opens a little lower right); closing it, or the icon again, puts it back.
+    anywhere (a second one opens a little lower right); closing it, or the icon again, puts it back. Since 4.15.0, when
+    Session 1 and Session 2 both have a video, Session 2's is beside Session 1's (S1 on the left, S2 on the right, each
+    named over it, each with its own volume and **Mute**; Session 2's kept apart, muted at first) and the Track Map and
+    friction circle make way, here and popped out; Session 2's follows the cursor at the same place along the chart (the
+    same distance, or time). The same session with two laps shows both laps' moments.
   - **Video** (since 4.8.0; a placeholder in 4.7.0): Session 1's race as recorded (*No video of this race* without
     one: an imported race, or one raced with Video off), at the moment the mouse is at on the chart, or the zone or move picked (since 4.10.3 the cursor; not the mouse while it plays). It lines up by itself: the video keeps when its first frame was, the log when the race
     clock started. Popped out, its window has the tools under the picture: **Play** / **Pause** (playing, a white
@@ -303,6 +323,11 @@ not; those older files aren't listed (they name no race), and stay in the folder
     on the app's output (Settings → General → Audio). Since 4.10.9 a **volume** slider and **Mute** under the picture
     (popped out, right of its time), kept; since 4.13.3 they scale the video's own sound (the slider's square, so half
     way is about half as loud): 4.10.9–4.13.2 set the output's volume, which didn't change what was heard.
+    Since 4.15.0 a race whose file's gone but is on YouTube (the Analysis Manager's YouTube, below), or an imported
+    session that came with its YouTube link, plays from YouTube: YouTube's own player in Edge's WebView2 (Windows' own),
+    lined up the same way (the sync tools too), playing along with Compare at 1×, ½× and 2× (put right when it's half a
+    second out), else shown frame by frame; under Compare it leaves room at its top for the pop-out icon. Export needs
+    the file. A private video, or one its owner doesn't let play outside YouTube, says so instead.
     - **Timeline** (since 4.10.9, popped out, under the tools; the window opens 1000 px wide): Session 1's chart as
       Compare's, alone: Speed, Throttle, Brake and Steering, each with its box (kept) and name (highlights it); the
       whole run under it with the frame (drag, click, wheel, double-click) and the playback buttons. Both are the same
@@ -317,7 +342,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
   - The export icon in the Session card's title row saves Session 1 (a lap or the race) as a file with your name (the
     one set before 4.7.0 in the Driver box, which went, else Windows' user name) and the race's. **Import** (the icon in
     Compare's title row; **Import…** before 4.7.0) copies files like it into `ForzaSessions\Imported\`, where they're
-    in Session 2, and puts the first in Session 2.
+    in Session 2, and puts the first in Session 2. Since 4.15.0 an export of a session on YouTube carries its link and
+    where in the video it starts (`# video,link,seconds`), so whoever imports it watches it in step.
   - Speeds are in mph where the region isn't metric, km/h elsewhere.
 - **Track Map** (since 4.6.3; a card a third of Compare's row until 4.6.9, now in Compare, right of the Video, a quarter of the row): the lines Session 1 and Session 2 took, from where the game says the
   car was (X and Z, 60 times a second, in the game's own metres): this run blue and solid, the other orange and
@@ -499,9 +525,10 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | `LapTracker.cs` | `LapTracker` (races, laps, a sprint's finish and `Progress`, tracks by game, start and length, places tagged with `NameHere`, the `Nearest` to the car; each track's most laps and cars), `LapRecord`, `RaceRecord` (a race finished: start and finish places, `Result`), `LapStore` (`AnalysisLaps.jsonl`, a JSON line per lap; `AnalysisRaces.jsonl`, one per race; best by track, car and class); since 4.5.0 each `LapRecord` and `RaceRecord` names its race's log (`Session`, from `Claim`); since 4.10.0 the games that run sessions (`TelemetryFrame.Sessions`: `FeedSessions`, a run each, `StartRun` / `EndRun`, a lap `Waiting` for its time, `Settle`, `RecordSession`) and the tracks a game names (`ByKey`, `AddKeyed`; Motorsport 2023's in the Forza path too) |
 | `RaceStatsView.cs` | (since 4.6.3) Racing Statistics: the tiles (`Tile`, a share's bar), Finishes' bars and Last races' places |
 | `TrackMapView.cs` | (since 4.6.3) The Track Map block: `TrackLines` (the best lap's line on a track, read from its race's log off the UI thread, kept per track and best lap) and `TrackMapView` (that line, your line of the last few minutes and the car, fitted north up) |
+| `RaceUploads.cs` | (since 4.15.0) Race videos to YouTube with Core's `YouTube`, one at a time: `Queue`, `Resume` (those marked `RaceVideoLink.Upload`), `Progress`, `Failure`, `DeleteFiles`; `Describe` (the title and description, from `SessionsView`) |
 | `RaceVideo.cs` | (since 4.8.0) `RaceVideo`: each race recorded with Core's `ScreenRecordings` (`RaceLog`'s `Began`, `Ended` and `Dropped`), `RaceVideos` (`AnalysisVideos.json`: a `RaceVideoLink` per race's log: the file, its first frame's time, `Offset`) |
 | `RaceLog.cs` | (since 4.5.0) A session log a race (since 4.10.0 a run, in the games that run sessions): Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
-| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import; since 4.7.0 `ShowMoment` (a zone or move on Compare's chart), `PopOut` (the Video and Track Map in windows of their own), Session 1 the analysed session), `SessionManager.cs` (since 4.12.0: the Session Manager window, from `SessionsView`'s `Items`, `Listed`, `Load` and `Delete`), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (since 4.7.0 only the drawing helpers, `Envelope` and `Clock`: the Trace went into Compare), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`; since 4.7.0 the Trace's zones, laps and markers, `ShowSamples` and `Mark`: the moment picked as a line), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `FrictionCircle.cs` (scores over the race, the friction circle), `Shifting.cs` (since 4.6.10: `ShiftAnalysis`, the gear changes judged against the car's best upshift points, the limiter, its tips; `Shift`), `ShiftChart.cs` (the Shifting card's chart), `SessionPicker.cs` (since 4.13.0: Compare's window to find a session), `RaceVideoView.cs` (since 4.8.0: Compare's Video, its tools popped out, `Shown` for the chart's `PlayAt`), `VideoFrames.cs` (a video's frames with Media Foundation, on its own thread: `Want`, `Play`, `Take`), `VideoSound.cs` (since 4.8.1: its sound while it plays, NAudio's `MediaFoundationReader` to WASAPI), `VideoExport.cs` (since 4.9.0: the video re-encoded with the telemetry drawn on: Media Foundation's sink writer, H.264 and AAC; Overlays' `DashView` and `OverlayWindow.Trace` drawn on a thread of its own), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
+| `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis: `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import; since 4.7.0 `ShowMoment` (a zone or move on Compare's chart), `PopOut` (the Video and Track Map in windows of their own), Session 1 the analysed session), `SessionManager.cs` (since 4.12.0: the Session Manager window, from `SessionsView`'s `Items`, `Listed`, `Load` and `Delete`), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (since 4.7.0 only the drawing helpers, `Envelope` and `Clock`: the Trace went into Compare), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`; since 4.7.0 the Trace's zones, laps and markers, `ShowSamples` and `Mark`: the moment picked as a line), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `FrictionCircle.cs` (scores over the race, the friction circle), `Shifting.cs` (since 4.6.10: `ShiftAnalysis`, the gear changes judged against the car's best upshift points, the limiter, its tips; `Shift`), `ShiftChart.cs` (the Shifting card's chart), `SessionPicker.cs` (since 4.13.0: Compare's window to find a session), `YouTubeOptions.cs` (since 4.15.0: the Analysis Manager's YouTube window and the YouTube mark), `RaceVideoView.cs` (since 4.8.0: Compare's Video, its tools popped out, `Shown` for the chart's `PlayAt`; since 4.15.0 from YouTube with Shared's `YouTubePlayer`, and a second one for Session 2), `VideoFrames.cs` (a video's frames with Media Foundation, on its own thread: `Want`, `Play`, `Take`), `VideoSound.cs` (since 4.8.1: its sound while it plays, NAudio's `MediaFoundationReader` to WASAPI), `VideoExport.cs` (since 4.9.0: the video re-encoded with the telemetry drawn on: Media Foundation's sink writer, H.264 and AAC; Overlays' `DashView` and `OverlayWindow.Trace` drawn on a thread of its own), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`) |
 | `Terrain.cs` | (since 4.10.8) Which of a game's maps the car is on (`AnalysisSettings.Worlds`, `World`, `Track.Map`): each map's ground learnt (`AnalysisTerrain.bin`), the last 16 squares as evidence, the switch (`AnalysisApplet.SetMap`, `MapChanged`; since 4.13.4 not while `LapTracker.MapKnown`, and a track's map first: `LapTracker.MapSeen`, its race's `raceMap`, `OnTop`) |
 | `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded, merged into `AnalysisSettings.Tracks` once per version of the file (`AnalysisSettings.KnownTracks`, a hash of it) |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names; since 4.10.0 a `Track`'s `Key` (the game's id for it), `GameCars` and `GameClasses` (the names the games give, by `CarNames.Number`), `Learn`) |

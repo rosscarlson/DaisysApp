@@ -5,6 +5,8 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using DaisysApp.Shared.Network;
+using DaisysApp.Shared.YouTube;
 
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
@@ -21,6 +23,10 @@ internal sealed class RaceVideoView : DockPanel
 
     private readonly Image picture = new() { Stretch = Stretch.Uniform };
     private VideoFrames? frames;
+    // (since 4.15.0) a video on YouTube, its file gone (or someone else's); made when one's first shown
+    private YouTubePlayer? tube;
+    /// <summary>Where the video shown plays from: its file, or its YouTube link.</summary>
+    private string? source;
     private VideoSound? sound;
     private WriteableBitmap? bitmap;
     /// <summary>The time in the video of the frame shown.</summary>
@@ -85,9 +91,11 @@ internal sealed class RaceVideoView : DockPanel
         System.Windows.Automation.AutomationProperties.SetName(along, T("Along the video"));
         along.ValueChanged += (_, e) =>
         {
-            if (settingSlider || !opened || frames == null) return;
+            if (settingSlider || !opened) return;
             Pause();
-            frames.Want(e.NewValue);
+            if (OnTube) tube!.Seek(e.NewValue);
+            else if (frames != null) frames.Want(e.NewValue);
+            else return;
             FromVideo(e.NewValue);
         };
         first.Children.Add(along);
@@ -147,6 +155,7 @@ internal sealed class RaceVideoView : DockPanel
         {
             tools.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
             if (!value) Pause();
+            if (tube != null) tube.Margin = TubeMargin;
             // (the volume on the tools' first line, right of the clock; back under the picture)
             ((Panel)volume.Parent).Children.Remove(volume);
             if (value)
@@ -186,6 +195,7 @@ internal sealed class RaceVideoView : DockPanel
         mute.ToolTip = name;
         System.Windows.Automation.AutomationProperties.SetName(mute, name);
         if (sound != null) sound.Level = SoundLevel;
+        tube?.SetVolume(soundLevel, muted);
     }
 
     private float SoundLevel => muted ? 0 : (float)soundLevel;
@@ -199,24 +209,73 @@ internal sealed class RaceVideoView : DockPanel
         return b;
     }
 
-    /// <summary>Session 1: its log (null: none, or imported) and its file name, the video's key.</summary>
+    /// <summary>Session 1 (or 2): its log (null: none) and its key (its file name; Imported\ an imported one's).
+    /// Since 4.15.0 a video whose file's gone plays from YouTube when it's there.</summary>
     public void Show(SessionData? session, string? key)
     {
         var l = session == null ? null : RaceVideos.Of(key);
-        if (ReferenceEquals(session, data) && key == log && ReferenceEquals(l, link)) return;
+        // (since 4.15.0 the same link can change where it plays from: its file deleted once it's on YouTube)
+        string? from = l == null ? null : l.HasFile ? l.File : l.YouTube;
+        if (ReferenceEquals(session, data) && key == log && ReferenceEquals(l, link) && from == source) return;
         Pause();
         data = session;
         log = key;
         link = l;
+        source = from;
         Close();
         sample = wanted = shownAt = double.NaN;
         picture.Source = bitmap = null;
+        tube?.Load(null);
+        if (tube != null) tube.Visibility = Visibility.Collapsed;
+        export.IsEnabled = link?.HasFile == true;
         if (link == null) { ShowNote(T("No video of this race")); ShowSync(); return; }
+        if (!link.HasFile && YouTube.IdOf(link.YouTube) is { } id)
+        {
+            ShowNote(null);
+            if (tube == null)
+            {
+                tube = new YouTubePlayer { Margin = TubeMargin };
+                tube.Updated += TubeUpdated;
+                ((Grid)picture.Parent).Children.Insert(1, tube);
+            }
+            tube.Visibility = Visibility.Visible;
+            tube.SetVolume(soundLevel, muted);
+            tube.Load(id);
+            wanted = 0;
+            ShowSync();
+            return;
+        }
         if (!File.Exists(link.File)) { ShowNote(F("Video not found: {0}", Path.GetFileName(link.File))); ShowSync(); return; }
         ShowNote(T("Opening the video…"));
         frames = new VideoFrames(link.File);
         wanted = 0;
         ShowSync();
+    }
+
+    /// <summary>(since 4.15.0) YouTube's page is a window of its own, over anything WPF draws: under Compare it leaves
+    /// room at the top for the slot's pop-out button.</summary>
+    private Thickness TubeMargin => tools.Visibility == Visibility.Visible ? new Thickness(0) : new Thickness(0, 32, 0, 0);
+
+    /// <summary>(since 4.15.0) Played from YouTube (its file deleted, or someone else's session's).</summary>
+    private bool OnTube => tube != null && tube.Visibility == Visibility.Visible;
+
+    /// <summary>(since 4.15.0) Compare's playback is playing the YouTube video along at this rate (0: not).</summary>
+    private double tubeRate;
+
+    /// <summary>(since 4.15.0) The YouTube player said where it is.</summary>
+    private void TubeUpdated()
+    {
+        if (!OnTube || tube == null) return;
+        if (tube.Ready && !opened)
+        {
+            opened = true;
+            along.Maximum = Math.Max(1, tube.Duration);
+        }
+        if (tube.Duration > 0) along.Maximum = tube.Duration;
+        if (double.IsNaN(tube.Time)) return;
+        shownAt = tube.Time;
+        if (playing) FromVideo(tube.Time);
+        else ShowPlace(tube.Time);
     }
 
     /// <summary>(since 4.10.3) Compare's playback: the race's moment (a sample of Session 1's log) as it plays at a rate
@@ -225,6 +284,23 @@ internal sealed class RaceVideoView : DockPanel
     {
         if (double.IsNaN(at) || data == null) return;
         if (playing) Pause();
+        if (OnTube && tube != null)
+        {
+            // (since 4.15.0) YouTube plays along at the rates it has (forwards), put right when it's off by half a
+            // second; else it's shown frame by frame, as the file
+            if (rate > 0 && tube.Ready)
+            {
+                double v = VideoOf(at);
+                if (v < 0 || v > tube.Duration) { if (tubeRate != 0) tube.Pause(); tubeRate = 0; return; }
+                if (tubeRate != rate || jumped || !tube.Playing || Math.Abs(tube.Time - v) > 0.5) tube.Play(v, rate);
+                tubeRate = rate;
+                return;
+            }
+            if (tubeRate != 0) tube.Pause();
+            tubeRate = 0;
+            wanted = at;
+            return;
+        }
         wanted = at;
         if (rate != 1) { if (sounding) sound?.Stop(); sounding = false; return; }
         if ((sounding && !jumped) || link == null || !opened) return;
@@ -236,6 +312,7 @@ internal sealed class RaceVideoView : DockPanel
     public void ShowSample(double at)
     {
         if (double.IsNaN(at) || playing || data == null) return;
+        if (tubeRate != 0) return;
         wanted = at;
     }
 
@@ -244,6 +321,8 @@ internal sealed class RaceVideoView : DockPanel
 
     private void Close()
     {
+        if (tubeRate != 0) tube?.Pause();
+        tubeRate = 0;
         frames?.Dispose();
         frames = null;
         sound?.Dispose();
@@ -255,6 +334,14 @@ internal sealed class RaceVideoView : DockPanel
 
     private void Tick()
     {
+        if (OnTube && tube != null)
+        {
+            if (!tube.Ready || playing || tubeRate != 0 || double.IsNaN(wanted)) return;
+            sample = wanted;
+            wanted = double.NaN;
+            tube.Seek(Math.Max(0, VideoOf(sample)));
+            return;
+        }
         if (frames == null) return;
         if (frames.Error is { } e && e != error) { error = e; ShowNote(F("Can't play this video: {0}", e)); return; }
         if (!frames.Ready) return;
@@ -306,15 +393,27 @@ internal sealed class RaceVideoView : DockPanel
 
     private void Play()
     {
-        if (!opened || frames == null) return;
+        if (!opened || (frames == null && !OnTube)) return;
         playing = true;
         sounding = false;
         double from = double.IsNaN(shownAt) || shownAt >= along.Maximum - 0.1 ? 0 : shownAt;
-        frames.Play(from);
+        if (OnTube)
+        {
+            tubeRate = 0;
+            tube!.Play(from);
+            PlayButton(true);
+            return;
+        }
+        frames!.Play(from);
         if (link != null) (sound ??= new VideoSound(link.File) { Level = SoundLevel }).Play(from);
-        ((TextBlock)play.Content).Text = "";
-        play.ToolTip = T("Pause");
-        System.Windows.Automation.AutomationProperties.SetName(play, T("Pause"));
+        PlayButton(true);
+    }
+
+    private void PlayButton(bool on)
+    {
+        ((TextBlock)play.Content).Text = on ? "" : "";
+        play.ToolTip = on ? T("Pause") : T("Play");
+        System.Windows.Automation.AutomationProperties.SetName(play, on ? T("Pause") : T("Play"));
     }
 
     private void Pause()
@@ -323,9 +422,8 @@ internal sealed class RaceVideoView : DockPanel
         playing = false;
         frames?.Pause();
         sound?.Stop();
-        ((TextBlock)play.Content).Text = "";
-        play.ToolTip = T("Play");
-        System.Windows.Automation.AutomationProperties.SetName(play, T("Play"));
+        if (OnTube) tube!.Pause();
+        PlayButton(false);
         Shown?.Invoke(double.NaN);
     }
 
@@ -336,8 +434,9 @@ internal sealed class RaceVideoView : DockPanel
         link.Offset = Math.Round(link.Offset + by, 4);
         RaceVideos.All.Save(soon: true);
         ShowSync();
-        if (!opened || playing || double.IsNaN(sample) || frames == null) return;
-        frames.Want(Math.Max(0, VideoOf(sample)));
+        if (!opened || playing || double.IsNaN(sample)) return;
+        if (OnTube) tube!.Seek(Math.Max(0, VideoOf(sample)));
+        else frames?.Want(Math.Max(0, VideoOf(sample)));
     }
 
     /// <summary>The frame shown is where the race clock starts (the log's first sample).</summary>

@@ -3,6 +3,23 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.15.0**
+- **SimEffects → Analysis → YouTube** (new): the YouTube mark in the Analysis Manager (left of the Event Shortcuts
+  button) signs in to YouTube with your own Google OAuth client (a Desktop app client with the YouTube Data API on)
+  and sets what happens to race videos: **Upload each race's video** as it's saved, **Upload as** Unlisted, Private or
+  Public, and **Delete the video file once it's uploaded**. Each is named from its session (track, car, best lap,
+  game). The Manager has a **YouTube** column (on YouTube, uploading n%, waiting, failed) and, for the rows picked,
+  **Upload to YouTube**, **Delete Video Files (kept on YouTube)** and **Open on YouTube**. A race whose file is gone
+  plays from YouTube in Compare, in step as before. An exported session carries its YouTube link, so an imported one
+  plays its video too. The YouTube account and upload are Core's (any module can use them); the player is Shared's.
+- **Compare**: when Session 1 and Session 2 both have a video, they play side by side (S1 left, S2 right, each named,
+  each with its own volume and Mute; S2 muted at first), Session 2's at the same place along the chart; the Track Map
+  and friction circle make way, here and popped out.
+- **Compare**: the chart's axis along the distance has Session 1's time under each distance, and the readout the time
+  at the mouse (both sessions'); the popped-out Video's timeline too.
+- **Compare**: Session 2 can be Session 1's own session when it has two laps or more, to compare its laps, even on a
+  track with only that session.
+
 **4.14.1**
 - **SimEffects → Analysis → Compare**: a pause in a session (the game paused: no data for a second or more) is marked
   above the chart with an icon and how long it was, and starts hidden: cut out of the chart's time, the clock and

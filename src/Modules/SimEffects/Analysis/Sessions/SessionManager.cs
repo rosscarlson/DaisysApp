@@ -8,6 +8,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using DaisysApp.Shared;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
@@ -34,6 +35,10 @@ internal sealed class SessionManager
     private readonly WrapPanel totals = new() { Margin = new Thickness(0, 0, 0, 10), HorizontalAlignment = HorizontalAlignment.Right };
     private readonly HeaderFilter days = new(T("Date"), (a, b) => DateTime.Parse(b, CultureInfo.CurrentCulture).CompareTo(DateTime.Parse(a, CultureInfo.CurrentCulture))),
         games = new(T("Game")), tracks = new(T("Track")), cars = new(T("Car")), kinds = new(T("Kind")), videos = new(T("Video"));
+    private readonly Button upload = Tool("", T("Upload to YouTube"), new Thickness(8, 0, 0, 0)),
+        dropFiles = Tool("", T("Delete Video Files (kept on YouTube)"), new Thickness(8, 0, 0, 0)), watch = Tool("", T("Open on YouTube"), new Thickness(8, 0, 0, 0));
+    /// <summary>Puts Delete Video Files' Confirm? back.</summary>
+    private Action disarmFiles = () => { };
     private readonly Button load = Tool("", T("Load"), new Thickness(0)), showLog = Tool("", T("Show in Folder"), new Thickness(8, 0, 0, 0)),
         showVideo = Tool("", T("Show Video in Folder"), new Thickness(8, 0, 0, 0)), delete = Tool("", T("Delete"), new Thickness(8, 0, 0, 0));
     /// <summary>Puts Delete's Confirm? back: what it's for changed.</summary>
@@ -42,8 +47,9 @@ internal sealed class SessionManager
     private ICollectionView? shown;
 
     /// <summary>A session as listed: what it takes on disk read when listed.</summary>
-    private sealed class Row
+    private sealed class Row : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
         public required SessionsView.Item Item { get; init; }
         public DateTime Date => Item.Started;
         public string DateText => Item.Started.ToString("g");
@@ -63,7 +69,19 @@ internal sealed class SessionManager
         /// <summary>Its size: 0 none, -1 linked but gone.</summary>
         public long Video { get; init; }
         public string VideoText => Video > 0 ? Sizes.Bytes(Video) : Video < 0 ? T("Missing") : "—";
-        public string VideoKind => Video > 0 ? T("With video") : T("No video");
+        public string VideoKind => Video > 0 || YouTube != null ? T("With video") : T("No video");
+        /// <summary>(since 4.15.0) Its video's YouTube link, or null.</summary>
+        public string? YouTube { get; init; }
+        /// <summary>(since 4.15.0) On YouTube, going there (how far), waiting, failed, or not.</summary>
+        public string YouTubeText => RaceUploads.Progress(Item.Key) is { } p ? (double.IsNaN(p) ? T("Waiting") : F("Uploading {0:0}%", p * 100))
+            : YouTube != null ? T("On YouTube") : RaceUploads.Failure(Item.Key) != null ? T("Failed") : "—";
+        public string? YouTubeTip => RaceUploads.Failure(Item.Key) ?? YouTube;
+        public int YouTubeOrder => YouTube != null ? 2 : RaceUploads.Progress(Item.Key) != null ? 1 : 0;
+        public void UploadsChanged()
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(YouTubeText)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(YouTubeTip)));
+        }
         public long Total => Data + Math.Max(0, Video);
         public string TotalText => Sizes.Bytes(Total);
         public string File => Item.File.Name;
@@ -116,6 +134,21 @@ internal sealed class SessionManager
             var picked = grid.SelectedItems.OfType<Row>().Select(r => r.Item).ToList();
             if (picked.Count > 0) view.Delete(picked);
         });
+        upload.Click += (_, _) =>
+        {
+            if (!YouTube.SignedIn) { YouTubeOptions.Show(window); return; }
+            RaceUploads.Queue(grid.SelectedItems.OfType<Row>().Select(r => r.Item.Key).ToList());
+        };
+        disarmFiles = ConfirmButton.ArmIcon(dropFiles, () =>
+        {
+            RaceUploads.DeleteFiles(grid.SelectedItems.OfType<Row>().Select(r => r.Item.Key).ToList());
+            view.Refresh();
+        });
+        watch.Click += (_, _) => { if (Picked is { YouTube: { } url }) Ui.Open(url); };
+        // (since 4.15.0) the YouTube account, and what's uploaded
+        var tube = new Button { Content = YouTubeOptions.Logo(), Padding = new Thickness(10, 6, 10, 6), Margin = new Thickness(0, 0, 8, 0), ToolTip = T("YouTube") };
+        System.Windows.Automation.AutomationProperties.SetName(tube, T("YouTube"));
+        tube.Click += (_, _) => YouTubeOptions.Show(window);
         // (since 4.13.1) where the race videos' options are; this window would cover them
         var recording = Tool("", T("Recording Options"), new Thickness(0, 0, 8, 0));
         recording.Click += (_, _) =>
@@ -132,10 +165,10 @@ internal sealed class SessionManager
             view.EventKeys.Where(h => !string.IsNullOrEmpty(h.Text)).Select(h => $"{h.Spec.Name}: {h.Text}")));
         keys.Padding = new Thickness(12, 6, 12, 6);
         keys.Margin = new Thickness(0, 0, 8, 0);
-        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { keys, recording, refresh, close } };
+        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { tube, keys, recording, refresh, close } };
         DockPanel.SetDock(right, Dock.Right);
         buttons.Children.Add(right);
-        buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { load, showLog, showVideo, delete } });
+        buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { load, showLog, showVideo, delete, upload, dropFiles, watch } });
         DockPanel.SetDock(buttons, Dock.Bottom);
         body.Children.Add(buttons);
 
@@ -145,6 +178,8 @@ internal sealed class SessionManager
 
         view.Listed += List;
         window.Closed += (_, _) => view.Listed -= List;
+        RaceUploads.Changed += UploadsChanged;
+        window.Closed += (_, _) => RaceUploads.Changed -= UploadsChanged;
         List();
         if (view.Analysed is { } now && rows.FirstOrDefault(r => r.Item.Key == now.Key) is { } row)
         {
@@ -170,6 +205,7 @@ internal sealed class SessionManager
         Column(T("Best"), nameof(Row.BestText), nameof(Row.Best), right: true);
         Column(T("Data"), nameof(Row.DataText), nameof(Row.Data), right: true);
         Column(videos.Header(), nameof(Row.VideoText), nameof(Row.Video), right: true);
+        Column(T("YouTube"), nameof(Row.YouTubeText), nameof(Row.YouTubeOrder), tip: nameof(Row.YouTubeTip));
         Column(T("Total"), nameof(Row.TotalText), nameof(Row.Total), right: true);
         Column(T("File"), nameof(Row.File), star: 1.5);
         foreach (var f in new[] { days, games, tracks, cars, kinds, videos }) f.Changed += () => { shown?.Refresh(); Totals(); };
@@ -177,7 +213,7 @@ internal sealed class SessionManager
         // (since 4.13.2) how many sessions a track has, when it's more than one
         tracks.Label = v => rows.Count(r => r.Track == v && Passes(r, tracks)) is > 1 and var n ? $"{v} ({n})" : v;
 
-        grid.SelectionChanged += (_, _) => { disarm(); Enable(); };
+        grid.SelectionChanged += (_, _) => { disarm(); disarmFiles(); Enable(); };
         grid.MouseDoubleClick += (_, e) =>
         {
             if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow) Load();
@@ -188,9 +224,10 @@ internal sealed class SessionManager
         };
     }
 
-    private void Column(object header, string path, string? sort = null, double star = 0, bool right = false)
+    private void Column(object header, string path, string? sort = null, double star = 0, bool right = false, string? tip = null)
     {
         var cell = new Style(typeof(TextBlock));
+        if (tip != null) cell.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, new Binding(tip)));
         cell.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(4, 2, 6, 2)));
         if (right) cell.Setters.Add(new Setter(TextBlock.TextAlignmentProperty, TextAlignment.Right));
         cell.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis));
@@ -212,14 +249,15 @@ internal sealed class SessionManager
         {
             i.File.Refresh();
             long data = i.File.Exists ? i.File.Length : 0;
-            string? video = i.Imported ? null : RaceVideos.Of(i.Key)?.File;
+            var link = RaceVideos.Of(i.Key);
+            string? video = i.Imported ? null : link?.File;
             long size = 0;
             if (!string.IsNullOrEmpty(video))
             {
                 var v = new FileInfo(video);
                 size = v.Exists ? v.Length : -1;
             }
-            rows.Add(new Row { Item = i, Data = data, VideoFile = size > 0 ? video : null, Video = size });
+            rows.Add(new Row { Item = i, Data = data, VideoFile = size > 0 ? video : null, Video = size, YouTube = link?.YouTube });
         }
         // (the sort kept: a DataGrid given new items drops it)
         var sorts = shown?.SortDescriptions.ToList() is { Count: > 0 } was ? was : new() { new SortDescription(nameof(Row.Date), ListSortDirection.Descending) };
@@ -322,6 +360,20 @@ internal sealed class SessionManager
         showVideo.IsEnabled = r?.VideoFile != null;
         delete.IsEnabled = n > 0;
         delete.ToolTip = n > 1 ? F("Delete these {0} sessions and their videos", n) : T("Delete this session and its video");
+        // (since 4.15.0) YouTube: those picked that can go, whose files can go, and the one picked's link
+        var picked = grid.SelectedItems.OfType<Row>().ToList();
+        upload.IsEnabled = picked.Any(p => p.VideoFile != null && p.YouTube == null && RaceUploads.Progress(p.Item.Key) == null);
+        dropFiles.IsEnabled = picked.Any(p => p.VideoFile != null && p.YouTube != null);
+        watch.IsEnabled = r?.YouTube != null;
+    }
+
+    /// <summary>(since 4.15.0) An upload moved on or finished: its row's YouTube column, and the buttons.</summary>
+    private void UploadsChanged()
+    {
+        foreach (var r in rows) r.UploadsChanged();
+        // (one finished: its link, from the list again)
+        if (rows.Any(r => r.YouTube == null && RaceVideos.Of(r.Item.Key)?.YouTube != null)) List();
+        else Enable();
     }
 
     private void Load()

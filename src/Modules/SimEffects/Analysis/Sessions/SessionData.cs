@@ -86,11 +86,13 @@ internal sealed class SessionData
     // columns kept as they were between rows rather than drawn between them: the lap and the gear
     private static readonly bool[] Step = { false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false };
 
-    /// <summary>The # lines of a session file: when it started, and its driver and name if it was exported.</summary>
-    public static (DateTime? Started, string? Driver, string? Name) Head(string path)
+    /// <summary>The # lines of a session file: when it started, and its driver and name if it was exported; since 4.15.0
+    /// its video on YouTube, if it has one ("# video,link,seconds": where in the video the session starts).</summary>
+    public static (DateTime? Started, string? Driver, string? Name, (string Url, double At)? Video) Head(string path)
     {
         DateTime? started = null;
         string? driver = null, name = null;
+        (string, double)? video = null;
         try
         {
             using var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete));
@@ -102,10 +104,12 @@ internal sealed class SessionData
                     && DateTime.TryParse(line[10..], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var t)) started = t.ToLocalTime();
                 else if (line.StartsWith("# driver,", StringComparison.Ordinal)) driver = line[9..].Trim();
                 else if (line.StartsWith("# name,", StringComparison.Ordinal)) name = line[7..].Trim();
+                else if (line.StartsWith("# video,", StringComparison.Ordinal) && line[8..].Split(',') is { Length: >= 2 } v
+                    && double.TryParse(v[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double at) && v[0].Trim().Length > 0) video = (v[0].Trim(), at);
             }
         }
         catch { }
-        return (started, driver, name);
+        return (started, driver, name, video);
     }
 
     public static SessionData Load(string path)

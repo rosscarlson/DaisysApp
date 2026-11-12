@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using DaisysApp.Settings;
+using DaisysApp.Shared.Network;
 using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
@@ -20,6 +21,20 @@ public sealed class RaceVideoLink
 
     /// <summary>Where a moment of the race (seconds from its log's start) is in the video, in seconds.</summary>
     public double VideoAt(DateTime logStarted, double seconds) => seconds + (logStarted - Started).TotalSeconds + Offset;
+
+    /// <summary>(since 4.15.0) Its copy on YouTube (the link), or null.</summary>
+    public string? YouTube { get; set; }
+
+    /// <summary>(since 4.15.0) Waiting to go to YouTube (<see cref="RaceUploads"/>; picked up again after a restart).</summary>
+    public bool Upload { get; set; }
+
+    /// <summary>(since 4.15.0) The video file is there (it may have been deleted, its YouTube copy kept).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool HasFile => File.Length > 0 && System.IO.File.Exists(File);
+
+    /// <summary>(since 4.15.0) There's a video to watch: the file, or its YouTube copy.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool Watchable => HasFile || YouTube != null;
 }
 
 /// <summary>(since 4.8.0) Each race's video, by its log's file name: %APPDATA%\DaisysApp\AnalysisVideos.json.</summary>
@@ -28,6 +43,15 @@ public sealed class RaceVideos
     private const string FileName = "AnalysisVideos";
 
     public Dictionary<string, RaceVideoLink> Videos { get; set; } = new();
+
+    /// <summary>(since 4.15.0) Each race's video uploaded to YouTube when it's saved (the account: Core's YouTube).</summary>
+    public bool YouTubeAuto { get; set; }
+
+    /// <summary>(since 4.15.0) Who can watch what's uploaded.</summary>
+    public YouTubePrivacy YouTubePrivacy { get; set; } = YouTubePrivacy.Unlisted;
+
+    /// <summary>(since 4.15.0) A video uploaded has its file deleted (watched from YouTube).</summary>
+    public bool YouTubeDeleteLocal { get; set; }
 
     private static RaceVideos? all;
     public static RaceVideos All => all ??= JsonStore.Load<RaceVideos>(FileName);
@@ -74,6 +98,8 @@ internal sealed class RaceVideo
             foreach (var k in gone) RaceVideos.All.Videos.Remove(k);
             RaceVideos.All.Save();
         }
+        // (since 4.15.0) uploads a restart cut short, and those waiting for a sign-in
+        RaceUploads.Resume();
     }
 
     /// <summary>Switched off: a race being recorded stops.</summary>
@@ -112,7 +138,21 @@ internal sealed class RaceVideo
     {
         if (recording != log) return;
         recording = null;
-        if (!starting) ScreenRecordings.Recorder?.Stop();
+        if (!starting) ScreenRecordings.Recorder?.Stop(() => Saved(log));
+    }
+
+    /// <summary>(since 4.15.0) A race's video finished: uploaded to YouTube when that's on, once the race is kept (a
+    /// race not kept has its video dropped a moment after it ends).</summary>
+    private void Saved(string log)
+    {
+        if (!RaceVideos.All.YouTubeAuto || RaceVideos.Of(log) is not { YouTube: null } link) return;
+        // (marked now, so a restart in the meantime still uploads it)
+        link.Upload = true;
+        RaceVideos.All.Save();
+        _ = Task.Delay(TimeSpan.FromSeconds(20)).ContinueWith(_ =>
+        {
+            if (RaceVideos.Of(log) is { HasFile: true, YouTube: null }) RaceUploads.Queue(new[] { log });
+        }, TaskScheduler.FromCurrentSynchronizationContext());
     }
 
     private void Dropped(string log)
@@ -135,7 +175,12 @@ internal sealed class RaceVideo
     /// <summary>The app closing: a race being recorded stops.</summary>
     public void Dispose()
     {
-        if (recording != null && !starting) ScreenRecordings.Recorder?.Stop();
+        if (recording != null && !starting)
+        {
+            ScreenRecordings.Recorder?.Stop();
+            // (uploaded at the next start, when it's kept)
+            if (RaceVideos.All.YouTubeAuto && RaceVideos.Of(recording) is { YouTube: null } link) { link.Upload = true; RaceVideos.All.Save(); }
+        }
         recording = null;
     }
 }

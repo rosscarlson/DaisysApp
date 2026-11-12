@@ -158,7 +158,7 @@ internal sealed class SessionsView
     private static readonly string WhenFormat = System.Text.RegularExpressions.Regex.Replace(CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern, "[^Md]*y+[^Md]*", "")
         + " " + CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern;
 
-    private static bool VideoThere(string key) => RaceVideos.Of(key)?.File is { Length: > 0 } f && File.Exists(f);
+    private static bool VideoThere(string key) => RaceVideos.Of(key)?.Watchable == true;
 
     /// <summary>The sessions again (a lap or race kept, a track renamed): the races' logs that are still there, newest
     /// first, then the imported ones.</summary>
@@ -193,14 +193,23 @@ internal sealed class SessionsView
                     + (unfinished.ContainsKey(g.Key) ? " · " + T("INCOMPLETE") : ""),
             });
         }
+        bool linked = false;
         var imported = ImportedFiles().Select(f =>
         {
             var head = SessionData.Head(f.FullName);
             var started = head.Started ?? SessionLog.StartedOf(f);
             string driver = string.IsNullOrWhiteSpace(head.Driver) ? T("Imported") : head.Driver;
-            return new Item { File = f, Key = KeyOf(f), Started = started, Driver = driver, Title = driver + " · " + (string.IsNullOrWhiteSpace(head.Name) ? When(started) : head.Name),
-                TrackName = head.Name ?? "" };
-        });
+            string key = KeyOf(f);
+            // (since 4.15.0) its video on YouTube, as exported: linked as a race's (its sync kept)
+            if (head.Video is { } v && RaceVideos.Of(key) == null)
+            {
+                RaceVideos.All.Videos[key] = new RaceVideoLink { File = "", YouTube = v.Url, Started = started, Offset = v.At };
+                linked = true;
+            }
+            return new Item { File = f, Key = key, Started = started, Driver = driver, Title = driver + " · " + (string.IsNullOrWhiteSpace(head.Name) ? When(started) : head.Name),
+                TrackName = head.Name ?? "", HasVideo = RaceVideos.Of(key)?.Watchable == true };
+        }).ToList();
+        if (linked) RaceVideos.All.Save();
         string? keep = (sessions.SelectedItem as Item)?.Key ?? settings.Selected;
         items = mine.OrderByDescending(i => i.Started).Concat(imported.OrderByDescending(i => i.Started)).ToList();
         filling = true;
@@ -382,6 +391,8 @@ internal sealed class SessionsView
             if (player.Playing || lastA == null) return;
             if (!off) video.ShowSample(lastA.From + lastA.IndexAt(x));
             else if (!double.IsNaN(player.Position)) video.ShowSample(player.Position);
+            // (since 4.15.0) and Session 2's at the same place
+            if (bothVideos) video2.ShowSample(off ? SampleOfB(player.Position) : BAt(x));
         };
         // (since 4.10.3) a click puts the cursor there; playing moves it, the video and the map with it
         compareChart.Clicked += x => { if (lastA != null) player.Seek(lastA.From + lastA.IndexAt(x)); };
@@ -393,6 +404,7 @@ internal sealed class SessionsView
             if (rate != 0) compareChart.Follow(x, rate > 0);
             if (!compareChart.IsMouseOver) { lineMap.HoverAt(x); FrictionAt(i); }
             if (!fromVideo) video.Follow(i, rate, jumped);
+            if (bothVideos) video2.Follow(SampleOfB(i) is var j && !double.IsNaN(j) ? j : lastB?.To ?? double.NaN, double.IsNaN(SampleOfB(i)) ? 0 : rate, jumped);
             if (videoRun == null) return;
             double vx = videoRun.XAt(i);
             videoChart.PlayAt(vx);
@@ -426,6 +438,7 @@ internal sealed class SessionsView
             double i = off ? player.Position : videoRun.From + videoRun.IndexAt(x);
             lineMap.HoverAt(off ? compareChart.PlayX : double.IsNaN(i) ? double.NaN : lastA.XAt(i));
             if (!player.Playing && !double.IsNaN(i)) video.ShowSample(i);
+            if (!player.Playing && bothVideos) video2.ShowSample(SampleOfB(i));
         };
         // (since 4.8.0) the video playing, or moved in its window: where it is on the chart and the map (since 4.10.3
         // the cursor, Compare's playback stopped)
@@ -437,7 +450,15 @@ internal sealed class SessionsView
             player.Seek(i);
             fromVideo = false;
         };
-        RaceVideos.Changed += () => { if (mine != null && mineItem != null) video.Show(mine.Data, mineItem.Imported ? null : mineItem.Key); };
+        RaceVideos.Changed += ShowVideos;
+        // (since 4.15.0) a race video's name and description on YouTube, from its session
+        RaceUploads.Describe = key => items.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is not { } i ? null
+            : (string.Join(" · ", new[] { i.TrackName, i.CarName, i.Best > 0 ? Blocks.LapTime(i.Best) : "", i.Game }.Where(t => t.Length > 0)),
+               string.Join("\n", new[]
+               {
+                   i.Game, F("Track: {0}", i.TrackName), F("Car: {0}", i.CarName), i.Laps > 0 ? F("Laps: {0}", i.Laps) : "",
+                   i.Best > 0 ? F("Best: {0}", Blocks.LapTime(i.Best)) : "", i.Started.ToString("f", CultureInfo.CurrentCulture),
+               }.Where(t => t.Length > 0)));
         compareChart.ZoneClicked += z => Pick(z, fromChart: true);
         Cards.Add(BuildCompare());
 
@@ -498,7 +519,8 @@ internal sealed class SessionsView
             string? video = null;
             if (!i.Imported && RaceVideos.All.Videos.Remove(i.Key, out var link))
             {
-                video = link.File;
+                // (since 4.15.0 none when only on YouTube: that copy stays)
+                video = link.File.Length > 0 ? link.File : null;
                 // (the video shown lets go of it)
                 RaceVideos.All.Save();
             }
@@ -853,8 +875,14 @@ internal sealed class SessionsView
         // first, half the width and 450 px high (half as high again), the map an eighth (taller than wide); the video's
         // window has its timeline under it
         System.Windows.Automation.AutomationProperties.SetName(lineMap, T("Track Map"));
-        var under = new Grid { Margin = new Thickness(0, 10, 0, 0), Height = 450 };
-        var slots = new FrameworkElement[] { PopOut(T("Video"), video, popped => video.Tools = popped, VideoTimeline(), 1000, 940), PopOut(T("Track Map"), lineMap), FrictionSlot() };
+        under = new Grid { Margin = new Thickness(0, 10, 0, 0), Height = 450 };
+        // (since 4.15.0 the Video slot has Session 2's beside Session 1's when both have one: the map and the friction
+        // circle make way, here and popped out)
+        var slots = new FrameworkElement[]
+        {
+            PopOut(T("Video"), VideoPair(), popped => { video.Tools = popped; video2.Tools = popped; }, VideoTimeline(), 1000, 940),
+            PopOut(T("Track Map"), lineMap), FrictionSlot(),
+        };
         // (since 4.13.3 the gaps between them dragged to resize them, kept)
         var shares = settings.UnderWidths is { Count: 3 } kept && kept.All(w => w > 0) ? kept.ToArray() : new[] { 4.0, 1, 3 };
         for (int i = 0; i < slots.Length; i++)
@@ -878,6 +906,92 @@ internal sealed class SessionsView
         s.Children.Add(under);
         return card("Compare", T("Analysis"), s, false, new UIElement[] { import });
     }
+
+    private Grid under = null!;
+    private readonly RaceVideoView video2 = new();
+    private readonly TextBlock videoLabel1 = VideoLabel(), videoLabel2 = VideoLabel();
+    private readonly Grid videoPair = new();
+    private bool bothVideos;
+    private GridLength[]? underKept;
+
+    private static TextBlock VideoLabel()
+    {
+        var t = new TextBlock { FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(2, 0, 30, 4), Visibility = Visibility.Collapsed };
+        return t;
+    }
+
+    /// <summary>(since 4.15.0) The Video slot's content: Session 1's video, and Session 2's beside it when both have
+    /// one, each with its name over it and its own volume and mute.</summary>
+    private FrameworkElement VideoPair()
+    {
+        videoPair.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        videoPair.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0) });
+        videoPair.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0) });
+        var one = new DockPanel { Children = { videoLabel1, video } };
+        DockPanel.SetDock(videoLabel1, Dock.Top);
+        var two = new DockPanel { Children = { videoLabel2, video2 }, Visibility = Visibility.Collapsed };
+        DockPanel.SetDock(videoLabel2, Dock.Top);
+        Grid.SetColumn(two, 2);
+        videoPair.Children.Add(one);
+        videoPair.Children.Add(two);
+        System.Windows.Automation.AutomationProperties.SetName(video2, T("Session 2 video"));
+        video2.SetVolume(settings.Video2Volume, settings.Video2Muted);
+        video2.VolumeChanged += () =>
+        {
+            settings.Video2Volume = video2.Volume;
+            settings.Video2Muted = video2.Muted;
+            settings.SaveSoon();
+        };
+        return videoPair;
+    }
+
+    /// <summary>(since 4.15.0) Session 2's video beside Session 1's (the map and the friction circle hidden), or not.</summary>
+    private void BothVideos(bool both, string label1 = "", string label2 = "")
+    {
+        videoLabel1.Text = "S1 · " + label1;
+        videoLabel2.Text = "S2 · " + label2;
+        videoLabel1.ToolTip = label1;
+        videoLabel2.ToolTip = label2;
+        if (both == bothVideos) return;
+        bothVideos = both;
+        videoLabel1.Visibility = videoLabel2.Visibility = both ? Visibility.Visible : Visibility.Collapsed;
+        videoPair.ColumnDefinitions[1].Width = new GridLength(both ? 10 : 0);
+        videoPair.ColumnDefinitions[2].Width = both ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        videoPair.Children[1].Visibility = both ? Visibility.Visible : Visibility.Collapsed;
+        // (the map's and the friction circle's columns, and the splitters before them, to nothing and back)
+        var cols = under.ColumnDefinitions;
+        if (both)
+        {
+            underKept = cols.Select(c => c.Width).ToArray();
+            for (int k = 1; k < cols.Count; k++) { cols[k].MinWidth = 0; cols[k].Width = new GridLength(0); }
+        }
+        else if (underKept != null)
+        {
+            for (int k = 1; k < cols.Count; k++) { cols[k].Width = underKept[k]; if (k % 2 == 0) cols[k].MinWidth = 120; }
+        }
+        foreach (UIElement child in under.Children)
+            if (Grid.GetColumn(child) > 0) child.Visibility = both ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private (string One, string Two) videoLabels = ("", "");
+
+    /// <summary>Session 1's race video, and (since 4.15.0) Session 2's beside it when both have one.</summary>
+    private void ShowVideos()
+    {
+        video.Show(mine?.Data, mineItem?.Key);
+        var otherItem = lastB != null ? otherSession.SelectedItem as Item : null;
+        bool both = lastA != null && otherItem != null && RaceVideos.Of(mineItem?.Key)?.Watchable == true && RaceVideos.Of(otherItem.Key)?.Watchable == true;
+        video2.Show(both ? other?.Data : null, both ? otherItem!.Key : null);
+        BothVideos(both, videoLabels.One, videoLabels.Two);
+    }
+
+    /// <summary>(since 4.15.0) Session 2's moment at Session 1's (a sample of each; the same distance, or time, along
+    /// their runs), NaN past Session 2's ends.</summary>
+    private double SampleOfB(double sampleA) =>
+        lastA == null || lastB == null || double.IsNaN(sampleA) ? double.NaN : BAt(lastA.XAt(sampleA));
+
+    /// <summary>(since 4.15.0) Session 2's moment at a place along the chart.</summary>
+    private double BAt(double x) => lastB == null || double.IsNaN(x) || double.IsNaN(lastB.IndexAt(x)) ? double.NaN : lastB.From + lastB.IndexAt(x);
 
     /// <summary>(since 4.13.3) Previous Event's and Next Event's shortcuts.</summary>
     internal IReadOnlyList<Shared.Hotkeys.Hotkey> EventKeys => applet.EventKeys;
@@ -1219,13 +1333,14 @@ internal sealed class SessionsView
     }
 
     /// <summary>With's races: since 4.6.5 only those on This one's track (any car; yours, then other drivers'); since
-    /// 4.13.0 not This one itself, "-- No Matches --" when that leaves none.</summary>
+    /// 4.13.0 not This one itself, "-- No Matches --" when that leaves none; since 4.15.0 This one too when it has 2 laps
+    /// or more (another of its laps to compare with), even with no other session on its track.</summary>
     private void FillOtherSessions()
     {
         string? keep = (otherSession.SelectedItem as Item)?.Key;
         filling = true;
         otherSession.Items.Clear();
-        var matches = items.Where(i => !Same(i, mineItem) && OnTrackOfThis(i)).ToList();
+        var matches = items.Where(i => Same(i, mineItem) ? Math.Max(i.Laps, mine?.Data.Laps.Count ?? 0) >= 2 : OnTrackOfThis(i)).ToList();
         otherSession.Items.Add(new Blank(matches.Count > 0 || mineItem == null ? T("None") : T("-- No Matches --")));
         foreach (var i in matches) otherSession.Items.Add(i);
         otherSession.SelectedItem = otherSession.Items.OfType<Item>().FirstOrDefault(i => i.Key == keep) ?? otherSession.Items[0];
@@ -1339,8 +1454,9 @@ internal sealed class SessionsView
         player.Show(a);
         friction.At = double.NaN;
         lineMap.Show(a, b);
-        video.Show(mine?.Data, mineItem == null || mineItem.Imported ? null : mineItem.Key);
         ShowLegend(a, b);
+        videoLabels = (thisLabel.Length > 0 ? thisLabel : mineItem?.Title ?? "", otherLabel);
+        ShowVideos();
         otherPart.Visibility = otherSession.SelectedItem is Item ? Visibility.Visible : Visibility.Hidden;
 
         var status = new List<string>();
@@ -1469,6 +1585,9 @@ internal sealed class SessionsView
             output.AppendLine("# started," + mine.Data.Started.AddMilliseconds(from).ToString("o", CultureInfo.InvariantCulture));
             output.AppendLine("# driver," + driver.Replace('\n', ' '));
             output.AppendLine("# name," + (name + (part.Lap != null ? " · " + part.Text : "")).Replace('\n', ' '));
+            // (since 4.15.0) its video on YouTube, and where in it this starts, so theirs plays it in step
+            if (RaceVideos.Of(mineItem.Key) is { YouTube: { } url } link)
+                output.AppendLine("# video," + url + "," + link.VideoAt(mine.Data.Started, from / 1000.0).ToString("0.###", CultureInfo.InvariantCulture));
             string? car = null;
             var rows = new StringBuilder();
             foreach (var line in File.ReadLines(mineItem.File.FullName))

@@ -117,7 +117,9 @@ internal sealed class CompareChart : FrameworkElement
     private Point? hover, dragFrom;
     private double dragX0;
     private bool dragged;
-    private const double Left = 52, AxisHeight = 18, Gap = 12, MarkerRow = 14;
+    private const double Left = 52, Gap = 12, MarkerRow = 14;
+    /// <summary>(since 4.15.0 a second row along the distance: Session 1's time there)</summary>
+    private double AxisHeight => ByDistance && a != null ? 30 : 18;
     /// <summary>The moment picked: a line at its start, its span (if any) shaded.</summary>
     private (double At, double? To)? mark;
     /// <summary>(since 4.8.0) Where the race's video is, playing (NaN: not); since 4.10.3 the cursor.</summary>
@@ -657,6 +659,9 @@ internal sealed class CompareChart : FrameworkElement
             foreach (var (_, _, area) in lanes) dc.DrawLine(gridPen, new Point(px, area.Top), new Point(px, area.Bottom));
             string t = ByDistance ? (x >= 1000 ? $"{x / 1000:0.##} km" : $"{x:0} m") : SessionChart.Clock(x);
             dc.DrawText(PedalColours.Text(this, t, 10, dim), new Point(px - 12, bottom + 2));
+            // (since 4.15.0) along the distance, Session 1's time there under it
+            if (ByDistance && TimeAlong(a, x) is var ta && !double.IsNaN(ta))
+                dc.DrawText(PedalColours.Text(this, SessionChart.Clock(ta, span < 200), 10, dim), new Point(px - 12, bottom + 14));
         }
 
         // (since 4.13.3) the mark jumped to, its tooltip as the mouse's while the mouse is off the chart
@@ -668,7 +673,7 @@ internal sealed class CompareChart : FrameworkElement
         {
             double x = XAt(p.X);
             if (hover != null) dc.DrawLine(PedalColours.Pen(text, 1, 0.5), new Point(p.X, lanes[0].Area.Top), new Point(p.X, bottom));
-            var lines = new List<string> { ByDistance ? $"{x:0} m" : SessionChart.Clock(x, true) };
+            var lines = new List<string> { ByDistance ? $"{x:0} m" + Times(x) : SessionChart.Clock(x, true) };
             string Pair(Channel c, Func<SessionData, double[]> of, Func<double, string> fmt)
             {
                 string va = a != null && !Hidden.Contains((c, 1)) ? Fmt(a.ValueAt(of(a.Data), x)) : "", vb = b != null && !Hidden.Contains((c, 2)) ? Fmt(b.ValueAt(of(b.Data), x)) : "";
@@ -694,6 +699,19 @@ internal sealed class CompareChart : FrameworkElement
             dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(tx, MarkerRow + 6, tip.Width + 12, tip.Height + 8), 4, 4);
             dc.DrawText(tip, new Point(tx + 6, MarkerRow + 10));
         }
+    }
+
+    /// <summary>(since 4.15.0) A run's time (from its start, less the hidden pauses) at a distance along it; NaN past its ends.</summary>
+    private static double TimeAlong(Run? r, double x) =>
+        r == null || double.IsNaN(r.IndexAt(x)) ? double.NaN : r.TimeAt(r.From + r.IndexAt(x));
+
+    /// <summary>(since 4.15.0) The readout's times at a distance: " Â· 0:32.45", both runs' with another.</summary>
+    private string Times(double x)
+    {
+        double ta = TimeAlong(a, x), tb = TimeAlong(b, x);
+        if (double.IsNaN(ta) && double.IsNaN(tb)) return "";
+        string Fmt(double t) => double.IsNaN(t) ? "â€“" : SessionChart.Clock(t, true);
+        return " Â· " + (b == null ? Fmt(ta) : Fmt(ta) + "  /  " + Fmt(tb));
     }
 
     /// <summary>(since 4.13.0) A run's timeline, combined: every channel it shows drawn over each other, each on its own
