@@ -3,6 +3,23 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.0**
+- **SimEffects → Analysis → Share Session** (new; the share icon at the top right of the Analysis card, where Import
+  was): sessions shared on your Daisy's Server (Settings → General), for everyone who uses it.
+  - **This session** (Session 1): a **Title** and **Description** to edit (the track, car, best lap and so on at
+    first), **Share** (once shared, it sends them again), **Remove**, and **Export** to a file and **Import** from one
+    as before.
+  - **Share each session automatically**: each race kept from then on is shared by itself; when its video is going to
+    YouTube, it waits until it's there, so it's shared with the video's link.
+  - **On Daisy's Server**: every session shared there, in a table (date, driver, game, track, car, class, laps, best,
+    video, title, who shared it and when). The search looks in every column as you type, and starts with Session 1's
+    track; a right-click on a header filters it, a click sorts. **Compare** downloads the one picked and puts it in
+    Session 2; **Open on YouTube**; **Delete** takes one of yours off. The list updates as others share.
+  - Everything goes over the app's connection to Daisy's Server, encrypted with its token. Needs a Daisy's Server
+    with the new sessions module.
+- **SimEffects → Analysis:** the Analysis Manager is the **Session Manager** again, with a **Server** column (Shared,
+  Sharing, Waiting for YouTube or Failed).
+
 **4.16.3**
 - **Video → Mini Mirror:** a mirror no longer waits for the app's UI thread to draw each picture: it hands over its
   newest and carries on, and the window draws it at WPF's own drawing priority, so a busy app can't hold the mirrors

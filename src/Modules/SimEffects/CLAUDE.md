@@ -58,6 +58,15 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.17.0 (Share Session, "Remote Logging"):** `Sessions/SessionShares.cs` (`SessionServer`: the server's `sessions`
+  channel, rid-matched asks, gzip export file in 512 KB `put`s, `get` 1 MB; `ShareQueue`: one at a time, auto from
+  `AutoSince`, waits while YouTube's going or marked `Upload` and not failed, and 60 s after the log's last write;
+  driven by `SessionsView.Refresh`, `RaceUploads.Changed` and a 1-minute timer) and `ShareWindow.cs`. The export file
+  is `SessionsView.ExportText`. Not sealed (every user reads them). Server side: the brief in the 4.17.0 session;
+  Daisy's Server had no `sessions` module at release. Tested with a fake server (`%TEMP%\sharetest`: `ShareTest.exe`
+  runs the protocol; `serve <csv>` keeps a fake up for DaisysDev, copy `%APPDATA%\ShareTest\DaisysServer.json` to
+  `%APPDATA%\DaisysDev`): upload, list, download identical, edit, delete, pushes; Compare loaded the download. Not
+  tried: Share from the window and auto share (DaisysDev has no races of its own).
 - **4.16.1:** `Entry` now puts every channel in `MoreChannels` ("Channels"; the user: all of them in the menu, not
   the row). Video's chip dims (`ShowVideo`, from `ShowOnOff`) when on and the profile is stopped or Analysis is off.
 - **4.15.5:** `Tracks.json` rebuilt from this PC's `Analysis.json` (FH4/5/6, 324; Export's fields, `Type` as stored,

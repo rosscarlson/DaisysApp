@@ -7,7 +7,7 @@ using DaisysApp.Shared.Network;
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
-/// (since 4.15.0) The Analysis Manager's YouTube window: the app's YouTube account (Core's
+/// (since 4.15.0) The Session Manager's YouTube window: the app's YouTube account (Core's
 /// <see cref="YouTubeAccountView"/>) and what Analysis does with it: each race's video uploaded when it's saved, who
 /// can watch it, and its file deleted once it's up. Kept in AnalysisVideos.json (<see cref="RaceVideos"/>). One window.
 /// </summary>

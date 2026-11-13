@@ -13,7 +13,7 @@ using DaisysApp.Shared.Network;
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
-/// (since 4.12.0) The Session Manager, from the Session card's wrench: every session listed (the races' logs, then the
+/// (since 4.12.0) The Session Manager (4.13.3–4.16.2 the Analysis Manager; since 4.17.0 with each session's share on Daisy's Server), from the Session card's wrench: every session listed (the races' logs, then the
 /// imported ones) with its game, track, car, laps, best and what it takes on disk (its log and its race video), the
 /// totals above; sorted by a column's header (newest first at first), filtered from a right-click on it (since 4.13.1;
 /// boxes in the headers before). Load analyses the session picked in the window behind, this one staying open; Show in
@@ -81,7 +81,12 @@ internal sealed class SessionManager
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(YouTubeText)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(YouTubeTip)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ServerText)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ServerTip)));
         }
+        /// <summary>(since 4.17.0) On Daisy's Server: Shared, Sharing n%, Waiting for YouTube, Failed, or "—".</summary>
+        public string ServerText => ShareQueue.State(Item) is { Length: > 0 } s ? s : "—";
+        public string? ServerTip => ShareQueue.Failure(Item.Key);
         public long Total => Data + Math.Max(0, Video);
         public string TotalText => Sizes.Bytes(Total);
         public string File => Item.File.Name;
@@ -113,8 +118,8 @@ internal sealed class SessionManager
     private SessionManager(FrameworkElement owner, SessionsView view)
     {
         this.view = view;
-        // (since 4.13.3 the Analysis Manager)
-        window = Ui.Dialog(T("Analysis Manager"), owner, 1180, 640);
+        // (4.13.3–4.16.2 the Analysis Manager; the Session Manager again since 4.17.0)
+        window = Ui.Dialog(T("Session Manager"), owner, 1180, 640);
         window.MinWidth = 700;
         window.MinHeight = 360;
         window.ResizeMode = ResizeMode.CanResize;
@@ -180,6 +185,8 @@ internal sealed class SessionManager
         window.Closed += (_, _) => view.Listed -= List;
         RaceUploads.Changed += UploadsChanged;
         window.Closed += (_, _) => RaceUploads.Changed -= UploadsChanged;
+        ShareQueue.Changed += UploadsChanged;
+        window.Closed += (_, _) => ShareQueue.Changed -= UploadsChanged;
         List();
         if (view.Analysed is { } now && rows.FirstOrDefault(r => r.Item.Key == now.Key) is { } row)
         {
@@ -206,6 +213,7 @@ internal sealed class SessionManager
         Column(T("Data"), nameof(Row.DataText), nameof(Row.Data), right: true);
         Column(videos.Header(), nameof(Row.VideoText), nameof(Row.Video), right: true);
         Column(T("YouTube"), nameof(Row.YouTubeText), nameof(Row.YouTubeOrder), tip: nameof(Row.YouTubeTip));
+        Column(T("Server"), nameof(Row.ServerText), tip: nameof(Row.ServerTip));
         Column(T("Total"), nameof(Row.TotalText), nameof(Row.Total), right: true);
         Column(T("File"), nameof(Row.File), star: 1.5);
         foreach (var f in new[] { days, games, tracks, cars, kinds, videos }) f.Changed += () => { shown?.Refresh(); Totals(); };

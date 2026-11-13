@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.0 (Analysis → Share Session):** needs Daisy's Server with the `sessions` module (the brief from this
+  session). Then open the share icon on the Analysis card: share Session 1 with an edited title, see it listed, change
+  the title and Share again, Remove it; tick Share each session automatically, race with Video and YouTube upload on,
+  and check it's shared after the video's on YouTube (with its link). From another PC or user: search, filter, Compare
+  (it should land in Session 2), Open on YouTube. The Session Manager's Server column should follow. Tried only
+  against a fake server: the protocol, download and Compare.
 - **4.16.3 (Mini Mirror: slow mirrors on a friend's PC, ~5 a second):** on his PC, after updating, show the mirrors
   for a few minutes (a game running), then send the Video log (Support → Logs, or
   `%LOCALAPPDATA%\DaisysApp\logs\Video-<date>.log`): the lines `Mirror … shown`, `… pictures drawn in its first 15 s

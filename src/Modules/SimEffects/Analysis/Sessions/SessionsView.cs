@@ -95,6 +95,8 @@ internal sealed class SessionsView
         public string Game { get; init; } = "";
         public string TrackName { get; init; } = "";
         public string CarName { get; init; } = "";
+        /// <summary>(since 4.17.0) Its class, for sharing.</summary>
+        public string ClassName { get; init; } = "";
         public int Laps { get; init; }
         /// <summary>The best lap's (or the race's) time, seconds; 0: none.</summary>
         public float Best { get; init; }
@@ -179,6 +181,7 @@ internal sealed class SessionsView
             races.TryGetValue(g.Key, out var race);
             string game = race?.Game ?? g.Laps[0].Game, track = race?.Track ?? g.Laps[0].Track;
             int car = race?.Car ?? g.Laps[0].Car;
+            int cls = race?.Class ?? (g.Laps.Count > 0 ? g.Laps[0].Class : 0);
             var started = SessionLog.StartedOf(file);
             var best = g.Laps.Count > 0 ? g.Laps.Min(l => l.Time) : race?.Time ?? 0;
             // (an incomplete race's time is how long it ran, not a result)
@@ -187,6 +190,7 @@ internal sealed class SessionsView
             {
                 File = file, Key = g.Key, Started = started, Track = track,
                 Game = game, TrackName = names.TrackName(track), CarName = names.CarName(game, car),
+                ClassName = cls > 0 && Blocks.ClassName(cls, game) is { Length: > 0 } cn && cn != "?" ? cn : "",
                 Laps = Math.Max(g.Laps.Count, race?.Laps ?? 0), Best = best, Incomplete = unfinished.ContainsKey(g.Key),
                 HasVideo = VideoThere(g.Key),
                 Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {When(started)}" + (best > 0 ? " · " + Blocks.LapTime(best) : "")
@@ -226,6 +230,32 @@ internal sealed class SessionsView
         else if (Same(pick, current)) current = pick;
         else if (Host.IsVisible) Open(pick);
         Listed?.Invoke();
+        ShareQueue.Consider(items, Describe, Driver);
+    }
+
+    /// <summary>(since 4.17.0) The name exports and shares carry: the one kept, else Windows' user name.</summary>
+    internal string Driver => string.IsNullOrWhiteSpace(settings.Driver) ? Environment.UserName : settings.Driver;
+
+    /// <summary>(since 4.17.0) Session 1 (the session analysed in Compare).</summary>
+    internal Item? Session1 => mineItem;
+
+    /// <summary>(since 4.17.0) A session's title and description, as it goes to YouTube and Daisy's Server.</summary>
+    internal static (string Title, string Description) Describe(Item i) =>
+        (string.Join(" · ", new[] { i.TrackName, i.CarName, i.Best > 0 ? Blocks.LapTime(i.Best) : "", i.Game }.Where(t => t.Length > 0)),
+         string.Join("\n", new[]
+         {
+             i.Game, F("Track: {0}", i.TrackName), F("Car: {0}", i.CarName), i.ClassName.Length > 0 ? F("Class: {0}", i.ClassName) : "", i.Laps > 0 ? F("Laps: {0}", i.Laps) : "",
+             i.Best > 0 ? F("Best: {0}", Blocks.LapTime(i.Best)) : "", i.Started.ToString("f", CultureInfo.CurrentCulture),
+         }.Where(t => t.Length > 0)));
+
+    /// <summary>(since 4.17.0) A session downloaded from Daisy's Server (its key, "Imported\file"): listed, then put in
+    /// Compare's Session 2 (Session 1 when there's none).</summary>
+    internal async Task CompareDownloaded(string key)
+    {
+        Refresh();
+        if (items.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is not { } item) return;
+        if (mine != null) await PickOther(item);
+        else Load(item);
     }
 
     /// <summary>(since 4.12.0) The sessions listed: the races' logs, newest first, then the imported ones.</summary>
@@ -372,8 +402,8 @@ internal sealed class SessionsView
         var export = IconButton("", T("Export this lap (or session) to send to someone"));
         export.Margin = new Thickness(0, 0, 4, 0);
         export.Click += (_, _) => Export();
-        // (since 4.12.0) the Session Manager (since 4.13.3 the Analysis Manager): every session, its disk use, loaded from there
-        var manage = IconButton("", T("Analysis Manager"));
+        // (since 4.12.0) the Session Manager (4.13.3–4.16.2 the Analysis Manager): every session, its disk use, loaded from there
+        var manage = IconButton("", T("Session Manager"));
         manage.Click += (_, _) => SessionManager.Show(Host, this);
         headCard = card("Session", T("Session"), head, false, new UIElement[] { sessions, delete, place, export, manage });
         headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
@@ -459,13 +489,12 @@ internal sealed class SessionsView
         video2.Clicked += PlayOrPause;
         RaceVideos.Changed += ShowVideos;
         // (since 4.15.0) a race video's name and description on YouTube, from its session
-        RaceUploads.Describe = key => items.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is not { } i ? null
-            : (string.Join(" · ", new[] { i.TrackName, i.CarName, i.Best > 0 ? Blocks.LapTime(i.Best) : "", i.Game }.Where(t => t.Length > 0)),
-               string.Join("\n", new[]
-               {
-                   i.Game, F("Track: {0}", i.TrackName), F("Car: {0}", i.CarName), i.Laps > 0 ? F("Laps: {0}", i.Laps) : "",
-                   i.Best > 0 ? F("Best: {0}", Blocks.LapTime(i.Best)) : "", i.Started.ToString("f", CultureInfo.CurrentCulture),
-               }.Where(t => t.Length > 0)));
+        RaceUploads.Describe = key => items.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is { } i ? Describe(i) : null;
+        // (since 4.17.0) sessions shared by themselves: once a YouTube upload ends, and each minute (one waiting for its video to be saved)
+        RaceUploads.Changed += () => ShareQueue.Consider(items, Describe, Driver);
+        var shareTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        shareTimer.Tick += (_, _) => ShareQueue.Consider(items, Describe, Driver);
+        shareTimer.Start();
         compareChart.ZoneClicked += z => Pick(z, fromChart: true);
         Cards.Add(BuildCompare());
 
@@ -786,10 +815,10 @@ internal sealed class SessionsView
     private Border BuildCompare()
     {
         var s = new StackPanel();
-        // (since 4.7.0 an icon; the Driver box went: an export carries the name kept before, else Windows' user name)
-        var import = IconButton("", T("Import someone else's lap or session"));
-        import.Margin = new Thickness(0, 0, 4, 0);
-        import.Click += (_, _) => Import();
+        // (since 4.17.0 Share Session: Daisy's Server, export and import; since 4.7.0 Import, an icon)
+        var share = IconButton("", T("Share Session"));
+        share.Margin = new Thickness(0, 0, 4, 0);
+        share.Click += (_, _) => ShareWindow.Show(Host, this);
 
         // (since 4.7.0) Session 1 (the session analysed) and Session 2 (a race on the same track, any car, anyone's, or
         // None: the Trace), each a row: its race, its lap, then its channels, so the rows line up (since 4.9.1 the
@@ -913,7 +942,7 @@ internal sealed class SessionsView
             under.Children.Add(slots[i]);
         }
         s.Children.Add(under);
-        return card("Compare", T("Analysis"), s, false, new UIElement[] { import });
+        return card("Compare", T("Analysis"), s, false, new UIElement[] { share });
     }
 
     private Grid under = null!;
@@ -1660,10 +1689,13 @@ internal sealed class SessionsView
 
     /// <summary>Saves this lap (or the session) as a session file of its own, with the driver's name and the session's,
     /// to send to someone: their Analysis imports it.</summary>
-    private void Export()
+    /// <summary>(since 4.17.0) Session 1's lap (or the whole session) can be exported.</summary>
+    internal bool CanExport => mine != null && mineItem != null && thisPart.SelectedItem is Part;
+
+    internal void Export()
     {
         if (mine == null || mineItem == null || thisPart.SelectedItem is not Part part) return;
-        string driver = string.IsNullOrWhiteSpace(settings.Driver) ? Environment.UserName : settings.Driver;
+        string driver = Driver;
         string name = mineItem.Title;
         string suggested = string.Join("_", $"{driver} - {name}{(part.Lap != null ? " - " + F("Lap {0}", part.Lap.Number + 1) : "")}".Split(Path.GetInvalidFileNameChars()));
         var dialog = new Microsoft.Win32.SaveFileDialog { FileName = suggested + ".csv", Filter = T("Session") + " (*.csv)|*.csv", DefaultExt = ".csv" };
@@ -1671,17 +1703,31 @@ internal sealed class SessionsView
         try
         {
             long from = (long)part.From * 1000 / SessionData.Hz, to = (long)part.To * 1000 / SessionData.Hz;
-            var output = new StringBuilder();
-            output.AppendLine("# ForzaWheel session,2");
-            output.AppendLine("# started," + mine.Data.Started.AddMilliseconds(from).ToString("o", CultureInfo.InvariantCulture));
-            output.AppendLine("# driver," + driver.Replace('\n', ' '));
-            output.AppendLine("# name," + (name + (part.Lap != null ? " · " + part.Text : "")).Replace('\n', ' '));
-            // (since 4.15.0) its video on YouTube, and where in it this starts, so theirs plays it in step
-            if (RaceVideos.Of(mineItem.Key) is { YouTube: { } url } link)
-                output.AppendLine("# video," + url + "," + link.VideoAt(mine.Data.Started, from / 1000.0).ToString("0.###", CultureInfo.InvariantCulture));
-            string? car = null;
-            var rows = new StringBuilder();
-            foreach (var line in File.ReadLines(mineItem.File.FullName))
+            var link = RaceVideos.Of(mineItem.Key);
+            double? at = link?.YouTube != null ? link.VideoAt(mine.Data.Started, from / 1000.0) : null;
+            string text = ExportText(mineItem.File.FullName, mine.Data.Started, from, to, driver, name + (part.Lap != null ? " · " + part.Text : ""), link?.YouTube, at);
+            File.WriteAllText(dialog.FileName, text, new UTF8Encoding(false));
+            Logging.Log.Here.Info($"Analysis: exported {dialog.FileName}");
+        }
+        catch (Exception ex) { MessageBox.Show(Window.GetWindow(Host), F("It couldn't be saved: {0}", ex.Message), T("Analysis")); }
+    }
+
+    /// <summary>A session's log from <paramref name="from"/> to <paramref name="to"/> (ms) as a session file of its own,
+    /// with the driver's name and the session's (since 4.17.0 also what Daisy's Server shares): their Analysis imports it.</summary>
+    internal static string ExportText(string path, DateTime started, long from, long to, string driver, string name, string? video, double? videoAt)
+    {
+        var output = new StringBuilder();
+        output.AppendLine("# ForzaWheel session,2");
+        output.AppendLine("# started," + started.AddMilliseconds(from).ToString("o", CultureInfo.InvariantCulture));
+        output.AppendLine("# driver," + driver.Replace('\n', ' '));
+        output.AppendLine("# name," + name.Replace('\n', ' '));
+        // (since 4.15.0) its video on YouTube, and where in it this starts, so theirs plays it in step
+        if (video != null && videoAt is double at)
+            output.AppendLine("# video," + video + "," + at.ToString("0.###", CultureInfo.InvariantCulture));
+        string? car = null;
+        var rows = new StringBuilder();
+        using (var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete)))
+            for (string? line; (line = reader.ReadLine()) != null;)
             {
                 if (line.StartsWith("# car,", StringComparison.Ordinal)) { car = line; continue; }
                 if (line.Length == 0 || !char.IsDigit(line[0])) continue;
@@ -1690,17 +1736,14 @@ internal sealed class SessionsView
                 if (ms < from || ms > to) continue;
                 rows.Append((ms - from).ToString(CultureInfo.InvariantCulture)).Append(line.AsSpan(comma)).AppendLine();
             }
-            if (car != null) output.AppendLine(car);
-            output.AppendLine(SessionLog.Header);
-            output.Append(rows);
-            File.WriteAllText(dialog.FileName, output.ToString(), new UTF8Encoding(false));
-            Logging.Log.Here.Info($"Analysis: exported {dialog.FileName}");
-        }
-        catch (Exception ex) { MessageBox.Show(Window.GetWindow(Host), F("It couldn't be saved: {0}", ex.Message), T("Analysis")); }
+        if (car != null) output.AppendLine(car);
+        output.AppendLine(SessionLog.Header);
+        output.Append(rows);
+        return output.ToString();
     }
 
     /// <summary>Adds session files (someone else's exported laps) to the list, and compares with the first.</summary>
-    private async void Import()
+    internal async void Import()
     {
         var dialog = new Microsoft.Win32.OpenFileDialog { Filter = T("Session") + " (*.csv)|*.csv", Multiselect = true };
         if (dialog.ShowDialog(Window.GetWindow(Host)) != true) return;
