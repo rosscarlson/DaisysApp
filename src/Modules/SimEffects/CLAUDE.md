@@ -58,6 +58,10 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.15.3:** YouTube in Compare stuttered: the poll's `s==1` test made buffering (3) look stopped, so Follow called
+  `tube.Play` (a seek) every poll and it buffered again. Now Playing includes buffering, drift uses `Now` (Time moved
+  on since heard), a loaded video is primed (muted play, pause, seek 0) before `Ready`, and `Playback.Waiting` holds the
+  cursor while a YouTube video buffers. The IFrame API can't download a whole video: YouTube buffers ahead itself.
 - **4.15.2:** Compare's playback (CompositionTarget.Rendering, 144+ Hz) redrew every chart each frame: the UI thread
   starved (input 0.5 s late), two videos froze the app (Application Hang). Charts now derive from `LayeredChart`
   (what moves on a child DrawingVisual, `InvalidateTop`); `VideoFrames` swaps two buffers (`Take(Action)`). Harness:

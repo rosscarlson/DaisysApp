@@ -394,7 +394,9 @@ internal sealed class SessionsView
             // (since 4.15.0) and Session 2's at the same place
             if (bothVideos) video2.ShowSample(off ? SampleOfB(player.Position) : BAt(x));
         };
-        // (since 4.10.3) a click puts the cursor there; playing moves it, the video and the map with it
+        // (since 4.10.3) a click puts the cursor there; playing moves it, the video and the map with it (since 4.15.3
+        // waiting while a YouTube video buffers)
+        player.Waiting = () => video.Buffering || (bothVideos && video2.Buffering);
         compareChart.Clicked += x => { if (lastA != null) player.Seek(lastA.From + lastA.IndexAt(x)); };
         player.Moved += (i, rate, jumped) =>
         {

@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.15.3**
+- **SimEffects → Analysis → Compare:** a race video played from YouTube no longer stutters as it plays. It was played
+  again from its place each time the app asked YouTube where it was while it was still loading, so it started loading
+  again, and again. Now a YouTube video is loaded and its start buffered as soon as the session's shown (played a
+  moment muted, then paused), before you press Play; while it plays, it's only put right when it's half a second off
+  (measured where it is now, not where it was last heard); and if YouTube has to wait for more of the video, Compare's
+  playback waits with it (the cursor, map and the other video), so they stay together.
+
 **4.15.2**
 - **SimEffects → Analysis → Compare:** playing a session no longer stutters the whole app, or freezes it with two
   sessions' videos: as it played, every chart (Compare's, the Video's timeline, the strip under it, the Track Map and,

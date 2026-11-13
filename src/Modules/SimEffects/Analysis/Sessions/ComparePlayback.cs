@@ -138,6 +138,8 @@ internal sealed class Playback
     public double Rate => rate;
     public double Position => position;
     public Run? Run => run;
+    /// <summary>(since 4.15.3) A video playing along waits for more of it (YouTube's): the cursor waits where it is.</summary>
+    public Func<bool>? Waiting { get; set; }
     /// <summary>Its bars on screen.</summary>
     public int Bars { get; set; }
 
@@ -223,6 +225,7 @@ internal sealed class Playback
     private void Frame(object? sender, EventArgs e)
     {
         if (run == null || rate == 0) return;
+        if (Waiting?.Invoke() == true) { startedAt = position; watch.Restart(); return; }
         double p = startedAt + watch.Elapsed.TotalSeconds * rate / SessionData.Dt;
         // (since 4.10.15 round the section: from its other end, a jump for the video)
         if (Looping && CanLoop && ((rate > 0 && p >= LoopTo && startedAt < LoopTo) || (rate < 0 && p <= LoopFrom && startedAt > LoopFrom)))

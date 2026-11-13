@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.15.3 (YouTube videos playing smoothly):** in Analysis → Compare, show a session whose video plays from YouTube
+  and wait a moment without pressing Play (it loads and buffers its start, muted), then Play at 1×, 2×, ½×; with two
+  YouTube videos too: they should play without stopping and starting, and if YouTube waits for more the cursor waits
+  with it. Tried: it builds. Not tried: anything in the app's window or with YouTube.
 - **4.15.2 (Compare's playback, widgets' right-click):** in Analysis → Compare, play a session with its video (Play,
   2×, ½×), then compare two sessions with videos (or Session 1's own laps) and play: the app should stay smooth, the
   cursor, map dots, friction dot and readout moving. Right-click an Analysis block (the Track Map) or the Dash where

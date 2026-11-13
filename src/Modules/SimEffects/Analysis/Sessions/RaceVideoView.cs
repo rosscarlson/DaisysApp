@@ -262,6 +262,10 @@ internal sealed class RaceVideoView : DockPanel
     /// <summary>(since 4.15.0) Compare's playback is playing the YouTube video along at this rate (0: not).</summary>
     private double tubeRate;
 
+    /// <summary>(since 4.15.3) Compare's playback playing the YouTube video along, which waits for more of it: the
+    /// playback waits too, rather than going on without it.</summary>
+    public bool Buffering => OnTube && tubeRate != 0 && tube!.Buffering;
+
     /// <summary>(since 4.15.0) The YouTube player said where it is.</summary>
     private void TubeUpdated()
     {
@@ -292,7 +296,8 @@ internal sealed class RaceVideoView : DockPanel
             {
                 double v = VideoOf(at);
                 if (v < 0 || v > tube.Duration) { if (tubeRate != 0) tube.Pause(); tubeRate = 0; return; }
-                if (tubeRate != rate || jumped || !tube.Playing || Math.Abs(tube.Time - v) > 0.5) tube.Play(v, rate);
+                // (since 4.15.3 where it is now, not as last heard, and not again while it buffers)
+                if (tubeRate != rate || jumped || !tube.Playing || (!tube.Buffering && Math.Abs(tube.Now - v) > 0.5)) tube.Play(v, rate);
                 tubeRate = rate;
                 return;
             }

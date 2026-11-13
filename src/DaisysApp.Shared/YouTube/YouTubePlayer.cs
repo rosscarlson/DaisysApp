@@ -17,7 +17,8 @@ namespace DaisysApp.Shared.YouTube;
 /// the caller seeks, plays (at YouTube's rates), pauses, sets the volume, and hears where it is
 /// (<see cref="Time"/>, <see cref="Updated"/> ten times a second, asked of the page). A paused seek shows that frame.
 /// Seeks go at most every 120 ms (the last one wins). The page is served from a made-up https address (YouTube wants
-/// one to embed).
+/// one to embed). Since 4.15.3 a video loaded is played a moment muted and paused before it's <see cref="Ready"/>, so
+/// YouTube buffers its start ahead of a play; <see cref="Buffering"/> says when a play waits for more.
 /// </summary>
 public sealed class YouTubePlayer : Grid
 {
@@ -33,13 +34,20 @@ public sealed class YouTubePlayer : Grid
     private double seekTo = double.NaN;
     private double volume = 1;
     private bool muted;
+    private double rate = 1;
+    // (since 4.15.3) when Time was heard, so a play's place is known between polls
+    private readonly System.Diagnostics.Stopwatch heard = new();
 
     /// <summary>Where it is (seconds), as last heard.</summary>
     public double Time { get; private set; } = double.NaN;
     /// <summary>Its length (seconds), once loaded.</summary>
     public double Duration { get; private set; }
-    /// <summary>Playing (as YouTube says).</summary>
+    /// <summary>Playing (as YouTube says; since 4.15.3 also while a play waits for more of the video).</summary>
     public bool Playing { get; private set; }
+    /// <summary>(since 4.15.3) A play waiting for more of the video (YouTube's buffering).</summary>
+    public bool Buffering { get; private set; }
+    /// <summary>(since 4.15.3) Where it is now: <see cref="Time"/> moved on by the time since it was heard as it plays.</summary>
+    public double Now => Playing && !Buffering && heard.IsRunning ? Time + heard.Elapsed.TotalSeconds * rate : Time;
     /// <summary>Loaded and ready to seek and play.</summary>
     public bool Ready { get; private set; }
     /// <summary>Why it can't play (YouTube's error, or WebView2 missing), else null.</summary>
@@ -71,7 +79,7 @@ public sealed class YouTubePlayer : Grid
         Ready = false;
         Time = double.NaN;
         Duration = 0;
-        Playing = false;
+        Playing = Buffering = false;
         Error = null;
         seekTo = double.NaN;
         ShowNote(id == null ? "" : T("Opening the video…"));
@@ -90,7 +98,7 @@ public sealed class YouTubePlayer : Grid
     public void Seek(double seconds)
     {
         seekTo = Math.Max(0, seconds);
-        if (Playing) { Run("pause()"); Playing = false; }
+        if (Playing) { Run("pause()"); Playing = Buffering = false; }
         if (!seeker.IsEnabled) { SendSeek(); seeker.Start(); }
     }
 
@@ -99,16 +107,19 @@ public sealed class YouTubePlayer : Grid
     {
         if (!Ready) return;
         seekTo = double.NaN;
-        string r = Math.Clamp(rate, 0.25, 2).ToString(CultureInfo.InvariantCulture);
+        this.rate = Math.Clamp(rate, 0.25, 2);
+        string r = this.rate.ToString(CultureInfo.InvariantCulture);
         Run($"play({Math.Max(0, from).ToString(CultureInfo.InvariantCulture)},{r})");
         Playing = true;
+        Time = Math.Max(0, from);
+        heard.Restart();
     }
 
     public void Pause()
     {
         if (!Ready) return;
         Run("pause()");
-        Playing = false;
+        Playing = Buffering = false;
     }
 
     /// <summary>The volume (0 to 1) and mute.</summary>
@@ -206,8 +217,13 @@ public sealed class YouTubePlayer : Grid
             if (m.TryGetProperty("d", out var d) && d.ValueKind == JsonValueKind.Number && d.GetDouble() > 0) Duration = d.GetDouble();
             if (Ready && m.TryGetProperty("t", out var t) && t.ValueKind == JsonValueKind.Number)
             {
-                if (double.IsNaN(seekTo)) Time = t.GetDouble();
-                Playing = m.GetProperty("s").GetInt32() == 1;
+                if (double.IsNaN(seekTo)) { Time = t.GetDouble(); heard.Restart(); }
+                // (since 4.15.3 buffering on the way to playing counts as playing: 4.15.0–4.15.2 played it again from
+                // the place, each poll, which made it buffer again)
+                int state = m.GetProperty("s").GetInt32();
+                bool want = m.TryGetProperty("w", out var w) && w.GetBoolean();
+                Buffering = state == 3 && want;
+                Playing = state == 1 || Buffering;
             }
             Updated?.Invoke();
         }
@@ -260,24 +276,27 @@ public sealed class YouTubePlayer : Grid
         <!doctype html><html><head><meta charset="utf-8"><meta name="referrer" content="strict-origin-when-cross-origin">
         <style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#p{position:absolute;inset:0;width:100%;height:100%}</style></head>
         <body><div id="p"></div><script>
-        var api=false,player=null,primed=false,err=0,want=false;
+        var api=false,player=null,primed=false,priming=false,err=0,want=false;
         function onYouTubeIframeAPIReady(){api=true;}
+        function prime(){priming=true;player.mute();player.playVideo();setTimeout(function(){if(priming){priming=false;primed=true;}},10000);}
         function load(id){
           primed=false;err=0;want=false;
-          if(player){player.cueVideoById(id);primed=true;return;}
+          if(player){priming=true;player.mute();player.loadVideoById(id);setTimeout(function(){if(priming){priming=false;primed=true;}},10000);return;}
           player=new YT.Player('p',{videoId:id,width:'100%',height:'100%',
             playerVars:{controls:0,disablekb:1,rel:0,playsinline:1,iv_load_policy:3,fs:0,origin:location.origin,widget_referrer:location.href},
             events:{
-              onReady:function(){primed=true;},
-              onStateChange:function(e){if(e.data==1&&!want)player.pauseVideo();},
+              onReady:prime,
+              onStateChange:function(e){
+                if(e.data==1&&priming){priming=false;player.pauseVideo();player.seekTo(0,true);primed=true;return;}
+                if(e.data==1&&!want)player.pauseVideo();},
               onError:function(e){err=e.data;}}});
         }
         function seek(t){player.seekTo(t,true);}
         function play(t,r){want=true;player.setPlaybackRate(r);player.seekTo(t,true);player.playVideo();}
         function pause(){want=false;player.pauseVideo();}
-        function stop(){primed=false;want=false;if(player)player.stopVideo();}
+        function stop(){primed=false;priming=false;want=false;if(player)player.stopVideo();}
         function poll(){
-          var o={a:api,p:primed,e:err};
+          var o={a:api,p:primed,e:err,w:want};
           if(player&&player.getCurrentTime){o.t=player.getCurrentTime();o.s=player.getPlayerState();o.d=player.getDuration();}
           return JSON.stringify(o);
         }
