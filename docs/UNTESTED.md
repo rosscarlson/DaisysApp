@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.15.5 (FH4, FH5, FH6 tracks):** after updating, Analysis → Known Tracks should have FH4's tracks, and the FH5 and
+  FH6 ones renamed or moved since 4.10.11 updated. Tried: it builds, the file is the PC's 324 named tracks. Not
+  tried: anything in the app's window.
 - **4.15.4 (smoother friction circle, RPM and Gear, S1/S2 highlight, video clicks):** in Analysis → Compare, play
   a bumpy Forza Horizon corner and try the friction circle's **Smooth** choices; tick **RPM** and **Gear** in a
   Session row's **More** drop-down (lanes, then **Combine**, and the readout); click **S1** and **S2** (that session

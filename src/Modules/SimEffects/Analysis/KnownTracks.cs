@@ -6,8 +6,8 @@ using DaisysApp.Settings;
 namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>
-/// The tracks that come with the app (since 3.34.0; <c>Tracks.json</c>, embedded): every FH5 and FH6 race the user
-/// mapped, as Export writes them. Added to <see cref="AnalysisSettings.Tracks"/> once per version of the file
+/// The tracks that come with the app (since 3.34.0; <c>Tracks.json</c>, embedded): every FH5 and FH6 (since 4.15.5 FH4's too)
+/// race the user mapped, as Export writes them. Added to <see cref="AnalysisSettings.Tracks"/> once per version of the file
 /// (<see cref="AnalysisSettings.KnownTracks"/>), so one deleted stays gone until the file changes; one already there
 /// (same game, and the same name or start) isn't added again; one the file added before is brought up to date. Two of
 /// the file's with one name (on two maps, or two places) are both added.

@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.15.5**
+- **SimEffects → Analysis** comes with the developer's tracks as they are now: 324, Forza Horizon 4's (92, new) as well
+  as Horizon 5's (144) and 6's (88), with the names, maps and starts brought up to date. Added once, as before: a
+  track you've deleted stays gone, and yours keep their names.
+
 **4.15.4**
 - **SimEffects → Analysis → Compare:** the friction circle is smoothed: each dot is the g averaged over a moment
   round it (a quarter of a second at first; **Smooth:** off, 0.1, 0.25, 0.5 or 1 s beside its Brake and Throttle), so a

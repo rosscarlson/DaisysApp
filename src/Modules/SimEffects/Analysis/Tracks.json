@@ -1,6 +1,1292 @@
 {
   "Tracks": [
     {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Aerodrome Cross Country Circuit",
+      "Type": null,
+      "X": 3901.84,
+      "Y": 159.61848,
+      "Z": 771.3,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:25:26.7963722-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Ambleside Ascent",
+      "Type": null,
+      "X": -5521.03,
+      "Y": 165.82806,
+      "Z": -4830.28,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:27:43.1084234-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Ambleside Loop Cross Country",
+      "Type": null,
+      "X": -3341.828,
+      "Y": 261.74963,
+      "Z": -3369.179,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:20:35.9931475-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Ambleside Rush Cross Country",
+      "Type": null,
+      "X": -5280.12,
+      "Y": 156.16046,
+      "Z": -4313.45,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:20:46.0290851-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Ambleside Scramble",
+      "Type": null,
+      "X": -4537.09,
+      "Y": 153.21387,
+      "Z": -3251.26,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:15:24.0849847-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Ambleside Sprint",
+      "Type": null,
+      "X": -5102.8,
+      "Y": 156.5683,
+      "Z": -3600.4365,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:10:22.3444891-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Ambleside Village Circuit",
+      "Type": null,
+      "X": -4930.412,
+      "Y": 153.82484,
+      "Z": -3432.4604,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:10:08.8499887-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Arthur's Seat Cross Country",
+      "Type": null,
+      "X": 3301.9695,
+      "Y": 144.09811,
+      "Z": 2510.7598,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:18:14.6507128-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Ashbrook Apex",
+      "Type": null,
+      "X": 402.58,
+      "Y": 215.40996,
+      "Z": -4630.2,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:28:19.7199062-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Ashbrook Loop Scramble",
+      "Type": null,
+      "X": 159.68,
+      "Y": 210.58014,
+      "Z": -4835.29,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:16:19.8366395-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Astmoor Heritage Circuit",
+      "Type": null,
+      "X": 1880.1365,
+      "Y": 328.35977,
+      "Z": -3238.05,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:12:16.804831-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Astmoor Rally Trail",
+      "Type": null,
+      "X": 4964.01,
+      "Y": 131.1457,
+      "Z": -3427.29,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:17:47.9641762-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Bamburgh Coast Sprint",
+      "Type": null,
+      "X": 4801.35,
+      "Y": 117.64108,
+      "Z": -1172.46,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:12:56.8685184-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Bamburgh Pinewood Trail",
+      "Type": null,
+      "X": 5113.75,
+      "Y": 111.57377,
+      "Z": -2210.27,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:17:37.5765123-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Batham Gate",
+      "Type": null,
+      "X": -398.56,
+      "Y": 250.93285,
+      "Z": -6160.81,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:27:55.9437327-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Beach View Cross Country",
+      "Type": null,
+      "X": 3842.872,
+      "Y": 256.71628,
+      "Z": -4024.5107,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:24:54.6128193-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Broadway Crossfire",
+      "Type": null,
+      "X": -344.95,
+      "Y": 223.891,
+      "Z": -5522.9,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:28:08.2643571-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Broadway Village Circuit",
+      "Type": null,
+      "X": 125.43,
+      "Y": 236.16211,
+      "Z": -5746.12,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:11:37.9410489-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Broadway Village Scramble",
+      "Type": null,
+      "X": -289.37805,
+      "Y": 241.9372,
+      "Z": -5967.2075,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:16:37.6928942-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Castle Cross Country Circuit",
+      "Type": null,
+      "X": 4973.95,
+      "Y": 122.767006,
+      "Z": -1485.26,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:25:04.1375494-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "City Outskirts Cross Country",
+      "Type": null,
+      "X": 479.96,
+      "Y": 296.63345,
+      "Z": -667.22,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:19:54.0520541-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "Cliffside Scramble",
+      "Type": null,
+      "X": 7065.7876,
+      "Y": 375.8155,
+      "Z": 158.10728,
+      "Length": 5950.164,
+      "Laps": 2,
+      "Racers": 12,
+      "Found": "2026-11-10T18:56:40.504205-05:00",
+      "Entry": [
+        7170.076,
+        372.32794,
+        222.8929
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Costal Rush Cross Country",
+      "Type": null,
+      "X": 975.43,
+      "Y": 175.96292,
+      "Z": 1190.15,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:19:30.9615587-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Cotswolds Road Rally Trail",
+      "Type": null,
+      "X": -3005,
+      "Y": 341.12494,
+      "Z": -4923.98,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:15:51.8244756-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Cotswolds Super Sprint",
+      "Type": null,
+      "X": -2160.39,
+      "Y": 354.1695,
+      "Z": -5797.89,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:11:23.0008405-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Derwent Lakeside Sprint",
+      "Type": null,
+      "X": -5032.4604,
+      "Y": 198.08545,
+      "Z": -360.1997,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:09:30.2407511-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Derwent Resovior Trail",
+      "Type": null,
+      "X": -1177.5154,
+      "Y": 184.2648,
+      "Z": -1567.102,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:14:56.9568585-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Derwent Resoviour Sprint",
+      "Type": null,
+      "X": -2703.37,
+      "Y": 290.0942,
+      "Z": -3540.56,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:10:36.3726916-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Derwent Valley Dash",
+      "Type": null,
+      "X": -3489.62,
+      "Y": 242.6781,
+      "Z": -3239.62,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:27:32.8367364-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Derwenwater Trail",
+      "Type": null,
+      "X": -4696.4473,
+      "Y": 157.06964,
+      "Z": -2130.9043,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:15:14.9782452-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Edinburgh City Sprint",
+      "Type": null,
+      "X": 2471.689,
+      "Y": 155.01181,
+      "Z": 2663.5247,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:07:59.0248387-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Edinburgh New Town",
+      "Type": null,
+      "X": 3436.24,
+      "Y": 152.49242,
+      "Z": 2949.45,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:26:23.8520306-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Edinburgh Station Circuit",
+      "Type": null,
+      "X": 2357.841,
+      "Y": 156.47215,
+      "Z": 2911.0303,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:07:40.012839-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Edinburgh Stockbridge",
+      "Type": null,
+      "X": 1909.1395,
+      "Y": 156.08267,
+      "Z": 2816.9297,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:26:44.2288164-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Edinburgh West End",
+      "Type": null,
+      "X": 1218.29,
+      "Y": 157.90024,
+      "Z": 3677.93,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:26:53.1051393-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Elmsdon On Sea Sprint",
+      "Type": null,
+      "X": 2494.8489,
+      "Y": 208.11885,
+      "Z": -5067.5625,
+      "Length": 18415.064,
+      "Laps": 1,
+      "Racers": 0,
+      "Found": "2026-11-12T16:06:32.0472652-05:00",
+      "Entry": [
+        2494.9028,
+        208.11172,
+        -5066.5474
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Elmsdon On Sea Sprint",
+      "Type": null,
+      "X": 2413.15,
+      "Y": 270.21036,
+      "Z": -4669.68,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:11:53.2447543-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Fenholm Cross Country Circuit",
+      "Type": null,
+      "X": 8556.512,
+      "Y": 239.42165,
+      "Z": -721.0029,
+      "Length": 5952.985,
+      "Laps": 3,
+      "Racers": 6,
+      "Found": "2026-11-10T18:34:19.628124-05:00",
+      "Entry": [
+        8906.813,
+        239.60039,
+        -702.9605
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Fenholm Cross Country Circuit",
+      "Type": null,
+      "X": 8556.536,
+      "Y": 237.08182,
+      "Z": -839.58813,
+      "Length": 5949.8086,
+      "Laps": 3,
+      "Racers": 12,
+      "Found": "2026-11-12T16:54:13.4139168-05:00",
+      "Entry": [
+        8560.449,
+        237.83252,
+        -820.9899
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "Fenholm Scramble",
+      "Type": null,
+      "X": 8561.858,
+      "Y": 248.59505,
+      "Z": -423.874,
+      "Length": 6297.442,
+      "Laps": 1,
+      "Racers": 12,
+      "Found": "2026-11-10T19:31:17.2406719-05:00",
+      "Entry": [
+        8489.681,
+        269.697,
+        -294.23096
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Garden's Cross Country Circuit",
+      "Type": null,
+      "X": -4725.08,
+      "Y": 160.88704,
+      "Z": 1473.5972,
+      "Length": 6092.7837,
+      "Laps": 3,
+      "Racers": 12,
+      "Found": "2026-11-10T18:11:12.8495503-05:00",
+      "Entry": [
+        -4785.0674,
+        168.06944,
+        1376.8918
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Glen Rannoch Cross Country",
+      "Type": null,
+      "X": -1245.52,
+      "Y": 242.76497,
+      "Z": 3066.86,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:18:41.0246343-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Glen Rannoch Hillside Sprint",
+      "Type": null,
+      "X": -842.30273,
+      "Y": 145.01834,
+      "Z": 2321.8054,
+      "Length": 6050.2466,
+      "Laps": 1,
+      "Racers": 12,
+      "Found": "2026-11-10T18:15:42.8411577-05:00",
+      "Entry": [
+        -921.0591,
+        147.4667,
+        2217.5908
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Glen Rannoch Trail",
+      "Type": null,
+      "X": -3321.79,
+      "Y": 141.6597,
+      "Z": 2784.6277,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-10T15:56:21.8136464-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Greendale Foothills Scramble",
+      "Type": null,
+      "X": -1044.494,
+      "Y": 156.0233,
+      "Z": 2049.4768,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-10T15:55:48.6208498-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Greendale Super Sprint",
+      "Type": null,
+      "X": 2219.3103,
+      "Y": 161.35344,
+      "Z": 3038.321,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:07:14.4025926-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Grendale Club Circuit",
+      "Type": null,
+      "X": -2027.4017,
+      "Y": 218.88896,
+      "Z": 1114.8489,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:08:59.057166-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Highland Farm Scramble",
+      "Type": null,
+      "X": 2768.84,
+      "Y": 157.02362,
+      "Z": -1512.21,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:17:05.1043928-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Holyrod Park Circuit",
+      "Type": null,
+      "X": 3551.28,
+      "Y": 141.76984,
+      "Z": 2543.75,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:08:24.0251671-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Holyrod Park Trail",
+      "Type": null,
+      "X": 3450.1245,
+      "Y": 142.90346,
+      "Z": 2532.2358,
+      "Length": 6079.61,
+      "Laps": 1,
+      "Racers": 12,
+      "Found": "2026-11-10T15:55:11.7355438-05:00",
+      "Entry": [
+        3742.1182,
+        136.35632,
+        2575.9392
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Horizon Festival Circuit",
+      "Type": null,
+      "X": -3100.7197,
+      "Y": 349.79828,
+      "Z": -4310.89,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:10:58.374044-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Horizon Festival Drag Strip",
+      "Type": null,
+      "X": -3155.98,
+      "Y": 347.8064,
+      "Z": -4502.32,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:30:12.6481425-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Horizon Festival Sprint",
+      "Type": null,
+      "X": -2501.54,
+      "Y": 349.31418,
+      "Z": -4311.94,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:11:11.4814254-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Lake District Sprint",
+      "Type": null,
+      "X": -1988.4,
+      "Y": 178.26163,
+      "Z": -1172.44,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:09:39.8925878-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Lakehurst Copse Circuit",
+      "Type": null,
+      "X": -865.82367,
+      "Y": 186.76073,
+      "Z": 493.61417,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:09:16.424574-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Lakehurst Forrest Sprint",
+      "Type": null,
+      "X": -159.37,
+      "Y": 309.31702,
+      "Z": -1779.28,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:12:28.6167824-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Lakehurst Forrest Trail",
+      "Type": null,
+      "X": -953.08,
+      "Y": 196.00536,
+      "Z": -1524.55,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:14:45.5566202-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Lakehurst Rush",
+      "Type": null,
+      "X": -1081.07,
+      "Y": 202.08966,
+      "Z": -1181.6,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:27:18.3157883-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Lakehurst Woodland Scramble",
+      "Type": null,
+      "X": -575.8838,
+      "Y": 204.64302,
+      "Z": -1130.3049,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:14:35.156348-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Moorhead Wind Farm Circuit",
+      "Type": null,
+      "X": 1772.651,
+      "Y": 288.59018,
+      "Z": -746.7598,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:12:46.5607289-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Morehead Rally Trail",
+      "Type": null,
+      "X": 4730.457,
+      "Y": 138.26514,
+      "Z": -1745.2004,
+      "Length": 6055.255,
+      "Laps": 1,
+      "Racers": 12,
+      "Found": "2026-11-10T16:21:17.5342243-05:00",
+      "Entry": [
+        4709.0376,
+        135.85938,
+        -1613.7136
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Mortimer Gardens Scramble",
+      "Type": null,
+      "X": -4661.848,
+      "Y": 156.48302,
+      "Z": 1708.4592,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-10T15:56:43.7359857-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Mountain Foot Cross Country",
+      "Type": null,
+      "X": -2225.07,
+      "Y": 344.6888,
+      "Z": 2700,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:18:53.8251116-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Mudkicker's 4x4 Scramble",
+      "Type": null,
+      "X": 1730.5426,
+      "Y": 328.171,
+      "Z": -2554.3496,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:16:55.5322658-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Night Flight Showcase",
+      "Type": null,
+      "X": -697.41296,
+      "Y": 267.44482,
+      "Z": -6176.9805,
+      "Length": 5957.9766,
+      "Laps": 1,
+      "Racers": 2,
+      "Found": "2026-11-12T16:30:22.283913-05:00",
+      "Entry": [
+        -688.49,
+        266.6062,
+        -6173.69
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Nine & Three Quarters Showcase",
+      "Type": null,
+      "X": -3532.3794,
+      "Y": 193.75574,
+      "Z": 3071.259,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:29:30.416214-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "North City Cross Country Circuit",
+      "Type": null,
+      "X": 1601.98,
+      "Y": 154.37875,
+      "Z": 2636.28,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:18:28.2888256-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Princes Street Garden Circuit",
+      "Type": null,
+      "X": 1754.09,
+      "Y": 156.36829,
+      "Z": 2810.4,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:08:13.9137701-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Quarry Cross Country Circuit",
+      "Type": null,
+      "X": -1796.28,
+      "Y": 241.11307,
+      "Z": -2702.0278,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:20:18.4287745-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Rally Yard Cross Country Circuit",
+      "Type": null,
+      "X": -798.06,
+      "Y": 155.48508,
+      "Z": 1956.17,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:19:20.1965351-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Resovior Run",
+      "Type": null,
+      "X": 1462.41,
+      "Y": 324.6515,
+      "Z": -3253.28,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:28:28.6916407-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Riverbank Cross Country Circuit",
+      "Type": null,
+      "X": -105.21,
+      "Y": 237.92163,
+      "Z": -5742.11,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:21:08.9644449-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "South Beach Cross Country Circuit",
+      "Type": null,
+      "X": 7761.6514,
+      "Y": 125.11241,
+      "Z": -2520.8657,
+      "Length": 4896.8823,
+      "Laps": 1,
+      "Racers": 12,
+      "Found": "2026-11-12T17:14:32.5142586-05:00",
+      "Entry": [
+        7690.187,
+        122.61135,
+        -2627.0264
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "South Beach Cross Country Circuit",
+      "Type": null,
+      "X": 7761.65,
+      "Y": 125.1122,
+      "Z": -2520.8684,
+      "Length": 5960.4907,
+      "Laps": 5,
+      "Racers": 12,
+      "Found": "2026-11-12T17:19:14.3199937-05:00",
+      "Entry": [
+        7690.1875,
+        122.60046,
+        -2627.0264
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "South Coast Scramble",
+      "Type": null,
+      "X": 7781.007,
+      "Y": 132.30878,
+      "Z": -2825.4473,
+      "Length": 5944.828,
+      "Laps": 3,
+      "Racers": 12,
+      "Found": "2026-11-12T17:09:26.5059739-05:00",
+      "Entry": [
+        7999.6553,
+        123.12398,
+        -3056.8496
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "South Island Circuit",
+      "Type": null,
+      "X": 8473.601,
+      "Y": 115.04425,
+      "Z": -3109.0513,
+      "Length": 5949.964,
+      "Laps": 2,
+      "Racers": 12,
+      "Found": "2026-11-12T17:03:07.897261-05:00",
+      "Entry": [
+        8690.51,
+        112.255455,
+        -3115.3665
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "The Behemoth Showcase",
+      "Type": null,
+      "X": -2416.3245,
+      "Y": 327.9505,
+      "Z": 2645.8286,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:29:06.0477393-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "The Gauntlet",
+      "Type": null,
+      "X": 5058.3,
+      "Y": 112.64515,
+      "Z": -2010.71,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:17:27.1608465-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "The Halo Experience Showcase",
+      "Type": null,
+      "X": 4802.47,
+      "Y": 107.607475,
+      "Z": -395.58,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:29:45.0446358-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "The Highland Charge",
+      "Type": null,
+      "X": -302.97598,
+      "Y": 171.52449,
+      "Z": 2971.6777,
+      "Length": 6107.0474,
+      "Laps": 1,
+      "Racers": 10,
+      "Found": "2026-11-10T16:26:47.2138457-05:00",
+      "Entry": [
+        -347.32114,
+        173.35641,
+        3125.4233
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "The Horizon Motorcross Experience",
+      "Type": null,
+      "X": -3017.67,
+      "Y": 170.31616,
+      "Z": -1869.64,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:29:58.4330944-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "The Meadows Sprint",
+      "Type": null,
+      "X": 4394.14,
+      "Y": 121.531395,
+      "Z": 82.38,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:13:07.4095376-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "The Needle Descent",
+      "Type": null,
+      "X": 8333.719,
+      "Y": 393.05106,
+      "Z": 172.62329,
+      "Length": 6077.788,
+      "Laps": 1,
+      "Racers": 12,
+      "Found": "2026-11-10T19:20:29.5768477-05:00",
+      "Entry": [
+        8034.6157,
+        376.6794,
+        29.633518
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "The Ridge Cross Country Circuit",
+      "Type": null,
+      "X": -548.66,
+      "Y": 170.83063,
+      "Z": 574.45,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:19:42.7566644-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "The Sinking Scramble",
+      "Type": null,
+      "X": 8571.323,
+      "Y": 239.5811,
+      "Z": -679.4192,
+      "Length": 5947.4478,
+      "Laps": 3,
+      "Racers": 12,
+      "Found": "2026-11-10T18:38:15.2688263-05:00",
+      "Entry": [
+        8560.259,
+        243.62389,
+        -457.24155
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "The Titan",
+      "Type": null,
+      "X": 4899.93,
+      "Y": 109.67075,
+      "Z": -185.89,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:25:11.8565733-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Tran Hows Scramble",
+      "Type": null,
+      "X": -4097.3,
+      "Y": 294.3127,
+      "Z": -5553.41,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:15:39.1243995-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Waterhead Sprint",
+      "Type": null,
+      "X": -3355.63,
+      "Y": 349.74838,
+      "Z": -4312.02,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:10:46.0846358-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": "Fortune Island",
+      "Name": "Westwick Festival Circuit",
+      "Type": null,
+      "X": 7652.5107,
+      "Y": 113.51517,
+      "Z": -1300.0634,
+      "Length": 5981.9663,
+      "Laps": 5,
+      "Racers": 12,
+      "Found": "2026-11-10T19:25:16.7941663-05:00",
+      "Entry": [
+        7523.2144,
+        111.01945,
+        -1249.324
+      ]
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "White Horse Hill Trail",
+      "Type": null,
+      "X": -115.69,
+      "Y": 212.21114,
+      "Z": -3060.35,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:16:06.1285102-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Whitewater Falls Cross Country",
+      "Type": null,
+      "X": -1220.67,
+      "Y": 291.61618,
+      "Z": -2553.97,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:20:05.8560068-05:00"
+    },
+    {
+      "Game": "FH4",
+      "Map": null,
+      "Name": "Windmill Cross Country",
+      "Type": null,
+      "X": -2562.06,
+      "Y": 347.6198,
+      "Z": -5697.38,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-11-12T16:20:56.7614879-05:00"
+    },
+    {
       "Game": "FH5",
       "Map": null,
       "Name": "Aerodromo Sprint",
@@ -90,6 +1376,24 @@
       "Laps": 1,
       "Racers": 10,
       "Found": "2026-10-31T17:31:19.0844073-04:00"
+    },
+    {
+      "Game": "FH5",
+      "Map": null,
+      "Name": "Baja California Trail",
+      "Type": null,
+      "X": -7453.7905,
+      "Y": 246.35223,
+      "Z": 2263.3794,
+      "Length": 5969.9214,
+      "Laps": 1,
+      "Racers": 1,
+      "Found": "2026-11-09T19:16:20.6833469-05:00",
+      "Entry": [
+        -9529.345,
+        417.33157,
+        -30.098791
+      ]
     },
     {
       "Game": "FH5",
@@ -360,7 +1664,7 @@
       "Y": 441.14456,
       "Z": 3633.4197,
       "Length": 5947.962,
-      "Laps": 2,
+      "Laps": 3,
       "Racers": 8,
       "Found": "2026-10-31T14:33:38.7314739-04:00"
     },
@@ -395,13 +1699,18 @@
       "Map": null,
       "Name": "Copper Canyon Sprint",
       "Type": null,
-      "X": -1788.5297,
-      "Y": 319.49582,
-      "Z": 4487.408,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T14:25:14.6988682-04:00"
+      "X": -1905.859,
+      "Y": 323.3254,
+      "Z": 4502.6904,
+      "Length": 422.92557,
+      "Laps": 1,
+      "Racers": 11,
+      "Found": "2026-10-31T14:25:14.6988682-04:00",
+      "Entry": [
+        -1788.5297,
+        319.49582,
+        4487.408
+      ]
     },
     {
       "Game": "FH5",
@@ -531,7 +1840,12 @@
       "Length": 6054.3374,
       "Laps": 1,
       "Racers": 9,
-      "Found": "2026-11-06T20:58:33.6035966-05:00"
+      "Found": "2026-11-06T20:58:33.6035966-05:00",
+      "Entry": [
+        -1298.3687,
+        180.87866,
+        -1285.4982
+      ]
     },
     {
       "Game": "FH5",
@@ -726,7 +2040,12 @@
       "Length": 6060.0312,
       "Laps": 1,
       "Racers": 8,
-      "Found": "2026-11-06T20:37:00.743345-05:00"
+      "Found": "2026-11-06T20:37:00.743345-05:00",
+      "Entry": [
+        -231.04695,
+        364.85516,
+        2115.7747
+      ]
     },
     {
       "Game": "FH5",
@@ -835,6 +2154,24 @@
     {
       "Game": "FH5",
       "Map": null,
+      "Name": "Hilltop Descent",
+      "Type": null,
+      "X": 80.21079,
+      "Y": 407.43082,
+      "Z": 4694.4297,
+      "Length": 6017.374,
+      "Laps": 1,
+      "Racers": 8,
+      "Found": "2026-11-10T20:05:08.085191-05:00",
+      "Entry": [
+        159.29085,
+        405.65033,
+        4703.8384
+      ]
+    },
+    {
+      "Game": "FH5",
+      "Map": null,
       "Name": "Horizon Baja Scramble",
       "Type": null,
       "X": -8409.571,
@@ -909,6 +2246,19 @@
       "Laps": 0,
       "Racers": 0,
       "Found": "2026-11-07T19:57:20.4431001-05:00"
+    },
+    {
+      "Game": "FH5",
+      "Map": "Hot Wheels Park",
+      "Name": "Hot Wheels Horizon Festival",
+      "Type": null,
+      "X": 531.8133,
+      "Y": 1494.7041,
+      "Z": 1256.6511,
+      "Length": 1847.7466,
+      "Laps": 1,
+      "Racers": 1,
+      "Found": "2026-11-07T20:40:19.991851-05:00"
     },
     {
       "Game": "FH5",
@@ -1201,13 +2551,18 @@
       "Map": "Hot Wheels Park",
       "Name": "Nexus Speed Circuit",
       "Type": null,
-      "X": -363.25565,
-      "Y": 1456.0757,
-      "Z": 222.83273,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-11-07T19:57:33.2143018-05:00"
+      "X": 196.29103,
+      "Y": 1644.4355,
+      "Z": 796.08417,
+      "Length": 4270.1924,
+      "Laps": 1,
+      "Racers": 12,
+      "Found": "2026-11-07T20:39:24.0851487-05:00",
+      "Entry": [
+        -363.25565,
+        1456.0757,
+        222.83273
+      ]
     },
     {
       "Game": "FH5",
@@ -1272,7 +2627,12 @@
       "Length": 6088.7993,
       "Laps": 1,
       "Racers": 10,
-      "Found": "2026-11-06T19:46:18.4462052-05:00"
+      "Found": "2026-11-06T19:46:18.4462052-05:00",
+      "Entry": [
+        -124.36282,
+        217.57652,
+        821.0267
+      ]
     },
     {
       "Game": "FH5",
@@ -1344,13 +2704,18 @@
       "Map": "Sierra Nueva",
       "Name": "Reserva del Carrizo",
       "Type": null,
-      "X": 1210.0677,
-      "Y": 220.36197,
-      "Z": -145.68974,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-11-07T18:50:58.1079914-05:00"
+      "X": 1199.1361,
+      "Y": 216.75682,
+      "Z": -171.18695,
+      "Length": 6051.499,
+      "Laps": 1,
+      "Racers": 9,
+      "Found": "2026-11-07T18:50:58.1079914-05:00",
+      "Entry": [
+        1210.0677,
+        220.36197,
+        -145.68974
+      ]
     },
     {
       "Game": "FH5",
@@ -1362,7 +2727,7 @@
       "Z": -373.80997,
       "Length": 6030.4775,
       "Laps": 1,
-      "Racers": 10,
+      "Racers": 11,
       "Found": "2026-10-31T17:22:30.6731385-04:00"
     },
     {
@@ -1396,13 +2761,18 @@
       "Map": null,
       "Name": "Riviera Sprint",
       "Type": null,
-      "X": 2802.8125,
-      "Y": 421.80917,
-      "Z": 3720.4531,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T17:28:32.2819089-04:00"
+      "X": 2336.0303,
+      "Y": 434.56073,
+      "Z": 3778.091,
+      "Length": 6005.377,
+      "Laps": 1,
+      "Racers": 9,
+      "Found": "2026-10-31T17:28:32.2819089-04:00",
+      "Entry": [
+        2802.8125,
+        421.80917,
+        3720.4531
+      ]
     },
     {
       "Game": "FH5",
@@ -1636,7 +3006,12 @@
       "Length": 6069.4775,
       "Laps": 1,
       "Racers": 9,
-      "Found": "2026-11-06T20:28:15.6537705-05:00"
+      "Found": "2026-11-06T20:28:15.6537705-05:00",
+      "Entry": [
+        -1090.7572,
+        320.4862,
+        1678.4766
+      ]
     },
     {
       "Game": "FH5",
@@ -1738,7 +3113,7 @@
       "Y": 255.56244,
       "Z": 3405.3062,
       "Length": 6107.8174,
-      "Laps": 1,
+      "Laps": 3,
       "Racers": 8,
       "Found": "2026-10-31T17:39:15.0951672-04:00"
     },
@@ -1812,13 +3187,18 @@
       "Map": "Hot Wheels Park",
       "Name": "Watersled Speed Circuit",
       "Type": null,
-      "X": 222.49112,
-      "Y": 1735.1368,
-      "Z": 1896.0106,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-11-07T19:53:26.7448154-05:00"
+      "X": 506.66104,
+      "Y": 1747.858,
+      "Z": 1984.8394,
+      "Length": 5947.758,
+      "Laps": 2,
+      "Racers": 12,
+      "Found": "2026-11-07T20:28:59.3673876-05:00",
+      "Entry": [
+        222.49112,
+        1735.1368,
+        1896.0106
+      ]
     },
     {
       "Game": "FH5",
@@ -1974,7 +3354,12 @@
       "Length": 5955.432,
       "Laps": 3,
       "Racers": 8,
-      "Found": "2026-10-28T19:40:02.2611445-04:00"
+      "Found": "2026-10-28T19:40:02.2611445-04:00",
+      "Entry": [
+        50.897743,
+        102.44017,
+        -6005.551
+      ]
     },
     {
       "Game": "FH6",
@@ -1988,6 +3373,24 @@
       "Laps": 0,
       "Racers": 0,
       "Found": "2026-10-30T22:12:16.9361197-04:00"
+    },
+    {
+      "Game": "FH6",
+      "Map": null,
+      "Name": "Edo Circuit",
+      "Type": null,
+      "X": -2409.6497,
+      "Y": 114.66864,
+      "Z": -5057.74,
+      "Length": 4658.0005,
+      "Laps": 1,
+      "Racers": 1,
+      "Found": "2026-11-12T21:10:05.0885786-05:00",
+      "Entry": [
+        3802.6182,
+        419.6581,
+        -5276.9883
+      ]
     },
     {
       "Game": "FH6",
@@ -2020,13 +3423,18 @@
       "Map": null,
       "Name": "Festival Chase",
       "Type": null,
-      "X": -1865.997,
-      "Y": 340.47244,
-      "Z": 16.91014,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T13:56:32.7688429-04:00"
+      "X": -1765.5884,
+      "Y": 329.70258,
+      "Z": 81.66017,
+      "Length": 6057.881,
+      "Laps": 1,
+      "Racers": 11,
+      "Found": "2026-10-31T13:56:32.7688429-04:00",
+      "Entry": [
+        -1865.997,
+        340.47244,
+        16.91014
+      ]
     },
     {
       "Game": "FH6",
@@ -2215,13 +3623,31 @@
       "Map": null,
       "Name": "Kinkaku-ji Trail",
       "Type": null,
-      "X": -2835.9302,
-      "Y": 133.03517,
-      "Z": -3642.5024,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-30T20:12:08.2168098-04:00"
+      "X": -2820.0293,
+      "Y": 132.0828,
+      "Z": -3753.1323,
+      "Length": 4712.0015,
+      "Laps": 1,
+      "Racers": 11,
+      "Found": "2026-10-30T20:12:08.2168098-04:00",
+      "Entry": [
+        -2835.9302,
+        133.03517,
+        -3642.5024
+      ]
+    },
+    {
+      "Game": "FH6",
+      "Map": null,
+      "Name": "Kinkaku-ji Trail",
+      "Type": null,
+      "X": -2823.379,
+      "Y": 133.23276,
+      "Z": -3733.0396,
+      "Length": 6049.369,
+      "Laps": 1,
+      "Racers": 8,
+      "Found": "2026-11-12T20:49:26.3898998-05:00"
     },
     {
       "Game": "FH6",
@@ -2246,7 +3672,7 @@
       "Z": -5364.72,
       "Length": 5955.2505,
       "Laps": 4,
-      "Racers": 8,
+      "Racers": 12,
       "Found": "2026-10-30T18:55:10.2691857-04:00"
     },
     {
@@ -2280,13 +3706,18 @@
       "Map": null,
       "Name": "Matsumi Climb",
       "Type": null,
-      "X": -4020.4272,
-      "Y": 412.12933,
-      "Z": -1644.7607,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T13:51:09.3910249-04:00"
+      "X": -3952.389,
+      "Y": 408.37628,
+      "Z": -1561.5098,
+      "Length": 6029.945,
+      "Laps": 1,
+      "Racers": 9,
+      "Found": "2026-10-31T13:51:09.3910249-04:00",
+      "Entry": [
+        -4020.4272,
+        412.12933,
+        -1644.7607
+      ]
     },
     {
       "Game": "FH6",
@@ -2384,13 +3815,18 @@
       "Map": null,
       "Name": "Norikura Skyline",
       "Type": null,
-      "X": -91.36009,
-      "Y": 562.464,
-      "Z": 7113.36,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T13:47:42.4113312-04:00"
+      "X": 3556.92,
+      "Y": 635.39813,
+      "Z": 6088.85,
+      "Length": 5961.344,
+      "Laps": 1,
+      "Racers": 2,
+      "Found": "2026-10-31T13:47:42.4113312-04:00",
+      "Entry": [
+        -91.36009,
+        562.464,
+        7113.36
+      ]
     },
     {
       "Game": "FH6",
@@ -2436,13 +3872,36 @@
       "Map": null,
       "Name": "Oyashirazu Trail",
       "Type": null,
-      "X": 2944.67,
-      "Y": 130.49614,
-      "Z": -4091.94,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T14:02:38.5059907-04:00"
+      "X": 2978.95,
+      "Y": 133.51619,
+      "Z": -3977.12,
+      "Length": 5948.033,
+      "Laps": 1,
+      "Racers": 11,
+      "Found": "2026-10-31T14:02:38.5059907-04:00",
+      "Entry": [
+        2944.67,
+        130.49614,
+        -4091.94
+      ]
+    },
+    {
+      "Game": "FH6",
+      "Map": null,
+      "Name": "Oyashirazu Trail",
+      "Type": null,
+      "X": 2978.95,
+      "Y": 133.52309,
+      "Z": -3977.12,
+      "Length": 5473.915,
+      "Laps": 1,
+      "Racers": 11,
+      "Found": "2026-11-12T13:01:53.9331991-05:00",
+      "Entry": [
+        2944.6704,
+        431.51315,
+        -4091.9375
+      ]
     },
     {
       "Game": "FH6",
@@ -2462,13 +3921,18 @@
       "Map": null,
       "Name": "River Descent",
       "Type": null,
-      "X": 175.93343,
-      "Y": 203.35219,
-      "Z": 109.047615,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T13:56:09.6523117-04:00"
+      "X": 263.13107,
+      "Y": 199.82957,
+      "Z": 24.760115,
+      "Length": 6069.1426,
+      "Laps": 1,
+      "Racers": 12,
+      "Found": "2026-10-31T13:56:09.6523117-04:00",
+      "Entry": [
+        175.93343,
+        203.35219,
+        109.047615
+      ]
     },
     {
       "Game": "FH6",
@@ -2521,6 +3985,24 @@
       "Laps": 2,
       "Racers": 8,
       "Found": "2026-10-30T20:11:26.7432784-04:00"
+    },
+    {
+      "Game": "FH6",
+      "Map": null,
+      "Name": "Sekibe Scramble",
+      "Type": null,
+      "X": 2495.2048,
+      "Y": 208.12329,
+      "Z": -5068.1465,
+      "Length": 20177.553,
+      "Laps": 1,
+      "Racers": 0,
+      "Found": "2026-11-12T20:29:06.660853-05:00",
+      "Entry": [
+        2495.2212,
+        208.11908,
+        -5067.2134
+      ]
     },
     {
       "Game": "FH6",
@@ -2663,7 +4145,12 @@
       "Length": 5941.1475,
       "Laps": 5,
       "Racers": 8,
-      "Found": "2026-10-28T20:33:50.0067055-04:00"
+      "Found": "2026-10-28T20:33:50.0067055-04:00",
+      "Entry": [
+        -838.8605,
+        507.71707,
+        7549.1494
+      ]
     },
     {
       "Game": "FH6",
@@ -2702,7 +4189,12 @@
       "Length": 5953.1475,
       "Laps": 3,
       "Racers": 4,
-      "Found": "2026-10-30T19:10:26.2606231-04:00"
+      "Found": "2026-10-30T19:10:26.2606231-04:00",
+      "Entry": [
+        984.11066,
+        125.05207,
+        2340.9402
+      ]
     },
     {
       "Game": "FH6",

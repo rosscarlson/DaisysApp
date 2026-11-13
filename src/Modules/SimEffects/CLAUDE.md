@@ -8,7 +8,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   Notify. No Moza here: built from the protocol only; this PC has a CS V2.5 base (found, rim not read).
 - **4.0.0 (the audit):** Overlays via `InputOverlay/FrameHook`; Shaker `DeviceVolumes` event-driven; Auto Start is
   `RunningPrograms.Watch`; Arduino retries 3 s ×3 then 15 s. Not tried with hardware.
-- `Analysis/Tracks.json`: the user's FH5+FH6 tracks, shipped (3.34.0), merged once per hash.
+- `Analysis/Tracks.json`: the user's FH4+FH5+FH6 tracks, shipped (3.34.0), merged once per hash.
 
 - **4.5.0 Forza Analysis merged into Analysis** (`Analysis/Sessions/`, settings `ForzaAnalysis.json`). `RaceLog` (Core 0.58 `SessionRecorder.Manual`) logs a race; `LapTracker.Claim` keeps it, named
   on `LapRecord`/`RaceRecord.Session`; unclaimed ones deleted 15 s after the next live frames. 4.6.1: a card's body
@@ -58,6 +58,9 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.15.5:** `Tracks.json` rebuilt from this PC's `Analysis.json` (FH4/5/6, 324; Export's fields, `Type` as stored,
+  `Entry` when set; sorted by game, name). Nexus and Watersled Speed Circuit (FH5) were dropped on this PC: users who
+  had them keep them (Merge never deletes).
 - **4.15.4:** the log is resampled to 100 Hz from whatever rate it was logged at: the friction circle's noise
   was the bumps, so it's smoothed when drawn (`FrictionCircle.Smooth`, a centred average; `FrictionSmooth`, 0.25 s),
   not by logging less. `Channel.Rpm`/`Gear` (hidden at first: not in old `CompareChannels`; always hidden on the
