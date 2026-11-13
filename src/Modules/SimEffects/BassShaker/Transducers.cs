@@ -4,9 +4,10 @@ namespace DaisysApp.Applets.SimEffects.BassShaker;
 /// A kind of transducer: the range of frequencies it shakes well, which every effect sent to it is kept within (below
 /// it the amplifier works for nothing, above it the shaker hums instead of shaking), and the one it shakes hardest at
 /// (its test tone). Ranges are from the makers' figures, narrowed to where each is strong; a device's own Low / High
-/// can be changed after.
+/// can be changed after. <see cref="BigHz"/>: where it was felt hardest on a rig (4.17.2, the BST-300EX: the Engine's
+/// tone at low revs, recorded), which Curbs, Impacts and Crashes then play at; 0: their own Hz.
 /// </summary>
-public sealed record TransducerType(string Id, string Name, int MinHz, int MaxHz, int PeakHz)
+public sealed record TransducerType(string Id, string Name, int MinHz, int MaxHz, int PeakHz, int BigHz = 0)
 {
     public static readonly TransducerType[] All =
     {
@@ -16,7 +17,7 @@ public sealed record TransducerType(string Id, string Name, int MinHz, int MaxHz
         new("buttkicker-mini", "ButtKicker Mini LFE", 12, 100, 40),
         new("dayton-bst1", "Dayton Audio BST-1 / BST-1 Pro", 20, 80, 40),
         new("dayton-bst2", "Dayton Audio BST-2", 20, 100, 40),
-        new("dayton-bst300", "Dayton Audio BST-300EX", 20, 80, 40),
+        new("dayton-bst300", "Dayton Audio BST-300EX", 20, 80, 32, 32),
         new("dayton-tt25", "Dayton Audio TT25 Puck", 30, 120, 50),
         new("dayton-tt-mini", "Dayton Audio Mini Puck (TT10 / TT20)", 40, 150, 60),
         new("aura-pro", "AuraSound AST-2B-4 Pro Bass Shaker", 15, 80, 40),

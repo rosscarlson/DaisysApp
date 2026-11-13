@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.2 (Shaker → Big Effects, BST-300EX at 32 Hz):** in a game, curbs, impacts and crashes should now hit like
+  the engine's low-rev shake did; the device's Big Effects slider (opened device) moves it, Off for the old sound,
+  and its Test plays it. Built from a recording of the rig; the change itself not felt yet.
 - **4.17.1 (Shaker → Effect Shortcuts: Highlight, Effect + / -):** bind them on the wheel, then in a game: Next /
   Previous to an effect, Highlight two or three (only those should shake; outlined in the meters, the rest with a grey
   line), Effect + / - on one, then Highlight each off again (every mute back as before). Tried in a test copy with

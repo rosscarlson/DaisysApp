@@ -74,6 +74,10 @@ public sealed class ShakerDevice : IVolume
     public int MaxHz { get; set; } = 100;
     public Channels Channels { get; set; }
     public Position Position { get; set; }
+    /// <summary>Curbs, Impacts and Crashes play at it on this device, Hz (0: their own; null: its type's <see cref="TransducerType.BigHz"/>).</summary>
+    public int? BigHz { get; set; }
+
+    [JsonIgnore] public int Big => BigHz ?? TransducerType.Of(Type).BigHz;
 
     /// <summary>Windows' volume for the device (0–1): set here, it's sent to Windows (<see cref="DeviceVolumes"/>).</summary>
     public double Volume { get => volume; set { if (value == volume) return; volume = value; Edited?.Invoke(); } }

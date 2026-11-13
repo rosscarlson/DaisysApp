@@ -352,7 +352,7 @@ internal sealed class BassShakerView : UserControl
         body.Children.Add(head);
         // Test, then the volume on the same line
         var test = new Button { Content = T("Test"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = F("{0} Hz for a second", TransducerType.Of(d.Type).PeakHz) };
+            ToolTip = F("{0} Hz for a second", d.Big > 0 ? d.Big : TransducerType.Of(d.Type).PeakHz) };
         AutomationProperties.SetName(test, F("Test {0}", d.Name));
         test.Click += (_, _) => engine.TestDevice(d);
         var volumeRow = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
@@ -374,6 +374,7 @@ internal sealed class BassShakerView : UserControl
                 d.Type = t.Id;
                 d.MinHz = t.MinHz;
                 d.MaxHz = t.MaxHz;
+                d.BigHz = null;
                 Structure();
             };
             body.Children.Add(Field(T("Transducer"), type));
@@ -392,6 +393,8 @@ internal sealed class BassShakerView : UserControl
             body.Children.Add(Field(T("Channels"), channels));
             body.Children.Add(SliderRow(T("Low"), 5, 200, 1, d.MinHz, v => $"{v:0} Hz", v => { d.MinHz = (int)v; if (d.MaxHz <= d.MinHz) d.MaxHz = d.MinHz + 1; Save(); }, T("Nothing lower is sent to it")));
             body.Children.Add(SliderRow(T("High"), 10, 250, 1, d.MaxHz, v => $"{v:0} Hz", v => { d.MaxHz = (int)v; Save(); }, T("Nothing higher is sent to it")));
+            body.Children.Add(SliderRow(T("Big Effects"), 0, 120, 1, d.Big, v => v < 1 ? T("Off") : $"{v:0} Hz", v => { d.BigHz = (int)v; Save(); },
+                T("Curbs, Impacts and Crashes play at it (Off: their own Hz)")));
             var buttons = new WrapPanel { Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
             buttons.Children.Add(ConfirmButton(T("Remove"), () =>
             {

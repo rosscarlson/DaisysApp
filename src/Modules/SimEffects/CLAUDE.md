@@ -126,6 +126,12 @@ Read only when working in this folder. Current state and lessons; history is in 
   settings, the real devices' list without keys, Enabled off; `%TEMP%/dashk/ui.ps1`, `key.ps1 <n>` sends Ctrl+Alt+Shift+Fn).
 - **4.17.1 Shaker:** Isolate became Highlight (several at once; 4.16.2's `Isolate` key read once as `Highlight`), with
   Effect + / - (`EffectKeys.Up/Down`); a highlight changes only its own effect's mute, so Mute in between holds.
+- **4.17.2 Shaker, Big Effects:** the user's "intense" feel (FH6, one car at low revs, Engine alone, BST-300EX on the
+  Plugable "Buttkicker" device) recorded by WASAPI loopback of that device (`D:\Temp\shakerlisten`: `listen.exe
+  <id part> <s> <wav>`, `analyse.py`): a clean sine 30–33.5 Hz at only ~6% level, so it's the rig's resonance.
+  `TransducerType.BigHz` (BST-300EX 32, PeakHz 32 too), `ShakerDevice.BigHz` (null: the type's; 0: off); Curbs,
+  Impacts, Crashes at it in `ShakerOutput` (hits not swept; curb gate ≤ Big/4). Wait for the game to say "driving"
+  (the log) before cueing a recording: the first one caught a menu.
 
 ## Test fixtures and tools
 

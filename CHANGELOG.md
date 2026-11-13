@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.2**
+- **SimEffects → Shaker:** **Curbs**, **Impacts** and **Crashes** play at a device's **Big Effects** frequency (a new
+  slider in the device's settings; Off: their own Hz), held there, with a curb's bumps at least two waves long. The
+  **Dayton Audio BST-300EX**'s is **32 Hz**: where it was felt hardest on the rig (the Engine's tone at low revs in
+  Forza Horizon 6, recorded from the device: a steady 30–33.5 Hz), now also its Test tone (was 40 Hz).
+
 **4.17.1**
 - **SimEffects → Shaker → Effect Shortcuts**, now in the order **Next Effect**, **Previous Effect**, **Highlight**,
   **Mute**, **Effect +** and **Effect -**:

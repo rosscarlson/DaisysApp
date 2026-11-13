@@ -26,8 +26,10 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   Split drives front left and front right; **All Wheels** and Split is side to side. So, for example:
   front / rear from one stereo amp = two devices, Left channel at Front and Right channel at Rear; side to side = one
   device, All Wheels, Split; all four corners = two stereo amps, one at Front and one at Rear, both Split. Opened
-  (the arrow), a device can change its transducer, position, channels, Low and High, or be removed (**Remove**, bottom
-  right). Each has **Test** (a second at the frequency it's strongest at; left of its volume, since 3.18.3), its volume and a meter of what it's playing. A device's volume and mute are Windows' own for that device (since 3.3.1), as on the Audio tab: moving the slider, muting or a shortcut changes the device in Windows straight away, and a change made in Windows or on the Audio tab shows here; two entries of one device (Left and Right) share it. A device that isn't plugged in says *Not
+  (the arrow), a device can change its transducer, position, channels, Low, High and **Big Effects** (since 4.17.2:
+  the frequency Curbs, Impacts and Crashes play at on it, held there, a curb's bumps at least two waves long; Off:
+  their own; each transducer's own at first, the Dayton BST-300EX's 32 Hz, where it was felt hardest on the rig), or
+  be removed (**Remove**, bottom right). Each has **Test** (a second at its Big Effects frequency, or the one it's strongest at; left of its volume, since 3.18.3), its volume and a meter of what it's playing. A device's volume and mute are Windows' own for that device (since 3.3.1), as on the Audio tab: moving the slider, muting or a shortcut changes the device in Windows straight away, and a change made in Windows or on the Audio tab shows here; two entries of one device (Left and Right) share it. A device that isn't plugged in says *Not
   connected* and starts playing when it is (checked every 3 seconds).
 - **Profiles** (since 3.18.0): the game and the profile are SimEffects' ([Profiles](../Profiles/README.md)): the Shaker
   reads the profile in use's game, and keeps its on / off and its **effects** per profile (each profile's made from its
@@ -120,7 +122,8 @@ steady rumble.
 
 **A hit** (Crashes and Impacts, since 3.10.2) is the strongest thing the shakers play: full strength at once and held
 for the first third of its *Length*, then dying away; its pitch starts at the shaker's strongest frequency (at least
-twice the effect's) and drops to the effect's *Frequency* (the body of it), and its wave is rounded off towards a
+twice the effect's) and drops to the effect's *Frequency* (the body of it; on a device with Big Effects, all of it at
+that), and its wave is rounded off towards a
 square for more push each cycle. While it plays, the other effects on that device are turned down (to 50% at its
 height), so it isn't lost under the engine and road. Gear Shift stays a plain knock. An effect's **Test** plays one
 knock or hit (before 3.10.2, one every 0.45 s).

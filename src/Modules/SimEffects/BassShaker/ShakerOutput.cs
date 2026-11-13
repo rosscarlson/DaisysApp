@@ -24,6 +24,8 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         /// <summary>A hit (Crashes, Impacts): held at full, then dying away, its pitch dropping from the shaker's
         /// strongest to the effect's own, the wave rounded off fuller, and the rest of the mix turned down under it.</summary>
         public readonly bool Hit = s.Info.Kind is EffectKind.Crashes or EffectKind.Impacts;
+        /// <summary>Curbs, Impacts, Crashes: at the device's Big Hz when it has one (<see cref="ShakerDevice.Big"/>).</summary>
+        public readonly bool Big = s.Info.Kind is EffectKind.Curbs or EffectKind.Impacts or EffectKind.Crashes;
         public float KnockAge, KnockHold;
         /// <summary>What it's played since the last <see cref="Report"/>: the sum of its samples squared.</summary>
         public double Energy;
@@ -94,7 +96,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
 
     /// <summary>The loudest sample since the meters last looked (they reset it).</summary>
     public volatile float Peak;
-    /// <summary>The device's Test button: a tone at its type's strongest frequency until then.</summary>
+    /// <summary>The device's Test button: a tone at its Big Hz (or its type's strongest frequency) until then.</summary>
     public DateTime TestUntil;
     /// <summary>How strong that tone is, 0..1 of the most it can be (<see cref="ShakerSettings.TestLevel"/>).</summary>
     public float TestLevel = 1;
@@ -212,7 +214,7 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
             release = MathF.Exp(-1f / (rate * 0.2f));
         }
         bool testing = DateTime.UtcNow < TestUntil;
-        float testHz = Math.Clamp(TransducerType.Of(device.Type).PeakHz, lo, hi);
+        float testHz = Math.Clamp(device.Big > 0 ? device.Big : TransducerType.Of(device.Type).PeakHz, lo, hi);
         // (an effect's Test plays through the master's mute, as a device's does: since 3.28.0; it was silent)
         float volume = (float)master.Volume;
         bool muted = master.Muted;
@@ -283,8 +285,11 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
         float smooth = 1 - MathF.Exp(-1f / (rate * 0.015f)), gateSmooth = 1 - MathF.Exp(-1f / (rate * 0.003f));
         float attack = 1f / (rate * 0.004f);
         const float TwoPi = MathF.PI * 2;
-        // a hit starts at the shaker's strongest frequency (at least twice the effect's own) and drops to the effect's
+        // a hit starts at the shaker's strongest frequency (at least twice the effect's own) and drops to the effect's,
+        // unless it's at the device's Big Hz
         float punchHz = Math.Clamp(TransducerType.Of(device.Type).PeakHz, lo, hi);
+        // (since 4.17.2) the big effects at the one it was felt hardest at, held there
+        float bigHz = device.Big > 0 ? Math.Clamp(device.Big, lo, hi) : 0;
         const float Drive = 2.2f;
         float driveScale = 1 / MathF.Tanh(Drive);
 
@@ -297,7 +302,10 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
             float gain = (testing ? (float)s.Effect.Volume : muted ? 0 : s.Gain) * s.GainOn(device.Key);
             bool here = gain > 0;
             float target = s.For(feed.Wheels) * gain;
-            float freq = Math.Clamp(s.Freq, lo, hi), gateHz = s.GateHz;
+            bool big = v.Big && bigHz > 0;
+            float freq = big ? bigHz : Math.Clamp(s.Freq, lo, hi), gateHz = s.GateHz;
+            // (Curbs: two waves a bump at least, or it's a flutter)
+            if (big && gateHz > 0) gateHz = Math.Min(gateHz, bigHz / 4);
             bool noise = s.Info.Shape == Shape.Noise;
             if (v.Knocks != s.Knocks)
             {
@@ -354,8 +362,11 @@ internal sealed class ShakerOutput : IWaveProvider, IDisposable
                     float kHz = freq;
                     if (v.Hit)
                     {
-                        float top = Math.Max(punchHz, Math.Min(freq * 2, hi));
-                        kHz = freq + (top - freq) * MathF.Exp(-v.KnockAge / Math.Max(0.01f, v.KnockHold * 0.6f));
+                        if (!big)
+                        {
+                            float top = Math.Max(punchHz, Math.Min(freq * 2, hi));
+                            kHz = freq + (top - freq) * MathF.Exp(-v.KnockAge / Math.Max(0.01f, v.KnockHold * 0.6f));
+                        }
                         v.KnockAge += 1f / rate;
                     }
                     v.KnockPhase += kHz / rate;
