@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.16.2 (Shaker: device meters; effect shortcuts):** in SimEffects → Shaker, the meters (and the widget) should show
+  a column per device left of a faint line, moving with what each plays, its small marker at its volume (red muted).
+  The Effects card's icons (Reset asks with a red ✕); Effect Shortcuts: bind Next / Previous, Isolate and Mute to the
+  wheel, drive, and check isolation ends (mutes back) on Isolate again, the Level Wizard opening and another profile.
+  Tried in a test copy with keys only: picking, isolating, its end and Mute; no game or shaker playing.
 - **4.16.1 (Compare's Channels drop-down; Video dimmed):** in Analysis → Compare, each Session row should show only
   **Channels** (after Combine on Session 1's); open it, untick and tick a few, click a name to highlight; the dots on
   the button should follow. The Video pop-out's timeline the same. Stop the profile: **Video** should dim with **ON**.

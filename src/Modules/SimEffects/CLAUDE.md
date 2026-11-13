@@ -111,6 +111,11 @@ Read only when working in this folder. Current state and lessons; history is in 
   `razer` stream, DXGI duplication with GDI fallback, LEDs = Segments unless set. Input Overlay: a `Widget` with
   `card: false` (session logs until 4.5.0).
 
+- **4.16.2 Shaker:** device columns in `SpectrumMeter` (`Update(devices, effects)`; device peaks taken in `Tick` before
+  the visibility check, so the widget gets them too). `EffectPicker` (prefix `ShakerPick.`): Isolate saves mutes like
+  the wizard; `Restore` on wizard open, profile change and `view.Closing()`. Tested in `%TEMP%/DaisysDevS` (its own
+  settings, the real devices' list without keys, Enabled off; `%TEMP%/dashk/ui.ps1`, `key.ps1 <n>` sends Ctrl+Alt+Shift+Fn).
+
 ## Test fixtures and tools
 
 - DaisysDev: settings in `%APPDATA%\DaisysDev`; copy `src\DaisysApp\bin\Debug\net8.0-windows\modules\SimEffects\

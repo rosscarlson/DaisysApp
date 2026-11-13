@@ -140,6 +140,8 @@ public sealed class ShakerSettings
     public string? OnOffKey { get; set; }
     /// <summary>The Level Wizard's shortcuts.</summary>
     public WizardKeys Wizard { get; set; } = new();
+    /// <summary>The Effects card's shortcuts: pick an effect, isolate it, mute it (<see cref="EffectPicker"/>).</summary>
+    public EffectKeys EffectKeys { get; set; } = new();
     /// <summary>How strong the Test buttons play, 0.1..1 (Settings → SimEffects → Shaker).</summary>
     public double TestLevel { get; set; } = 1;
     /// <summary>The meters popped out as a widget.</summary>
@@ -195,6 +197,15 @@ public sealed class MetersWidget : IOverlayPlace
     public double Opacity { get; set; } = 0.9;
     public bool Topmost { get; set; } = true;
     public bool ClickThrough { get; set; }
+}
+
+/// <summary>The Effects card's shortcuts (keys or controller buttons): the next or previous effect, Isolate and Mute.</summary>
+public sealed class EffectKeys
+{
+    public string? Previous { get; set; }
+    public string? Next { get; set; }
+    public string? Isolate { get; set; }
+    public string? Mute { get; set; }
 }
 
 /// <summary>The Level Wizard's shortcuts (keys or controller buttons): steps, level, the four settings, and Solo / All.</summary>

@@ -37,14 +37,19 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1), or
   right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its background, On top
   and Click through, then **Done**; right-click it to move it again, its **Delete** closes it. It stays open at the next start
-  (`MetersWidget`), and moves while the tab isn't showing. Since 3.24.2 its edit strip has **Background** (0%: only the
+  (`MetersWidget`), and moves while the tab isn't showing. Since 4.16.2 the meters start with a column per device
+  (set apart by a faint line): what it's playing, a small marker beside it at its volume, red while it's muted. Since 3.24.2 its edit strip has **Background** (0%: only the
   meters, over the game), and it hides while the profile is stopped. While it's open, a **Widgets** card at the bottom left
   lists it with **Edit** and **Delete** (since 3.8.6, Core's `Widget.ListCard`; a deleted one can be made again: 3.7.0
   failed with "already the logical child of another element").
 - **Effects**: each one's meter, mute, volume and shortcuts show folded; opened (the arrow) it has its settings,
   **Plays On** (each device by its name without Windows' description in brackets: on or off for this effect, and a
   level for how much of it that device gets), then **Test** (it plays for a moment, even when off) and **Remove**
-  at the bottom right. Drag one by its grip (left) onto another to move it: above it in its top half, below in its bottom
+  at the bottom right. The card's icons (since 4.16.2): **Reset Effects**, the **Level Wizard**, **Effect Shortcuts**
+  and **Add Effect**. Effect Shortcuts binds **Previous Effect** and **Next Effect** (pick one, round the end; it's
+  outlined in the list and bright in the meters), **Isolate on / off** (only the picked one plays; again, every effect's
+  mute as it was, as when the Level Wizard opens or the profile changes) and **Mute on / off** (the picked one alone);
+  they do nothing while the Level Wizard is open. Drag one by its grip (left) onto another to move it: above it in its top half, below in its bottom
   half. **Add Effect** adds any kind (the same kind twice is fine: two engine tones on different devices, say).
 - **Level Wizard** (beside Add Effect): a window, kept above the game (**On Top**), that takes you through the
   profile's effects one at a time, so each can be set while you drive. Its first step is its shortcuts (keys or
@@ -161,5 +166,6 @@ The games' telemetry (`Game`, `TelemetryFrame`, each game's reader) is the modul
 | `LevelWizard.cs` | The Level Wizard (`Showing` and `Changed` for the tab, which re-draws the effects at most every 100 ms): the shortcuts step (`WizardKeys` as Core `Hotkeys` added by `AddKeys` at the start, listed in Settings → Shortcuts, registered only while it's open, "Needed"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |
 | `DeviceVolumes.cs` | Each device's volume and mute = Windows' endpoint volume (Shared's `Audio/EndpointVolume`): read when the device is found, the app's changes sent as they're made (`ShakerDevice.Edited`), Windows' changes taken from its notification, a device plugged in found by `DeviceService`'s notice (nothing polled since 4.0.0); entries of one device share it |
 | `Volume.cs` | `VolumeHotkeys` (every volume's shortcuts and the on / off one as Core `Hotkeys`, put in place again when devices, effects or the profile change; `For(volume)` for Core's `HotkeyWindow`), `VolumeControl` (mute, slider, %, shortcut button) |
-| `Meters.cs` | `SpectrumMeter` (the column per effect with held peaks; the Level Wizard's effect bright, its label bold; a second one is the meters' widget, in Core's `Widget`) and `MiniMeter` (the line in a row; `Bright`) |
+| `EffectPicker.cs` | The Effects card's shortcuts (`EffectKeys`, Core `Hotkeys`): the picked effect (`Current`), Isolate (mutes saved, put back by `Restore`) and Mute |
+| `Meters.cs` | `SpectrumMeter` (a column per device first, its volume marker, a spacer, then the column per effect with held peaks; the Level Wizard's effect bright, its label bold; a second one is the meters' widget, in Core's `Widget`) and `MiniMeter` (the line in a row; `Bright`) |
 | `AddDeviceWindow.cs` | Add Device: device, transducer, channels |

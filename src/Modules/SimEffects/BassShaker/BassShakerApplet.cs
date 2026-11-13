@@ -89,6 +89,7 @@ public sealed class BassShakerApplet : IApplet
     public void Dispose()
     {
         SimProfiles.Renamed -= Renamed;
+        view.Closing();
         view.HideWidget();
         hotkeys.Dispose();
         TitleBadges.Set("BassShaker", null);

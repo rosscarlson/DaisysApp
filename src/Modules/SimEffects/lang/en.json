@@ -621,9 +621,9 @@
   "Nothing higher is sent to it": "Nothing higher is sent to it",
   "Add Effect": "Add Effect",
   "Level Wizard": "Level Wizard",
-  "Each effect in turn, set by shortcuts while you drive": "Each effect in turn, set by shortcuts while you drive",
+  "Level Wizard: each effect in turn, set by shortcuts while you drive": "Level Wizard: each effect in turn, set by shortcuts while you drive",
   "Reset Effects": "Reset Effects",
-  "Back to the game's own effects and settings": "Back to the game's own effects and settings",
+  "Reset Effects: back to the game's own effects and settings": "Reset Effects: back to the game's own effects and settings",
   "Effects": "Effects",
   "No effects": "No effects",
   "Drag to move": "Drag to move",
@@ -971,5 +971,10 @@
   "Smooth: off": "Smooth: off",
   "Smooth: {0} s": "Smooth: {0} s",
   "Click: highlight · Right-click: find a session": "Click: highlight · Right-click: find a session",
-  "Highlight {0}": "Highlight {0}"
+  "Highlight {0}": "Highlight {0}",
+  "Effect Shortcuts": "Effect Shortcuts",
+  "Previous Effect": "Previous Effect",
+  "Next Effect": "Next Effect",
+  "Isolate on / off": "Isolate on / off",
+  "Mute on / off": "Mute on / off"
 }

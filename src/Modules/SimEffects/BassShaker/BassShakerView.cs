@@ -41,6 +41,7 @@ internal sealed class BassShakerView : UserControl
     private readonly Dictionary<string, TextBlock> deviceProblems = new();
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly Debounce saveTimer;
+    private readonly EffectPicker picker;
     private int ticks;
     private Point dragStart;
     private string? dragKey;
@@ -50,6 +51,9 @@ internal sealed class BassShakerView : UserControl
         this.settings = settings;
         this.engine = engine;
         this.hotkeys = hotkeys;
+
+        picker = new EffectPicker(settings, () => Active, () => wizard != null);
+        picker.AddKeys();
 
         // ---- the top line ----
         onOff.SetResourceReference(StyleProperty, "ChipToggle");
@@ -106,6 +110,7 @@ internal sealed class BassShakerView : UserControl
         Content = page;
 
         saveTimer = new Debounce(TimeSpan.FromMilliseconds(600), () => { settings.Save(); });
+        picker.Changed += () => { VolumeControl.Refresh(); RenderEffects(); Save(); };
         meterTimer.Tick += (_, _) => Tick();
         IsVisibleChanged += (_, _) => Meters();
         hotkeys.Changed += () => { VolumeControl.Refresh(); Save(); };
@@ -117,6 +122,7 @@ internal sealed class BassShakerView : UserControl
     /// <summary>Another SimEffects profile is in use: its effects, and on or off as it has them.</summary>
     public void ProfileLoaded()
     {
+        picker.Reset();
         engine.Apply(Active);
         hotkeys.Register();
         Render();
@@ -164,6 +170,8 @@ internal sealed class BassShakerView : UserControl
     {
         if (wizard != null) { wizard.Activate(); return; }
         if (Active is not { } p || p.Effects.Count == 0) return;
+        // (it saves and puts back the mutes itself)
+        picker.Restore();
         wizard = new LevelWizard(settings, p, engine, Save);
         // what it changes shows here as it happens (another screen, while driving), a tenth of a second at most behind
         wizard.Changed += () => { wizardRefresh.Stop(); wizardRefresh.Start(); };
@@ -212,6 +220,13 @@ internal sealed class BassShakerView : UserControl
         HideWidget();
     }
 
+    /// <summary>The app closing: every effect's mute as it was before Isolate, its shortcuts gone.</summary>
+    public void Closing()
+    {
+        picker.Restore();
+        picker.RemoveKeys();
+    }
+
     /// <summary>Closed (the app closing: shown again at the next start).</summary>
     public void HideWidget()
     {
@@ -249,20 +264,21 @@ internal sealed class BassShakerView : UserControl
     private void Tick()
     {
         var signals = engine.Signals;
-        var showing = wizard?.Showing;
+        var showing = Picked;
         var levels = signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing)).ToArray();
-        if (metersWidget != null) widgetMeter.Update(levels, meterTimer.Interval.TotalSeconds);
+        // each device's output (its peak, falling back), its volume and mute: the meters' columns on the left
+        var devices = settings.Devices.Select(d =>
+        {
+            float shown = Math.Max(engine.TakePeak(d.Key), deviceLevels.GetValueOrDefault(d.Key) * 0.85f);
+            deviceLevels[d.Key] = shown;
+            return (MeterName(d), shown, d.Volume, d.Muted);
+        }).ToArray();
+        if (metersWidget != null) widgetMeter.Update(devices, levels, meterTimer.Interval.TotalSeconds);
         if (!IsVisible) return;
-        spectrum.Update(levels, meterTimer.Interval.TotalSeconds);
+        spectrum.Update(devices, levels, meterTimer.Interval.TotalSeconds);
         foreach (var s in signals)
             if (effectMeters.TryGetValue(s.Effect.Key, out var m)) m.Level = s.Level;
-        foreach (var (key, m) in deviceMeters)
-        {
-            float peak = engine.TakePeak(key);
-            float shown = Math.Max(peak, deviceLevels.GetValueOrDefault(key) * 0.85f);
-            deviceLevels[key] = shown;
-            m.Level = shown;
-        }
+        foreach (var (key, m) in deviceMeters) m.Level = deviceLevels.GetValueOrDefault(key);
         if (++ticks % 15 == 0)
         {
             ShowStatus();
@@ -274,6 +290,15 @@ internal sealed class BassShakerView : UserControl
             }
         }
     }
+
+    /// <summary>The effect outlined and bright: the Level Wizard's step while it's open, else the one picked by shortcuts.</summary>
+    private ShakerEffect? Picked => wizard != null ? wizard.Showing : picker.Current;
+
+    /// <summary>A device's column in the meters: its short name, and its channel when it's one of two on a device.</summary>
+    private static string MeterName(ShakerDevice d) => ShortName(d.Name) + d.Channels switch
+    {
+        Channels.Left => " L", Channels.Right => " R", Channels.Lfe => " LFE", _ => "",
+    };
 
     // ---- left: devices and the profile ----
 
@@ -385,8 +410,8 @@ internal sealed class BassShakerView : UserControl
     private Border EffectsCard()
     {
         var panel = new StackPanel();
-        var add = new Button { Content = T("Add Effect"), Padding = new Thickness(10, 3, 10, 3) };
-        add.SetResourceReference(StyleProperty, "AccentButton");
+        var add = Icon("", T("Add Effect"));
+        ((TextBlock)add.Content).SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
         add.Click += (_, _) =>
         {
             if (Active is not { } p) return;
@@ -405,20 +430,23 @@ internal sealed class BassShakerView : UserControl
             }
             menu.IsOpen = true;
         };
-        var wizard = new Button { Content = T("Level Wizard"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 8, 0),
-            ToolTip = T("Each effect in turn, set by shortcuts while you drive") };
+        var wizard = Icon("", T("Level Wizard"), T("Level Wizard: each effect in turn, set by shortcuts while you drive"));
         wizard.Click += (_, _) => OpenWizard();
         // (the profile is the module's, on the Profiles tab: its effects go back to its game's own here)
-        var reset = ConfirmButton(T("Reset Effects"), () =>
+        var reset = Icon("", T("Reset Effects"), T("Reset Effects: back to the game's own effects and settings"));
+        DaisysApp.Shared.ConfirmButton.ArmIcon(reset, () =>
         {
             if (Active is not { } p) return;
             p.Effects = DefaultProfiles.For(p.Game).Effects;
             Structure();
-        }, T("Back to the game's own effects and settings"));
-        reset.Margin = new Thickness(0, 0, 8, 0);
+        });
+        // next / previous effect, isolate and mute it, from the wheel
+        var keys = HotkeyWindow.Button(T("Effect Shortcuts"), () => picker.Keys, picker.Shown);
+        keys.Margin = new Thickness(0, 0, 4, 0);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
         buttons.Children.Add(reset);
         buttons.Children.Add(wizard);
+        buttons.Children.Add(keys);
         buttons.Children.Add(add);
         panel.Children.Add(HeaderLine(T("Effects"), buttons));
         panel.Children.Add(effectsStack);
@@ -455,7 +483,7 @@ internal sealed class BassShakerView : UserControl
         var chevron = Chevron(e.Expanded, () => { e.Expanded = !e.Expanded; Save(); RenderEffects(); });
         Grid.SetColumn(chevron, 1);
         head.Children.Add(chevron);
-        bool showing = wizard?.Showing == e;
+        bool showing = Picked == e;
         var name = new TextBlock { Text = info.Title, FontWeight = showing ? FontWeights.Bold : FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, ToolTip = info.Tip, TextTrimming = TextTrimming.CharacterEllipsis };
         Grid.SetColumn(name, 2);
         head.Children.Add(name);
@@ -602,6 +630,16 @@ internal sealed class BassShakerView : UserControl
         var b = new Border { Child = child, CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 6, 8, 6), Margin = new Thickness(0, 0, 0, 6), BorderThickness = new Thickness(1) };
         b.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
         b.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
+        return b;
+    }
+
+    /// <summary>An icon button, named for screen readers, its tooltip the name unless it has one of its own.</summary>
+    private static Button Icon(string glyph, string name, string? tip = null)
+    {
+        var b = VolumeControl.IconButton(glyph);
+        b.Margin = new Thickness(0, 0, 4, 0);
+        b.ToolTip = tip ?? name;
+        AutomationProperties.SetName(b, name);
         return b;
     }
 

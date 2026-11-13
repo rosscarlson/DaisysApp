@@ -25,43 +25,58 @@ internal static class MeterColours
 
 /// <summary>
 /// The spectrum-analyser-style meter above the effects: a column of segments per effect, in the effects' order, lit
-/// from the bottom as it shakes, with the highest point held at the top for a moment and falling back.
+/// from the bottom as it shakes, with the highest point held at the top for a moment and falling back. On its left,
+/// apart, a column per device: what it's playing, its volume as a small marker beside it (red while it's muted).
 /// </summary>
 internal sealed class SpectrumMeter : FrameworkElement
 {
     private const int Segments = 16;
     private const double LabelHeight = 18;
+    /// <summary>The gap between the devices and the effects, with a faint line in it.</summary>
+    private const double Spacer = 14;
+    private (string Label, float Level, double Volume, bool Muted)[] devices = Array.Empty<(string, float, double, bool)>();
     private (string Label, float Level, bool Muted, bool Bright)[] items = Array.Empty<(string, float, bool, bool)>();
     private float[] peaks = Array.Empty<float>();
     private double[] peakHeld = Array.Empty<double>();
 
     public SpectrumMeter() => Height = 150;
 
-    /// <summary>The levels now (0..1), one per effect; called by the view's timer.</summary>
-    public void Update((string Label, float Level, bool Muted, bool Bright)[] now, double dt)
+    /// <summary>The levels now (0..1), one per device and one per effect; called by the view's timer.</summary>
+    public void Update((string Label, float Level, double Volume, bool Muted)[] devicesNow, (string Label, float Level, bool Muted, bool Bright)[] now, double dt)
     {
-        if (peaks.Length != now.Length) { peaks = new float[now.Length]; peakHeld = new double[now.Length]; }
-        for (int i = 0; i < now.Length; i++)
+        int n = devicesNow.Length + now.Length;
+        if (peaks.Length != n) { peaks = new float[n]; peakHeld = new double[n]; }
+        for (int i = 0; i < n; i++)
         {
-            if (now[i].Level >= peaks[i]) { peaks[i] = now[i].Level; peakHeld[i] = 0.8; }
+            float level = i < devicesNow.Length ? devicesNow[i].Level : now[i - devicesNow.Length].Level;
+            if (level >= peaks[i]) { peaks[i] = level; peakHeld[i] = 0.8; }
             else if ((peakHeld[i] -= dt) <= 0) peaks[i] = Math.Max(0, peaks[i] - (float)(dt * 0.6));
         }
+        devices = devicesNow;
         items = now;
         InvalidateVisual();
     }
 
     protected override void OnRender(DrawingContext dc)
     {
-        double w = ActualWidth, h = ActualHeight - LabelHeight;
-        int n = items.Length;
-        if (n == 0 || w <= 0 || h <= 0) return;
+        int nd = devices.Length, n = nd + items.Length;
+        double spacer = nd > 0 && items.Length > 0 ? Spacer : 0;
+        double w = ActualWidth - spacer, h = ActualHeight - LabelHeight;
+        if (n == 0 || w <= 0 || h <= 0 || peaks.Length != n) return;
         double col = w / n, bar = Math.Min(col * 0.72, 56), segH = h / Segments, gap = Math.Max(1, segH * 0.22);
         var text = TryFindResource("TextSecondaryBrush") as Brush ?? Brushes.Gray;
         double dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        if (spacer > 0)
+        {
+            dc.PushOpacity(0.35);
+            dc.DrawRectangle(text, null, new Rect(nd * col + spacer / 2 - 0.5, 0, 1, ActualHeight));
+            dc.Pop();
+        }
         for (int c = 0; c < n; c++)
         {
-            var (label, level, muted, bright) = items[c];
-            double x = c * col + (col - bar) / 2;
+            bool device = c < nd;
+            var (label, level, muted, bright) = device ? (devices[c].Label, devices[c].Level, devices[c].Muted, false) : items[c - nd];
+            double left = c * col + (device ? 0 : spacer), x = left + (col - bar) / 2;
             int lit = (int)Math.Round(Math.Clamp(level, 0, 1) * Segments);
             int peak = (int)Math.Ceiling(Math.Clamp(peaks[c], 0, 1) * Segments) - 1;
             for (int s = 0; s < Segments; s++)
@@ -69,17 +84,34 @@ internal sealed class SpectrumMeter : FrameworkElement
                 int band = MeterColours.Band(s, Segments);
                 bool on = s < lit || (s == peak && peak > 0);
                 var rect = new Rect(x, h - (s + 1) * segH + gap / 2, bar, segH - gap);
-                dc.DrawRectangle(on && !muted ? MeterColours.Lit(band, bright) : MeterColours.Unlit(band, bright), null, rect);
+                // (muted: faint, picked or not)
+                dc.DrawRectangle(on && !muted ? MeterColours.Lit(band, bright) : MeterColours.Unlit(band, bright && !muted), null, rect);
             }
+            if (device) VolumeMarker(dc, x, h, devices[c].Volume, muted);
             var face = bright ? new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal) : new Typeface("Segoe UI");
             var ft = new FormattedText(label, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, face, 11, bright ? TryFindResource("TextBrush") as Brush ?? text : text, dpi)
             {
                 MaxTextWidth = Math.Max(1, col - 2), MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis, TextAlignment = TextAlignment.Center,
             };
             if (muted) dc.PushOpacity(0.5);
-            dc.DrawText(ft, new Point(c * col + 1, h + 3));
+            dc.DrawText(ft, new Point(left + 1, h + 3));
             if (muted) dc.Pop();
         }
+    }
+
+    /// <summary>A device's volume: a small triangle left of its column pointing at the height it's set to.</summary>
+    private void VolumeMarker(DrawingContext dc, double x, double h, double volume, bool muted)
+    {
+        double y = h - Math.Clamp(volume, 0, 1) * h, size = 4;
+        var g = new StreamGeometry();
+        using (var ctx = g.Open())
+        {
+            ctx.BeginFigure(new Point(x - 1, y), true, true);
+            ctx.LineTo(new Point(x - 1 - size * 1.4, y - size), false, false);
+            ctx.LineTo(new Point(x - 1 - size * 1.4, y + size), false, false);
+        }
+        g.Freeze();
+        dc.DrawGeometry(muted ? MeterColours.Red : TryFindResource("TextBrush") as Brush ?? Brushes.White, null, g);
     }
 }
 

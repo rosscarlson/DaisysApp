@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.16.2**
+- **SimEffects → Shaker:** the meters (and their widget) show a column per device on the left, set apart by a faint
+  line: what it's playing, with a small marker at the volume it's set to (red while it's muted).
+- **SimEffects → Shaker:** Reset Effects, Level Wizard and Add Effect are icons, and **Effect Shortcuts** (beside them)
+  binds **Previous Effect**, **Next Effect**, **Isolate on / off** (only that effect plays; again, every effect's
+  mute as it was) and **Mute on / off** (that effect alone). The picked effect is outlined in the list and bright in
+  the meters, as the Level Wizard's step is.
+
 **4.16.1**
 - **SimEffects → Analysis → Compare:** each Session row's channels (Speed, Throttle, Brake, Steering, Clutch, RPM,
   Gear) are all in one **Channels** drop-down, a box, colour and name each as before, with a dot on the button in the
