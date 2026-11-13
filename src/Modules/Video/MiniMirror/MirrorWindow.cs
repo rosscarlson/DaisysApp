@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace DaisysApp.Applets.Video.MiniMirror;
 
@@ -20,6 +22,18 @@ internal sealed class MirrorWindow : Window
     private WriteableBitmap? bitmap;
     private bool closed;
     private bool hideFromCapture;
+    // The newest picture, waiting for the UI thread (since 4.16.3; before, each frame waited for the UI thread to draw
+    // it, at a priority above WPF's own drawing and input, so a busy UI thread slowed the mirrors and the app's window)
+    private readonly object frameGate = new();
+    private byte[] pending = [];
+    private int pendingWidth, pendingHeight, pendingStride;
+    private bool posted;
+    private long postedAt;
+    // what happened to the pictures since the log last asked (DrawStats)
+    private int statDrawn, statSkipped;
+    private long statWaitTicks, statWaitMax, statWriteTicks;
+    private string drawing = "";
+    private static readonly DaisysApp.Logging.Logger log = DaisysApp.Logging.Log.Here;
 
     public MirrorWindow(MirrorDefinition definition, CaptureManager captureManager, Func<IEnumerable<PixelRect>> snapTargets, bool hideFromCapture)
     {
@@ -51,7 +65,7 @@ internal sealed class MirrorWindow : Window
         };
         chrome.InteractionEnded += OnInteractionEnded;
 
-        compositor = new MirrorCompositor(captureManager, definition.SourceRect, definition.TargetFps) { Zoom = definition.Zoom };
+        compositor = new MirrorCompositor(captureManager, definition.SourceRect, definition.TargetFps) { Zoom = definition.Zoom, Name = definition.Name, DrawStats = DrawStats };
         compositor.FrameReady += OnFrameReady;
 
         SourceInitialized += (_, _) =>
@@ -65,12 +79,14 @@ internal sealed class MirrorWindow : Window
         Loaded += (_, _) =>
         {
             ApplyDefinitionChanged();
+            drawing = Drawing();
             compositor.Start();
+            log.Info($"Mirror {Definition.Name} shown: window {Definition.WindowBounds.Width}x{Definition.WindowBounds.Height}, region {Definition.SourceRect.Width}x{Definition.SourceRect.Height}, zoom {Definition.Zoom:0.##}, {Definition.TargetFps}/s, {drawing}");
         };
         SizeChanged += (_, _) => UpdateClip();
         Closed += (_, _) =>
         {
-            closed = true;
+            lock (frameGate) closed = true;
             compositor.Dispose();
         };
     }
@@ -83,23 +99,78 @@ internal sealed class MirrorWindow : Window
     private void UpdateClip() =>
         root.Clip = Definition.Shape == MirrorShape.Circle ? new EllipseGeometry(new Rect(0, 0, ActualWidth, ActualHeight)) : null;
 
+    /// <summary>
+    /// On the compositor's thread: keeps a copy of the picture and, unless one is already on its way, asks the UI
+    /// thread to draw it. A picture that comes before the UI thread got to the last one replaces it (skipped).
+    /// </summary>
     private void OnFrameReady(byte[] buffer, int width, int height, int stride)
     {
         if (closed || width <= 0 || height <= 0) return;
+        lock (frameGate)
+        {
+            int size = stride * height;
+            if (pending.Length != size) pending = new byte[size];
+            Buffer.BlockCopy(buffer, 0, pending, 0, size);
+            pendingWidth = width;
+            pendingHeight = height;
+            pendingStride = stride;
+            if (posted) { statSkipped++; return; }
+            posted = true;
+            postedAt = Stopwatch.GetTimestamp();
+        }
+        try { Dispatcher.BeginInvoke(DispatcherPriority.Render, DrawPending); }
+        catch (OperationCanceledException) { /* app shutting down */ }
+    }
+
+    private void DrawPending()
+    {
+        lock (frameGate)
+        {
+            posted = false;
+            if (closed) return;
+            long start = Stopwatch.GetTimestamp(), wait = start - postedAt;
+            int width = pendingWidth, height = pendingHeight;
+            if (bitmap == null || bitmap.PixelWidth != width || bitmap.PixelHeight != height)
+            {
+                bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgr32, null);
+                image.Source = bitmap;
+            }
+            bitmap.WritePixels(new Int32Rect(0, 0, width, height), pending, pendingStride, 0);
+            statDrawn++;
+            statWaitTicks += wait;
+            statWaitMax = Math.Max(statWaitMax, wait);
+            statWriteTicks += Stopwatch.GetTimestamp() - start;
+        }
+    }
+
+    /// <summary>For the log (the compositor's thread): what the window did with the pictures since the last time.</summary>
+    private string DrawStats()
+    {
+        int drawn, skipped;
+        long wait, waitMax, write;
+        lock (frameGate)
+        {
+            (drawn, skipped, wait, waitMax, write) = (statDrawn, statSkipped, statWaitTicks, statWaitMax, statWriteTicks);
+            statDrawn = statSkipped = 0;
+            statWaitTicks = statWaitMax = statWriteTicks = 0;
+        }
+        double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
+        if (drawn == 0) return $"window drew none{(skipped > 0 ? $", {skipped} skipped: UI thread busy" : "")}";
+        double avgWait = Ms(wait) / drawn;
+        // the UI thread taking longer than a frame to get to a picture is what slows a mirror on this side
+        string busy = avgWait > 1000.0 / Math.Max(1, compositor.TargetFps) && skipped > drawn / 4 ? " (UI thread busy)" : "";
+        return $"window drew {drawn}, {skipped} skipped for a newer one{busy}; UI thread got to each after {avgWait:0.#} ms, longest {Ms(waitMax):0}; writing each took {Ms(write) / drawn:0.##} ms; {drawing}";
+    }
+
+    /// <summary>How WPF draws the app (on the UI thread): on the graphics card or in software (Settings → General, or after a blank window).</summary>
+    private static string Drawing()
+    {
         try
         {
-            Dispatcher.Invoke(() =>
-            {
-                if (closed) return;
-                if (bitmap == null || bitmap.PixelWidth != width || bitmap.PixelHeight != height)
-                {
-                    bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgr32, null);
-                    image.Source = bitmap;
-                }
-                bitmap.WritePixels(new Int32Rect(0, 0, width, height), buffer, stride, 0);
-            });
+            bool software = RenderOptions.ProcessRenderMode == System.Windows.Interop.RenderMode.SoftwareOnly;
+            return $"WPF {(software ? "drawing in software" : "on the graphics card")} (tier {RenderCapability.Tier >> 16})";
         }
-        catch (OperationCanceledException) { /* app shutting down */ }
+        catch { return "WPF ?"; }
     }
 
     private void OnInteractionEnded(PixelRect bounds)
@@ -148,6 +219,7 @@ internal sealed class MirrorWindow : Window
         chrome.Locked = Definition.PositionLocked;
         compositor.TargetFps = Definition.TargetFps;
         compositor.Zoom = Definition.Zoom;
+        compositor.Name = Definition.Name;
         WindowTools.SetClickThrough(this, Definition.ClickThrough);
         Opacity = Definition.Opacity;
         Visibility = Definition.Visible ? Visibility.Visible : Visibility.Hidden;

@@ -227,6 +227,7 @@ internal sealed class MonitorCapture : IDisposable
                     continue;
                 }
 
+                long pictureStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 try
                 {
                     using (desktop)
@@ -249,6 +250,8 @@ internal sealed class MonitorCapture : IDisposable
                     var map = context!.Map(staging!, 0, MapMode.Read);
                     try { FrameBuffer.Update(map.DataPointer, (int)map.RowPitch, width, height); }
                     finally { context.Unmap(staging!, 0); }
+                    FrameBuffer.AddCost(System.Diagnostics.Stopwatch.GetTimestamp() - pictureStart);
+                    FrameBuffer.Path = hdr != null ? "HDR to SDR" : "8-bit";
                     OnFrame(info);
                 }
                 finally
@@ -331,6 +334,10 @@ internal sealed class MonitorCapture : IDisposable
             }
             catch (Exception ex)
             {
+                // Windows gives a program one duplication per monitor: Video's recording, webcam or SimEffects →
+                // Analysis' race video holding this one leaves Mini Mirror without it (0x80070057)
+                if (ex.Message != lastError && Gaming.ScreenCapture.Running(DeviceName))
+                    log.Warn($"Capture of {DeviceName}: Video's recording or virtual webcam is capturing this monitor, and Windows allows a program only one capture of it");
                 LogOnce(ex);
                 ReleaseDxgi();
                 return false;
@@ -489,6 +496,8 @@ internal sealed class MonitorCapture : IDisposable
         lastError = null;
         FrameBuffer.Update(grab.Bits, grab.Stride, grab.Width, grab.Height);
         long took = Environment.TickCount64 - start;
+        FrameBuffer.AddCost(took * System.Diagnostics.Stopwatch.Frequency / 1000);
+        FrameBuffer.Path = "GDI";
         statFrames++;
         statGdiMs += took;
         Stats();
@@ -638,7 +647,15 @@ internal sealed class MonitorFrameBuffer
     private readonly object gate = new();
     private byte[] buffer = Array.Empty<byte>();
     private int width, height, stride;
-    private long version;
+    private long version, costTicks;
+
+    /// <summary>How the pictures come now (for the log): "8-bit", "HDR to SDR" or "GDI".</summary>
+    public volatile string Path = "starting";
+
+    /// <summary>Stopwatch ticks the capture spent on its pictures so far (copying each off the graphics card), for the log.</summary>
+    public long CostTicks => Interlocked.Read(ref costTicks);
+
+    public void AddCost(long ticks) => Interlocked.Add(ref costTicks, ticks);
 
     public unsafe void Update(IntPtr source, int sourcePitch, int width, int height)
     {

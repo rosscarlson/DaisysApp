@@ -24,6 +24,9 @@ internal sealed class ScreenCapture : IDisposable
     /// <summary>Whether the pictures are Windows' 16-bit HDR picture, not its 8-bit one.</summary>
     public bool Hdr => hub.Hdr;
 
+    /// <summary>Whether the monitor is being captured here (Mini Mirror can't have its own capture of it then).</summary>
+    public static bool Running(string deviceName) => Hub.Running(deviceName);
+
     /// <summary>Starts capturing the monitor, or joins its capture (throws when it can't be had).</summary>
     public static ScreenCapture Open(string deviceName) => new(Hub.Join(deviceName));
 
@@ -137,6 +140,11 @@ internal sealed class ScreenCapture : IDisposable
             this.deviceName = deviceName;
             this.device = device;
             this.context = context;
+        }
+
+        public static bool Running(string deviceName)
+        {
+            lock (hubs) return hubs.ContainsKey(deviceName);
         }
 
         public static Hub Join(string deviceName)

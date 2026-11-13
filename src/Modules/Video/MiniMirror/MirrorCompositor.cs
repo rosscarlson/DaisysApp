@@ -31,6 +31,12 @@ internal sealed class MirrorCompositor : IDisposable
 
     public int TargetFps { get; set; }
 
+    /// <summary>The mirror's name, for the log.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>What the window did with the pictures since it was last asked (for the log; it starts counting again).</summary>
+    public Func<string>? DrawStats { get; set; }
+
     /// <summary>1 = exactly the selected region; above 1 crops in around its centre, below 1 takes in more around it.</summary>
     public double Zoom
     {
@@ -40,8 +46,8 @@ internal sealed class MirrorCompositor : IDisposable
 
     /// <summary>
     /// Raised on the render thread with a frame (buffer, width, height, stride). The buffer is reused for the next
-    /// frame as soon as this returns, so handlers must finish with it before returning (Dispatcher.Invoke, not
-    /// BeginInvoke).
+    /// frame as soon as this returns, so handlers copy what they need before returning, without waiting on the UI
+    /// thread (since 4.16.3 the window keeps a copy and draws the newest when the UI thread gets to it).
     /// </summary>
     public event Action<byte[], int, int, int>? FrameReady;
 
@@ -72,6 +78,8 @@ internal sealed class MirrorCompositor : IDisposable
 
     private void RenderLoop()
     {
+        // (Thread.Sleep is 15.6 ms at a time without it: a 144 Hz mirror couldn't go past about 64 a second)
+        using var timer = DaisysApp.Shared.Win32.HighResTimer.Hold();
         try { RenderFrames(); }
         catch (Exception ex) { DaisysApp.Logging.ErrorLog.Write("Mini Mirror compositor (this mirror stopped updating)", ex); }
     }
@@ -81,10 +89,12 @@ internal sealed class MirrorCompositor : IDisposable
         var clock = Stopwatch.StartNew();
         long[] lastVersions = Array.Empty<long>();
         PixelRect lastRect = default;
-        long nextStats = clock.ElapsedMilliseconds + 60000;
-        int composed = 0, firstComposed = 0;
+        int firstComposed = 0;
         // once, 15 s in: pictures drawn and pictures the captures brought, so a Normal log tells a frozen mirror's side
         long firstReport = 15000, firstVersions = -1;
+        // (since 4.16.3) each minute after that: a slow one (drawn well under what came in) at Info, with where the time went
+        var period = new Period();
+        int slowReports = 0;
 
         while (running)
         {
@@ -108,27 +118,102 @@ internal sealed class MirrorCompositor : IDisposable
             var versions = snapshot.Select(s => s.Buffer.Version).ToArray();
             if (!effective.Equals(lastRect) || !versions.SequenceEqual(lastVersions))
             {
+                long composeStart = Stopwatch.GetTimestamp();
                 Compose(snapshot, effective);
+                period.Composed(Stopwatch.GetTimestamp() - composeStart);
                 lastVersions = versions;
                 lastRect = effective;
-                composed++;
                 firstComposed++;
             }
-            if (firstVersions < 0) firstVersions = versions.Sum();
+            if (firstVersions < 0)
+            {
+                firstVersions = versions.Sum();
+                period.Start(snapshot, clock.ElapsedMilliseconds);
+            }
             else if (firstReport > 0 && clock.ElapsedMilliseconds >= firstReport)
             {
                 firstReport = 0;
-                log.Info($"Mirror {rect.Width}x{rect.Height} at {rect.X},{rect.Y} on {string.Join(", ", snapshot.Select(s => s.Monitor.DeviceName))}: {firstComposed} pictures drawn in its first 15 s, {versions.Sum() - firstVersions} captured (at most {TargetFps}/s); picture brightness {Pixels.Brightness(composeBuffer, effective.Width, effective.Height, effective.Width * 4)} of 255{string.Concat(snapshot.Select(x => $", {x.Monitor.DeviceName} {x.Buffer.Brightness()}"))}");
+                log.Info($"Mirror {Name} {rect.Width}x{rect.Height} at {rect.X},{rect.Y} on {string.Join(", ", snapshot.Select(s => s.Monitor.DeviceName))}: {firstComposed} pictures drawn in its first 15 s, {versions.Sum() - firstVersions} captured (at most {TargetFps}/s); picture brightness {Pixels.Brightness(composeBuffer, effective.Width, effective.Height, effective.Width * 4)} of 255{string.Concat(snapshot.Select(x => $", {x.Monitor.DeviceName} {x.Buffer.Brightness()}"))}; {period.Report(snapshot, clock.ElapsedMilliseconds, TargetFps, DrawStats, out _)}");
+                period.Start(snapshot, clock.ElapsedMilliseconds);
             }
-            if (clock.ElapsedMilliseconds >= nextStats)
+            else if (firstReport == 0 && clock.ElapsedMilliseconds - period.Since >= 60000)
             {
-                log.Debug($"Mirror {rect.Width}x{rect.Height} at {rect.X},{rect.Y} on {string.Join(", ", snapshot.Select(s => s.Monitor.DeviceName))}: {composed} frames drawn in the last minute (at most {TargetFps}/s)");
-                composed = 0;
-                nextStats = clock.ElapsedMilliseconds + 60000;
+                string text = period.Report(snapshot, clock.ElapsedMilliseconds, TargetFps, DrawStats, out bool slow);
+                if (slow && (++slowReports <= 10 || slowReports % 30 == 0))
+                    log.Info($"Mirror {Name} {rect.Width}x{rect.Height} is slow (time {slowReports}) {text}");
+                else log.Debug($"Mirror {Name} {rect.Width}x{rect.Height} {text}");
+                period.Start(snapshot, clock.ElapsedMilliseconds);
             }
 
             long elapsed = clock.ElapsedMilliseconds - frameStart;
-            Thread.Sleep((int)Math.Max(1, budgetMs - elapsed));
+            int sleep = (int)Math.Max(1, budgetMs - elapsed);
+            long sleepStart = Stopwatch.GetTimestamp();
+            Thread.Sleep(sleep);
+            period.Slept(sleep, Stopwatch.GetTimestamp() - sleepStart);
+        }
+    }
+
+    /// <summary>
+    /// One stretch of a mirror's work, for the log: the pictures each capture brought and what each cost it, the
+    /// pictures composed and how long that took, how long the waits between frames really were (Windows' timer), and
+    /// what the window did with them (<see cref="DrawStats"/>).
+    /// </summary>
+    private sealed class Period
+    {
+        public long Since;
+        private long[] versions = [], costs = [];
+        private int composed, sleeps;
+        private long composeTicks, composeMax, sleptTicks, askedMs, sleepMax;
+
+        public void Start((MonitorInfo Monitor, MonitorFrameBuffer Buffer)[] snapshot, long now)
+        {
+            Since = now;
+            versions = snapshot.Select(s => s.Buffer.Version).ToArray();
+            costs = snapshot.Select(s => s.Buffer.CostTicks).ToArray();
+            composed = sleeps = 0;
+            composeTicks = composeMax = sleptTicks = askedMs = sleepMax = 0;
+        }
+
+        public void Composed(long ticks)
+        {
+            composed++;
+            composeTicks += ticks;
+            composeMax = Math.Max(composeMax, ticks);
+        }
+
+        public void Slept(int asked, long ticks)
+        {
+            sleeps++;
+            askedMs += asked;
+            sleptTicks += ticks;
+            sleepMax = Math.Max(sleepMax, ticks);
+        }
+
+        private static double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
+
+        /// <summary>The stretch as text; slow when it composed well under what came in, or the window says so.</summary>
+        public string Report((MonitorInfo Monitor, MonitorFrameBuffer Buffer)[] snapshot, long now, int target, Func<string>? drawStats, out bool slow)
+        {
+            double seconds = Math.Max(0.001, (now - Since) / 1000.0);
+            var parts = new List<string>();
+            double captured = 0;
+            for (int i = 0; i < snapshot.Length; i++)
+            {
+                var b = snapshot[i].Buffer;
+                long frames = i < versions.Length ? b.Version - versions[i] : 0;
+                long cost = i < costs.Length ? b.CostTicks - costs[i] : 0;
+                captured = Math.Max(captured, frames / seconds);
+                parts.Add($"{snapshot[i].Monitor.DeviceName} ({b.Path}) {frames / seconds:0.#}/s{(frames > 0 ? $" at {Ms(cost) / frames:0.#} ms each" : "")}");
+            }
+            string draw = drawStats?.Invoke() ?? "";
+            bool drawSlow = draw.Contains("UI thread busy", StringComparison.Ordinal);
+            double perSecond = composed / seconds;
+            // (a still screen brings nothing, and then nothing needs drawing)
+            slow = drawSlow || captured >= 5 && perSecond < 0.6 * Math.Min(target, captured);
+            return $"in {seconds:0} s: captured {string.Join(", ", parts)}; composed {perSecond:0.#}/s (at most {target}/s)" +
+                   (composed > 0 ? $" at {Ms(composeTicks) / composed:0.##} ms each, longest {Ms(composeMax):0.#}" : "") +
+                   (sleeps > 0 ? $"; waits between frames {Ms(sleptTicks) / sleeps:0.#} ms for {askedMs / (double)sleeps:0.#} asked, longest {Ms(sleepMax):0}" : "") +
+                   (draw.Length > 0 ? "; " + draw : "");
         }
     }
 

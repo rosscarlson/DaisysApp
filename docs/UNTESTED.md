@@ -2,6 +2,14 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.16.3 (Mini Mirror: slow mirrors on a friend's PC, ~5 a second):** on his PC, after updating, show the mirrors
+  for a few minutes (a game running), then send the Video log (Support → Logs, or
+  `%LOCALAPPDATA%\DaisysApp\logs\Video-<date>.log`): the lines `Mirror … shown`, `… pictures drawn in its first 15 s
+  …` and `Mirror … is slow …` say whether the time goes in the capture (`at N ms each` high, or GDI), composing, the
+  waits, or the UI thread (`got to each after`, `skipped`, `drawing in software`). Also whether it's still slow at
+  all (the drawing change may be the fix). Tried in a test copy: one 1920×1080 mirror at 144/s on the 5120×1440 HDR
+  monitor, the lines as above (capture 10 ms a picture, ~57/s as the screen changed, none skipped). Not tried: on
+  his PC; a slow one (no Info line here); Video's recording at the same time.
 - **4.16.2 (Shaker: device meters; effect shortcuts):** in SimEffects → Shaker, the meters (and the widget) should show
   a column per device left of a faint line, moving with what each plays, its small marker at its volume (red muted).
   The Effects card's icons (Reset asks with a red ✕); Effect Shortcuts: bind Next / Previous, Isolate and Mute to the

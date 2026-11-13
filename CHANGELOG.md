@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.16.3**
+- **Video → Mini Mirror:** a mirror no longer waits for the app's UI thread to draw each picture: it hands over its
+  newest and carries on, and the window draws it at WPF's own drawing priority, so a busy app can't hold the mirrors
+  back and many mirrors can't hold up the app's window and its clicks. Mirrors set above 64 a second can reach it
+  (Windows' 1 ms timer while one runs).
+- **Video → Mini Mirror:** the Video log says where a slow mirror's time goes, for a PC where mirrors crawl: when one
+  is shown (its window, region and rate, and whether the app draws on the graphics card or in software), 15 s in, and
+  each minute it's slow (each minute on Debug logging): pictures captured a second and what each cost the capture
+  (8-bit, HDR to SDR or GDI), composed and how long that took, the real waits between frames, pictures drawn and
+  skipped, and how long the UI thread took to get to each. A capture refused while Video's recording, virtual webcam
+  or SimEffects → Analysis' race video holds the same monitor says so (Windows allows a program one capture of it).
+
 **4.16.2**
 - **SimEffects → Shaker:** the meters (and their widget) show a column per device on the left, set apart by a faint
   line: what it's playing, with a small marker at the volume it's set to (red while it's muted).

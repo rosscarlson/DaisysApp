@@ -83,6 +83,14 @@ Auto HDR has a 16-bit mode while the 8-bit capture still sends 8-bit pictures (t
 black until 2.6.2). Each mirror composes its region (cropped by zoom) at its own frame rate and draws it into its
 window.
 
+**The log, for a slow mirror** (Video log, Normal logging, since 4.16.3): when a mirror is shown, its window, region
+and frame rate, and whether the app draws on the graphics card or in software; 15 s in, and then each minute it's
+slow (every minute on Debug logging), where its time went: per monitor, pictures captured a second, how (8-bit, HDR
+to SDR or GDI) and what each cost; pictures composed and how long each took; the real waits between frames; and the
+window's side: pictures drawn, skipped for a newer one, and how long the app's UI thread took to get to each. A
+capture refused while Video's recording, virtual webcam or SimEffects → Analysis' race video holds the same monitor
+says so (Windows allows a program one capture of a monitor).
+
 **The log, for a mirror that won't move** (Video log, Normal logging): the first capture describes the PC (Windows
 build, GPUs and driver versions, monitors with refresh rate and HDR, GPU scheduling, multiplane overlay, Windows'
 DirectX game settings); each capture says how it's set up (`Capturing \\.\DISPLAYn: …`: the mode, 8-bit or 16-bit
@@ -109,7 +117,7 @@ full-screen *exclusive* game can't be captured — use borderless / windowed ful
 | `Capture.cs`, `HdrCapture.cs` | One shared screen capture per monitor (desktop duplication), HDR turned back to SDR; while Windows refuses it (secure desktop) the device is kept and the duplication asked for again, 0.5 s doubling to 5 s |
 | `ScreenGrab.cs`, `CaptureDiagnostics.cs` | A monitor through GDI (to check a quiet capture, and instead of a stuck one); what the log says about the PC |
 | `MirrorCompositor.cs` | One mirror's picture from the monitors its region covers, at a capped frame rate |
-| `MirrorWindow.cs`, `ChromeInteraction.cs` | A mirror's always-on-top window, and moving / resizing it |
+| `MirrorWindow.cs`, `ChromeInteraction.cs` | A mirror's always-on-top window (it keeps the newest picture and draws it when the UI thread gets to it), and moving / resizing it |
 | `Selection.cs` | Picking a region (dim, drag, then adjust) |
 | `MirrorData.cs`, `Native.cs` | Mirrors and monitors (rectangles and exact window placement on mixed-DPI setups: Core's `Shared/Win32`) |
 | `MiniMirrorSettingsView.xaml(.cs)` | Settings → Video → Mini Mirror |

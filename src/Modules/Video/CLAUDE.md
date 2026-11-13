@@ -4,6 +4,19 @@ Past work on this part of Daisy's App (Claude Code reads this file only when it 
 
 ## Latest
 
+- **4.16.3 (asked 2026-11-13: a friend's mirrors and the Mini Mirror tab ~5 fps "in the last several releases",
+  SimEffects' overlays fine; find a bug or add logging):** no change in Mini Mirror since 4.0.0 explains it (4.0.0
+  only moved P/Invokes and the program watch to Core, checked). Changed: `MirrorWindow.OnFrameReady` copies the
+  picture and `BeginInvoke`s at Render priority, one at a time (newest wins, `statSkipped`), not `Dispatcher.Invoke`
+  at Normal (which can starve WPF's render pass and input when the UI thread is busy); `MirrorCompositor` holds
+  `HighResTimer` (Sleep was 15.6 ms: 144/s capped at ~64). Logging: `Mirror X shown` (window, region, fps, WPF
+  hardware/software + tier), the 15 s line + `Period.Report` (per monitor `Path` and `CostTicks` from
+  `MonitorFrameBuffer`, compose ms, real sleep vs asked, window's `DrawStats`: drawn, skipped, UI wait, WritePixels
+  ms), each minute Info when slow (composed < 60% of min(target, captured) with captured ≥ 5/s, or "UI thread busy"),
+  else Debug; `TryInitialize` warns when `Gaming.ScreenCapture.Running` (one duplication per monitor per process:
+  Mini Mirror and the recorder/webcam/race video still each have their own; sharing the hub is the fix if that's it).
+  Seen here: full 5120×1440 HDR picture costs ~10 ms per capture (Map + whole-monitor copy, even for a small region).
+  Tested in DaisysDev (seeded mirror, json restored). **Next:** his Video log (`docs/UNTESTED.md`).
 - **4.16.0:** the quality profiles moved to Core (`Shared/Video/VideoProfiles`, `VideoProfiles.json`, Core 0.64) for
   Plex → Scanner's transcodes; `GamingSettings.Profiles` is now `VideoProfiles.All` (JsonIgnore), `Load` touches it
   first so Gaming.json's old list is read before it's saved without it; `Save` saves the profiles too; 1080p and
