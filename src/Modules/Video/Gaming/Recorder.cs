@@ -8,6 +8,7 @@ using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.MediaFoundation;
+using DaisysApp.Shared.Video;
 
 namespace DaisysApp.Applets.Video.Gaming;
 

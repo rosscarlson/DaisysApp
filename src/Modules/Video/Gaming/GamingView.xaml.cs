@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using DaisysApp.Shared.Charts;
 using DaisysApp.Shared.Hardware;
 using DaisysApp.Shared.Hotkeys;
+using DaisysApp.Shared.Video;
 
 namespace DaisysApp.Applets.Video.Gaming;
 

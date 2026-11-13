@@ -3,6 +3,26 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.16.0**
+- **Plex → Scanner** (a new sub-tab): tools that look through the libraries' files, in three parts.
+  - **Duplicates:** titles with more than one file (a 720p and a 1080p of the same movie, say), from Plex's own list,
+    or **Across libraries** for the same title in two libraries too. Each title's files are under it with the best
+    one ticked (highest resolution, then bit rate), its version, bit rate, size, library, when it was added and its
+    path; every column sorts and a box searches. **Pick All But the Best** or **Pick All But the Smallest**, then
+    **Delete Files** deletes them from the disk (never a title's last file) and has Plex look at those folders again.
+  - **Space:** what each show (and each of its seasons) or movie takes: files, size, size per episode, resolutions,
+    codecs, bit rate and hours, and roughly what it would take after a transcode with a video profile, and what that
+    saves. Picked shows, seasons or movies go to Transcode's queue.
+  - **Transcode:** makes whole shows, seasons or movies smaller with FFmpeg on the graphics card (NVIDIA, Intel or
+    AMD's encoder), one file at a time below normal priority: to one of the app's video profiles (its codec, height,
+    bit rates and quality), keeping every audio track, subtitle and chapter, and 10-bit and HDR10 pictures as they
+    are. Each new file is checked (as long as the original, and smaller) before it replaces the original, or goes
+    beside it as another version; Plex then looks at the folder again. **Get FFmpeg** downloads FFmpeg 7.1 (later
+    builds need an NVIDIA driver GTX 10-series cards never got).
+- **Video profiles are the app's:** Video → Recording's quality profiles are now one list in the app's core
+  (`VideoProfiles.json`, read from your Recording settings the first time), shared by Recording and Plex → Scanner.
+  Two new ones: **1080p** (HEVC, 4–6 Mbit/s) and **720p** (HEVC, 1–2 Mbit/s).
+
 **4.15.5**
 - **SimEffects → Analysis** comes with the developer's tracks as they are now: 324, Forza Horizon 4's (92, new) as well
   as Horizon 5's (144) and 6's (88), with the names, maps and starts brought up to date. Added once, as before: a

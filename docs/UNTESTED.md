@@ -2,6 +2,16 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.16.0 (Plex → Scanner: duplicates, space, transcode; video profiles in Core):** in Plex → Scanner → Duplicates,
+  look through the list (Across libraries too), pick a file you don't want and **Delete Files**; in **Space**, check
+  a show's sizes and seasons; in **Transcode**, **Get FFmpeg**, then queue a season you don't mind (Space → a show →
+  a season → **Transcode Seasons**) and **Start**: it should play in Plex afterwards, with its audio and subtitles.
+  Video → Recording's settings should list High, Medium, Low, 1080p and 720p, and still record. Tried: harness on the
+  live server (duplicates 507 episodes and 7 movies in 0.4 s; every movie and episode read in 1.6 s and 4.9 s; copies
+  of an episode and a 4K clip transcoded on the GTX 1080 Ti at 8× with all 3 audio tracks and 17 subtitles kept, Stop
+  Now and closing mid-file leaving the original and no .part); a test copy of the app: Duplicates, Space, seasons,
+  queueing, Get FFmpeg (downloaded, NVENC found); the profiles read from Gaming.json. Not tried: deleting or
+  transcoding real library files, Keep the original in the app, a remote server's path mapping, Intel or AMD encoders.
 - **4.15.5 (FH4, FH5, FH6 tracks):** after updating, Analysis → Known Tracks should have FH4's tracks, and the FH5 and
   FH6 ones renamed or moved since 4.10.11 updated. Tried: it builds, the file is the PC's 324 named tracks. Not
   tried: anything in the app's window.

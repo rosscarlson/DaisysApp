@@ -59,6 +59,34 @@ public sealed class PlexSettings
 
     public int StatsDays { get; set; } = 30;
 
+    // ---- Scanner (4.16.0)
+
+    /// <summary>The library picked last in Duplicates and Space.</summary>
+    public string? DuplicatesLibrary { get; set; }
+    public string? SpaceLibrary { get; set; }
+    /// <summary>Duplicates: also the same title in two libraries (reads every title).</summary>
+    public bool DuplicatesAcross { get; set; }
+    /// <summary>Core's video profile transcodes use (<see cref="DaisysApp.Shared.Video.VideoProfiles"/>).</summary>
+    public string TranscodeProfile { get; set; } = "720p";
+    /// <summary>Audio made AAC at the profile's rate (else copied as it is).</summary>
+    public bool TranscodeAac { get; set; }
+    /// <summary>Keep the original beside the new file (Plex shows both as versions) instead of replacing it.</summary>
+    public bool TranscodeKeepBoth { get; set; }
+    /// <summary>ffmpeg.exe picked by hand; empty = the one downloaded, or on the PATH.</summary>
+    public string FfmpegPath { get; set; } = "";
+    /// <summary>A path on the server, and where the same folder is on this PC (for a server elsewhere).</summary>
+    public string PathFrom { get; set; } = "";
+    public string PathTo { get; set; } = "";
+
+    /// <summary>A server path as this PC sees it.</summary>
+    public string LocalPath(string serverPath)
+    {
+        string from = PathFrom.Trim(), to = PathTo.Trim();
+        if (from.Length == 0 || to.Length == 0 || !serverPath.StartsWith(from, StringComparison.OrdinalIgnoreCase)) return serverPath;
+        string rest = serverPath[from.Length..].TrimStart('/', '\\').Replace('/', '\\');
+        return Path.Combine(to, rest);
+    }
+
     [JsonIgnore]
     public bool HasServer => Address.Trim().Length > 0;
     [JsonIgnore]

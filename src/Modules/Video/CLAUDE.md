@@ -4,6 +4,11 @@ Past work on this part of Daisy's App (Claude Code reads this file only when it 
 
 ## Latest
 
+- **4.16.0:** the quality profiles moved to Core (`Shared/Video/VideoProfiles`, `VideoProfiles.json`, Core 0.64) for
+  Plex → Scanner's transcodes; `GamingSettings.Profiles` is now `VideoProfiles.All` (JsonIgnore), `Load` touches it
+  first so Gaming.json's old list is read before it's saved without it; `Save` saves the profiles too; 1080p and
+  720p added (also to a migrated list). Tested: migration in a test copy (High/Medium/Low + 1080p/720p). Not
+  tested: editing a profile in Settings, recording after the move.
 - **3.37.16:** Recording's shortcuts button is Core's (`WebcamShortcutsButton`, badge checkbox via `extra`; its list
   skips bindings not added yet); Settings' `ShortcutWarning`/`FailedHotkeys` gone; camera hide matched by
   `ControllerButtons.Same`; Mini Mirror's `SelectionKeys` on Core's `HotkeyManager` (not tried after the change).

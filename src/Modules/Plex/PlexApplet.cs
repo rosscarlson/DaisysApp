@@ -8,9 +8,10 @@ namespace DaisysApp.Applets.Plex;
 /// The Plex tab: a Plex Media Server's admin tools. Now Playing (who's watching what, how, and stopping a stream; with
 /// Tautulli's recent plays), Server (its state, problems found, libraries, maintenance, and on the server's own PC its
 /// logs, caches and a restart), Database (integrity check, repair, backups and a backup scheduled in Windows' Task
-/// Scheduler, restore), Posters (a 4K / HDR / Dolby Vision banner on many posters at once, and off again) and Tautulli
-/// (its statistics, history and users). Set up in the setup wizard: this PC's Plex, a plex.tv sign-in, or an address and
-/// token; Tautulli's address and API key (found on this PC when it's here).
+/// Scheduler, restore), Posters (a 4K / HDR / Dolby Vision banner on many posters at once, and off again), Tautulli
+/// (its statistics, history and users) and Scanner (duplicates, space by show, transcoding with the graphics card). Set
+/// up in the setup wizard: this PC's Plex, a plex.tv sign-in, or an address and token; Tautulli's address and API key
+/// (found on this PC when it's here).
 /// </summary>
 [Applet("Plex", "Plex", "\uE8B2", Order = 48,
     Description = "Your Plex server: who's watching, its database checked, repaired and backed up on a schedule, poster banners, and Tautulli's stats")]
@@ -30,6 +31,7 @@ public sealed class PlexApplet : AppletGroup
         Add("Database", T("Database"), "\uE8F1", () => MakeTool(new DatabaseView(service)));
         Add("Posters", T("Posters"), "\uEB9F", () => MakeTool(new PostersView(service)));
         Add("Tautulli", T("Tautulli"), "\uE9D9", () => MakeTool(new TautulliView(service)));
+        Add("Scanner", T("Scanner"), "\uE721", () => MakeTool(new ScannerView(service)));
     }
 
     /// <summary>A tool; the first one made also has the connection's Settings page and setup step (any can be off).</summary>

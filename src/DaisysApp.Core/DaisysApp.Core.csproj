@@ -42,8 +42,9 @@
          0.60 (4.8.0): Shell/ScreenRecordings (Video → Recording's recorder for other modules: Analysis' race videos);
          0.61 (4.10.7): ScreenRecordings.Recording and RecordingChanged (the tray icon's red centre);
          0.62 (4.15.0): Shared/Network/YouTube (one YouTube account: sign-in, upload, delete, links) and YouTubeAccountView;
-         0.63 (4.15.1): YouTube's app client (built in from the YOUTUBE_CLIENT secret), Upload's progress in bytes -->
-    <AssemblyVersion>0.63.0.0</AssemblyVersion>
+         0.63 (4.15.1): YouTube's app client (built in from the YOUTUBE_CLIENT secret), Upload's progress in bytes;
+         0.64 (4.16.0): Shared/Video/VideoProfiles (Video → Recording's profiles, shared with Plex → Scanner's transcodes) -->
+    <AssemblyVersion>0.64.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

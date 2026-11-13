@@ -157,13 +157,17 @@ clears it), and the title bar bubble's setting. All of them are in Settings → 
 2560 × 1440 (the middle), and the line below the box says what it comes to; the quality profile's own size then
 applies on top. The virtual webcam shows the same shape.
 
-**Quality profiles:** High, Medium and Low to start with, all editable, and you can add your own:
+**Quality profiles:** High, Medium, Low, 1080p and 720p to start with, all editable, and you can add your own. Since
+4.16.0 the list is the app's, shared with Plex → Scanner's transcodes (saved in `VideoProfiles.json`; read from
+`Gaming.json` the first time); a transcode keeps the source's frame rate.
 
 | | Codec | Frame rate | Size | Bit rate |
 |---|---|---|---|---|
 | High | HEVC | 60 fps | as recorded | VBR, 80 Mbit/s average, 100 peak |
 | Medium | HEVC | 60 fps | 1440p | VBR, 40 average, 50 peak |
 | Low | H.264 | 30 fps | 1080p | VBR, 15 average, 20 peak |
+| 1080p | HEVC | 30 fps | 1080p | VBR, 4 average, 6 peak |
+| 720p | HEVC | 30 fps | 720p | VBR, 1 average, 2 peak |
 
 For each: codec (**H.264**, **HEVC** or **AV1**, whichever the graphics card can encode: GeForce RTX 40 and 50 cards do
 all three; older cards H.264 and HEVC), frame rate (30 to 144), size (as recorded, or scaled down to 2160p, 1440p,
@@ -294,7 +298,7 @@ matters, hide the overlay with its shortcut.
 - **Games:** every program recognised as a game: its friendly name, whether it counts as a game, and remove.
 - **History:** on or off, how long to keep it, open the folder.
 
-Saved in `%APPDATA%\DaisysApp\Gaming.json`.
+Saved in `%APPDATA%\DaisysApp\Gaming.json`; the quality profiles in `VideoProfiles.json` (Core's `Shared/Video/VideoProfiles`).
 
 ## Code
 

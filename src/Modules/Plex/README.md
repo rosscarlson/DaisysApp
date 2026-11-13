@@ -5,9 +5,10 @@
 
 Admin tools for your [Plex Media Server](https://www.plex.tv/), for when something's wrong and before it is: who's
 watching and how, what's wrong with the server, its libraries and maintenance jobs, its database checked, repaired and
-backed up on a schedule, a 4K / HDR / Dolby Vision banner on many posters at once, and
-[Tautulli](https://tautulli.com/)'s statistics. Five sub-tabs: **Now Playing**, **Server**, **Database**, **Posters**
-and **Tautulli**.
+backed up on a schedule, a 4K / HDR / Dolby Vision banner on many posters at once,
+[Tautulli](https://tautulli.com/)'s statistics, and files found and made smaller (duplicates, space by show,
+transcoding on the graphics card). Six sub-tabs: **Now Playing**, **Server**, **Database**, **Posters**, **Tautulli**
+and **Scanner** (since 4.16.0).
 
 The database tools work on the server's own PC (run Daisy's App there); everything else works from any PC that can
 reach the server.
@@ -136,6 +137,51 @@ watched and most popular movies, shows and artists, recently watched, most activ
 and the most streams at once. **Users**: everyone, with when they were last seen, their plays, how long they've
 watched, what they played last, on which player and from where.
 
+## Scanner
+
+Tools that look through the libraries' files (since 4.16.0), in three parts. A library is read once (about 5 seconds for
+30,000 episodes on the server's own PC) and kept until **Refresh**; the tools share the reading.
+
+- **Duplicates**: titles with more than one file, a 720p and a 1080p of the same movie say. A movie or TV library (Plex's
+  own list of titles with more than one version: quick), and **Across libraries** for the same title in two libraries
+  too (every title read). Each title's files are under it, with **Best** ticked (the highest resolution, then bit rate),
+  the version, bit rate, size, library, when it was added and the file; any column sorts, and the box searches titles and
+  paths. **Pick All But the Best** or **Pick All But the Smallest** picks the others (or pick by hand: Ctrl, Shift);
+  **Delete Files** (Confirm?) deletes the picked files from the disk (never a title's last one) and has Plex look at
+  their folders again, so the versions go from Plex too. **Show in Explorer** (or a double-click), **Copy Path**.
+- **Space**: what a library takes. For TV, a row for each show: its files, size, size per episode, resolutions and
+  codecs (1080p ×40 · 720p ×2), its bit rate, hours, and roughly what it would take after a transcode with the video
+  profile picked beside the library (**≈ After**, **≈ Saves**; files already that small are left as they are). Click a
+  show (or several) for its seasons. For movies, a row for each movie. **Transcode Shows** / **Transcode Seasons** /
+  **Transcode Movies** add the picked ones' files to Transcode's queue, leaving out those already that small.
+- **Transcode**: makes files smaller with FFmpeg on the graphics card (NVIDIA NVENC, Intel Quick Sync or AMD AMF,
+  whichever works here; else the processor, slowly).
+  - **FFmpeg**: **Get FFmpeg** downloads it (gyan.dev's essentials build of FFmpeg 7.1, about 90 MB, to
+    `%LOCALAPPDATA%\DaisysApp\ffmpeg`), or **Browse…** to an `ffmpeg.exe` (with `ffprobe.exe` beside it); one on the
+    PATH is used too. It says which encoder the profile's codec gets. (7.1 because later builds need NVIDIA's driver
+    570 or newer, which GTX 10-series cards never got.)
+  - **Output**: the **Profile** is one of the app's video profiles, the same list as Video → Recording's (edited in its
+    settings): its codec (H.264, HEVC or AV1), height (the picture scaled down to it, never up), average and peak bit
+    rate, quality (the encoder's preset) and keyframes; the frame rate stays the source's. **1080p** (HEVC, 4–6 Mbit/s)
+    and **720p** (HEVC, 1–2 Mbit/s) are there for this. **Audio as AAC at the profile's rate**, or (off) every audio
+    track copied as it is. **Keep the original**: the new file goes beside it as `name - 720p.mkv`, which Plex shows as
+    another version (Duplicates can then delete either); off, the original is deleted once the new file checks out.
+    **Server path → this PC**: for a server on another PC, where its folders are from here (`/data/media` →
+    `\\nas\media`).
+  - **Queue**: each file with its source, state (how far, how fast, time left; or why it was skipped or failed) and
+    what it saved. **Start** goes through the waiting files one at a time; **Stop After This One**, **Stop Now**
+    (Confirm?: the file in hand is left as it was), **Remove** (picked waiting files), **Clear Finished**, **Show in
+    Explorer**. A failed file's FFmpeg message shows under the list when it's picked.
+
+  Each file is read with FFprobe first, then written as Matroska beside the original as `name.mkv.part` (Plex ignores
+  it), with every audio track, subtitle (MP4 text subtitles as SRT), chapter and attachment kept, and 10-bit and HDR10
+  pictures kept 10-bit with their colours (HEVC and AV1). Then it's checked: as long as the original (within half a
+  percent) and smaller than it, else it's deleted and the original kept. The new file is `name.mkv` (an `.mp4` becomes
+  `.mkv`), and Plex is asked to look at the folder again. Skipped: files already at or under the profile's height and
+  peak bit rate, Dolby Vision profile 5 (it has no HDR10 picture under it), and HDR with an H.264 profile. It needs
+  free space on the file's drive, runs below normal priority (Plex's own streams come first) and stops with the app
+  (the half-written file deleted). The queue isn't kept when the app closes.
+
 ## Files
 
 | | |
@@ -144,13 +190,15 @@ watched, what they played last, on which player and from where.
 | `%LOCALAPPDATA%\DaisysApp\Plex\PlexBackup.ps1` | the backup script (written again when the schedule or folder changes) |
 | *backup folder*`\Plex yyyy-MM-dd HHmmss\`, `Backups.log` | the backups, and what each run did |
 | *backup folder*`\Before repair …`, `\Before restore …` | the database as it was before a repair or restore |
-| `%LOCALAPPDATA%\DaisysApp\logs\Plex-MM-dd-yy.log` | the module's log: connections, jobs started, stops, banners, repairs |
+| `%LOCALAPPDATA%\DaisysApp\ffmpeg\` | FFmpeg, when Scanner → Transcode downloaded it |
+| `%APPDATA%\DaisysApp\VideoProfiles.json` | the video profiles, shared with Video → Recording |
+| `%LOCALAPPDATA%\DaisysApp\logs\Plex-MM-dd-yy.log` | the module's log: connections, jobs started, stops, banners, repairs, files deleted, each transcode (with its FFmpeg command) |
 
 ## Code
 
 | File | What it does |
 |---|---|
-| `PlexApplet.cs` | The tab (`AppletGroup`) and its five sub-tabs (`PlexTool`); the first one made has the setup step and Settings page and connects |
+| `PlexApplet.cs` | The tab (`AppletGroup`) and its six sub-tabs (`PlexTool`); the first one made has the setup step and Settings page and connects |
 | `PlexSettings.cs` | The settings (`PlexServer.json`), the banner's style, the posters with a banner |
 | `PlexService.cs` | The connection: which server (name, version, identifier), whether it's this PC's, the clients; libraries and counts |
 | `PlexClient.cs` | Plex Media Server's HTTP API (JSON), and plex.tv's: the PIN sign-in and the account's servers; reading answers |
@@ -159,11 +207,18 @@ watched, what they played last, on which player and from where.
 | `Database/Backups.cs` | The backups' list, the backup script, and its task in Task Scheduler |
 | `Database/DbTools.cs` | Check, Repair and Restore |
 | `Posters/PosterTools.cs` | Finding 4K / HDR / Dolby Vision titles, drawing the banner, uploading it and taking it off |
+| `Scanner/MediaFiles.cs` | A library's files (`MediaFile`: each version's file, its size, resolution, codec, bit rate), read a few pages at once and kept; Plex asked to rescan a folder |
+| `Scanner/Ffmpeg.cs` | FFmpeg: found, downloaded, its version; the graphics card's encoder for a codec (tried once); FFprobe's view of a file |
+| `Scanner/Transcoder.cs` | The transcode queue: what's skipped, the size estimate, FFmpeg's arguments, running one file (progress, checks, replacing) |
 | `Views/ActivityView.cs` | Now Playing (and `SessionCard`, one stream) |
 | `Views/ServerView.cs` | Server: state, checks, libraries, maintenance, this PC |
 | `Views/DatabaseView.cs` | Database |
 | `Views/PostersView.cs` | Posters |
 | `Views/TautulliView.cs` | Tautulli |
+| `Views/ScannerView.cs` | Scanner: its three parts; the profile drop-down they share |
+| `Views/DuplicatesPanel.cs` | Duplicates |
+| `Views/SpacePanel.cs` | Space |
+| `Views/TranscodePanel.cs` | Transcode |
 | `Views/ConnectionForms.cs` | The server's and Tautulli's forms (on Core's `ConnectionForm`) |
 | `Views/SetupPanel.cs` | The setup wizard's step (and its own window), and Settings → Plex |
 | `Views/PlexUi.cs` | The module's own pieces: posters, facts lines, tags, findings, small buttons, list rows |

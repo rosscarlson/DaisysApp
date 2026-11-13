@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using DaisysApp.Shared;
+using DaisysApp.Shared.Video;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -303,7 +304,7 @@ public partial class GamingSettingsView : UserControl
 
     private void ResetProfiles()
     {
-        S.Profiles = RecordingProfile.Defaults();
+        VideoProfiles.Reset();
         S.Profile = "High";
         S.Save();
         FillProfiles();

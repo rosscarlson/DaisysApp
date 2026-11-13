@@ -20,7 +20,7 @@ change is about the window, Settings → General or the module loader. Folder na
 | Support → Network Tools → Connection · Ping · Speed Test · Traceroute · Wi-Fi · Port Scan · Network Scan · Host Scan · Events · Stress Tests · Logs · Tools | `src/Modules/Support/` → `Networking/` (one README for its tools; a folder each: `Connection/` `Ping/` `SpeedTest/` `Traceroute/` `WiFi/` `PortScan/` ⚠ `DeviceScan/` (Network Scan) `HostScan/` `Events/`; probes shared by Port Scan and Host Scan: `Probes/`; the speed test is Core's `Shared/Network/`) · `StressTests/` (its own README) · `Logs/` · ⚠ `QuickTools/` (Tools) |
 | AI | `src/Modules/AI/` (one README for the whole module) |
 | HA (Home Assistant) | `src/Modules/HomeAssistant/` (one README) |
-| Plex → Now Playing · Server · Database · Posters · Tautulli | `src/Modules/Plex/` (one README; database work: `Database/`, banners: `Posters/`, views: `Views/`) |
+| Plex → Now Playing · Server · Database · Posters · Tautulli · Scanner | `src/Modules/Plex/` (one README; database work: `Database/`, banners: `Posters/`, Scanner: `Scanner/`, views: `Views/`) |
 | Remote API (other devices: remote control ops, module channels, Button2Key Remote) | `API.md` (the only description of the protocol; clients: AI `Remote.cs`, Core `RemoteChannels`, `clients/android`, Daisy's App Mobile `D:\OneDrive\Code\Android\DaisysApp`) |
 | Template (writing a module) | `src/Modules/Template/` |
 | Settings → General, the window, tabs, updates | `src/DaisysApp/` (main `README.md`: Settings → General, Project layout) |

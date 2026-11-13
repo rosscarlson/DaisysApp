@@ -1,13 +1,13 @@
 using System.IO;
 using System.Text.Json.Serialization;
 using DaisysApp.Settings;
+using DaisysApp.Shared.Video;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
 public enum OverlayMode { Simple, Medium, Advanced }
 public enum OverlayAlign { Left, Right }
 public enum CaptureSource { Monitor, Region, App }
-public enum RateControl { Cbr, Vbr }
 public enum HdrRecording { Sdr, Hdr10 }
 
 /// <summary>Saved in %APPDATA%\DaisysApp\Gaming.json.</summary>
@@ -52,7 +52,9 @@ public sealed class GamingSettings
     public string AppExe { get; set; } = "";
     public string Folder { get; set; } = "";
     public string Profile { get; set; } = "High";
-    public List<RecordingProfile> Profiles { get; set; } = RecordingProfile.Defaults();
+    /// <summary>(since 4.16.0) Core's list, shared with Plex → Scanner (Gaming.json's own until then).</summary>
+    [JsonIgnore]
+    public List<RecordingProfile> Profiles => VideoProfiles.All;
     public bool RecordSystemAudio { get; set; } = true;
     public bool RecordMicrophone { get; set; }
     public bool RecordCursor { get; set; } = true;
@@ -116,12 +118,13 @@ public sealed class GamingSettings
 
     public static GamingSettings Load()
     {
+        // (4.16.0) Core reads the profiles from Gaming.json once, before this saves it without them
+        _ = VideoProfiles.All;
         var s = JsonStore.Load<GamingSettings>(FileName);
         s.Cameras = (s.Cameras ?? new()).Where(c => !string.IsNullOrEmpty(c.DeviceId)).Take(CameraPlacement.Max).ToList();
         foreach (var c in s.Cameras) c.ClampCrop();
         // JSON loses the comparer
         s.Games = new Dictionary<string, GameEntry>(s.Games ?? new(), StringComparer.OrdinalIgnoreCase);
-        if (s.Profiles == null || s.Profiles.Count == 0) s.Profiles = RecordingProfile.Defaults();
         s.Scale = Math.Clamp(s.Scale, 0.5, 4);
         s.BackgroundOpacity = Math.Clamp(s.BackgroundOpacity, 0, 1);
         s.BenchmarkSeconds = Math.Clamp(s.BenchmarkSeconds, 5, 3600);
@@ -132,6 +135,7 @@ public sealed class GamingSettings
     public void Save()
     {
         lock (Games) JsonStore.Save(FileName, this);
+        VideoProfiles.Save();
     }
 }
 
@@ -143,33 +147,4 @@ public sealed class GameEntry
     /// <summary>Treat it as a game: show the overlay and log its frame rates. Off = ignore it.</summary>
     public bool Track { get; set; } = true;
     public DateTime LastSeen { get; set; }
-}
-
-/// <summary>A set of recording settings (High, Medium, Low, or the user's own).</summary>
-public sealed class RecordingProfile
-{
-    public string Name { get; set; } = "";
-    /// <summary>"H264", "HEVC" or "AV1".</summary>
-    public string Codec { get; set; } = "HEVC";
-    public int Fps { get; set; } = 60;
-    /// <summary>Output height in pixels; 0 = the same as what's recorded.</summary>
-    public int Height { get; set; }
-    public RateControl RateControl { get; set; } = RateControl.Vbr;
-    /// <summary>Average bit rate, Mbit/s.</summary>
-    public double BitrateMbps { get; set; } = 80;
-    /// <summary>Peak bit rate for VBR, Mbit/s.</summary>
-    public double MaxBitrateMbps { get; set; } = 100;
-    /// <summary>0 fastest … 100 best quality (the encoder's preset; the encoder chip does the work either way).</summary>
-    public int Quality { get; set; } = 100;
-    public int KeyframeSeconds { get; set; } = 2;
-    public int AudioKbps { get; set; } = 192;
-
-    public RecordingProfile Clone() => (RecordingProfile)MemberwiseClone();
-
-    public static List<RecordingProfile> Defaults() => new()
-    {
-        new() { Name = "High", Codec = "HEVC", Fps = 60, Height = 0, RateControl = RateControl.Vbr, BitrateMbps = 80, MaxBitrateMbps = 100, Quality = 100, AudioKbps = 192 },
-        new() { Name = "Medium", Codec = "HEVC", Fps = 60, Height = 1440, RateControl = RateControl.Vbr, BitrateMbps = 40, MaxBitrateMbps = 50, Quality = 70, AudioKbps = 160 },
-        new() { Name = "Low", Codec = "H264", Fps = 30, Height = 1080, RateControl = RateControl.Vbr, BitrateMbps = 15, MaxBitrateMbps = 20, Quality = 50, AudioKbps = 128 },
-    };
 }
