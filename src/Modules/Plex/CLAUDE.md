@@ -50,8 +50,8 @@ Past work on this module (Claude Code reads this file only when it works in this
   tools turn `\uE721` into the glyph: run `%TEMP%\plexs\fixglyph.py <files>` on new files only (it also converts
   glyphs other modules keep as characters: don't run it on them). Bash heredocs eat `\f`, `\r`, `\t` in paths.
 - **Tested (4.16.0):** harness `%TEMP%\plexs` (`plexs.exe dups all transcode [keep] cancel shutdown`, copies in
-  `D:\Temp\ffm\t`; FFmpeg 7.1 in `D:\Temp\ffm`), all passed; test app copy `%TEMP%\DaisysPlex` (settings copied
-  from DaisysDev, `ui.ps1` drives it by UIA): Duplicates, Space, seasons, queue, Get FFmpeg. **Not tested:** deleting
+  `D:\Temp\ffm\t`, deleted after: copy an episode and a 4K clip there again; FFmpeg 7.1 in `D:\Temp\ffm`), all passed;
+  test app copy `%TEMP%\DaisysPlex` (settings were copied from DaisysDev, then deleted; `ui.ps1` drives it by UIA): Duplicates, Space, seasons, queue, Get FFmpeg. **Not tested:** deleting
   or transcoding library files, a remote server, QSV/AMF.
 - **Now:** 4.16.0 released. **Next:** the user tries `docs/UNTESTED.md`'s 4.16.0 and 4.14.0 entries. Ideas not done:
   a saved queue; more Scanner tools (missing episodes, files Plex doesn't know, bit-rate outliers); delete uploaded
