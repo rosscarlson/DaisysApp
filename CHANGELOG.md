@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.1**
+- **SimEffects → Shaker → Effect Shortcuts**, now in the order **Next Effect**, **Previous Effect**, **Highlight**,
+  **Mute**, **Effect +** and **Effect -**:
+  - **Highlight** (was Isolate on / off; its shortcut kept): on / off for the picked effect, several at once. While
+    any are highlighted only those play; turning the last one off puts every effect's mute back as it was.
+  - **Effect +** / **Effect -** (new): the picked effect's volume up or down 5%.
+- **The meters (and widget):** a muted column has a thin grey line from top to bottom; a highlighted effect's column
+  is outlined.
+
 **4.17.0**
 - **SimEffects → Analysis → Share Session** (new; the share icon at the top right of the Analysis card, where Import
   was): sessions shared on your Daisy's Server (Settings → General), for everyone who uses it.

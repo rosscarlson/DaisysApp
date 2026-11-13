@@ -220,7 +220,7 @@ internal sealed class BassShakerView : UserControl
         HideWidget();
     }
 
-    /// <summary>The app closing: every effect's mute as it was before Isolate, its shortcuts gone.</summary>
+    /// <summary>The app closing: every effect's mute as it was before Highlight, its shortcuts gone.</summary>
     public void Closing()
     {
         picker.Restore();
@@ -265,7 +265,7 @@ internal sealed class BassShakerView : UserControl
     {
         var signals = engine.Signals;
         var showing = Picked;
-        var levels = signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing)).ToArray();
+        var levels = signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing, picker.IsHighlighted(s.Effect))).ToArray();
         // each device's output (its peak, falling back), its volume and mute: the meters' columns on the left
         var devices = settings.Devices.Select(d =>
         {
@@ -440,7 +440,7 @@ internal sealed class BassShakerView : UserControl
             p.Effects = DefaultProfiles.For(p.Game).Effects;
             Structure();
         });
-        // next / previous effect, isolate and mute it, from the wheel
+        // next / previous effect, highlight it, mute it, its volume, from the wheel
         var keys = HotkeyWindow.Button(T("Effect Shortcuts"), () => picker.Keys, picker.Shown);
         keys.Margin = new Thickness(0, 0, 4, 0);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };

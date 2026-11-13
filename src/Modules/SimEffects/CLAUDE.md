@@ -124,6 +124,8 @@ Read only when working in this folder. Current state and lessons; history is in 
   the visibility check, so the widget gets them too). `EffectPicker` (prefix `ShakerPick.`): Isolate saves mutes like
   the wizard; `Restore` on wizard open, profile change and `view.Closing()`. Tested in `%TEMP%/DaisysDevS` (its own
   settings, the real devices' list without keys, Enabled off; `%TEMP%/dashk/ui.ps1`, `key.ps1 <n>` sends Ctrl+Alt+Shift+Fn).
+- **4.17.1 Shaker:** Isolate became Highlight (several at once; 4.16.2's `Isolate` key read once as `Highlight`), with
+  Effect + / - (`EffectKeys.Up/Down`); a highlight changes only its own effect's mute, so Mute in between holds.
 
 ## Test fixtures and tools
 

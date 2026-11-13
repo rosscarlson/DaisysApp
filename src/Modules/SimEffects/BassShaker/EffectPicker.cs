@@ -4,9 +4,10 @@ namespace DaisysApp.Applets.SimEffects.BassShaker;
 
 /// <summary>
 /// The effect picked by shortcuts (Next / Previous Effect), outlined in the list and bright in the meters as the Level
-/// Wizard's step is, and what can be done to it: Isolate (only it plays; again, every effect's mute as it was) and Mute
-/// (it alone). Its shortcuts are Core's Hotkeys (so in Settings → Shortcuts too), set from the Effects card. While the
-/// Level Wizard is open they do nothing (it has its own).
+/// Wizard's step is, and what can be done to it: Highlight (on / off; while any effect is highlighted only those play,
+/// and with none left every effect's mute is as it was), Mute (it alone), Effect + / - (its volume). Its shortcuts are
+/// Core's Hotkeys (so in Settings → Shortcuts too), set from the Effects card. While the Level Wizard is open they do
+/// nothing (it has its own).
 /// </summary>
 internal sealed class EffectPicker
 {
@@ -15,10 +16,12 @@ internal sealed class EffectPicker
     private readonly ShakerSettings settings;
     private readonly Func<ShakerProfile?> active;
     private readonly Func<bool> paused;
+    private readonly HashSet<ShakerEffect> highlighted = new();
+    /// <summary>Every effect's mute before the first was highlighted.</summary>
     private Dictionary<ShakerEffect, bool>? wasMuted;
     private ShakerEffect? current;
 
-    /// <summary>The pick, isolation or a mute changed (on the UI thread).</summary>
+    /// <summary>The pick, a highlight, a mute or a volume changed (on the UI thread).</summary>
     public event Action? Changed;
 
     public EffectPicker(ShakerSettings settings, Func<ShakerProfile?> active, Func<bool> paused)
@@ -28,23 +31,25 @@ internal sealed class EffectPicker
         this.paused = paused;
     }
 
-    /// <summary>Previous, Next, Isolate and Mute, in that order.</summary>
+    /// <summary>Next, Previous, Highlight, Mute, Effect + and Effect -, in that order.</summary>
     public IReadOnlyList<Hotkey> Keys { get; private set; } = Array.Empty<Hotkey>();
 
     /// <summary>The effect picked (null: none yet, or it's gone).</summary>
     public ShakerEffect? Current => current is { } c && active()?.Effects.Contains(c) == true ? c : null;
 
-    public bool Isolated => wasMuted != null;
+    public bool IsHighlighted(ShakerEffect e) => highlighted.Contains(e);
 
     public void AddKeys()
     {
         var k = settings.EffectKeys;
         Keys = Hotkeys.Replace(Prefix, new (HotkeySpec, Action)[]
         {
-            (Spec("Previous", T("Previous Effect"), () => k.Previous, v => k.Previous = v), () => Press(() => Step(-1))),
             (Spec("Next", T("Next Effect"), () => k.Next, v => k.Next = v), () => Press(() => Step(1))),
-            (Spec("Isolate", T("Isolate on / off"), () => k.Isolate, v => k.Isolate = v), () => Press(Isolate)),
-            (Spec("Mute", T("Mute on / off"), () => k.Mute, v => k.Mute = v), () => Press(Mute)),
+            (Spec("Previous", T("Previous Effect"), () => k.Previous, v => k.Previous = v), () => Press(() => Step(-1))),
+            (Spec("Highlight", T("Highlight"), () => k.Highlight, v => k.Highlight = v), () => Press(Highlight)),
+            (Spec("Mute", T("Mute"), () => k.Mute, v => k.Mute = v), () => Press(Mute)),
+            (Spec("Up", T("Effect +"), () => k.Up, v => k.Up = v), () => Press(() => Nudge(VolumeHotkeys.Step))),
+            (Spec("Down", T("Effect -"), () => k.Down, v => k.Down = v), () => Press(() => Nudge(-VolumeHotkeys.Step))),
         });
     }
 
@@ -66,51 +71,67 @@ internal sealed class EffectPicker
         Changed?.Invoke();
     }
 
-    /// <summary>The next or previous effect, round the end; isolated, the isolation moves with it.</summary>
+    /// <summary>The picked effect, the first when none is.</summary>
+    private ShakerEffect Pick() => current = Current ?? active()!.Effects[0];
+
+    /// <summary>The next or previous effect, round the end.</summary>
     private void Step(int dir)
     {
         var effects = active()!.Effects;
         int i = Current is { } c ? effects.IndexOf(c) : -1;
         i = i < 0 ? (dir > 0 ? 0 : effects.Count - 1) : (i + dir + effects.Count) % effects.Count;
         current = effects[i];
-        if (Isolated) Apply();
         Logging.Log.Here.Debug(() => $"Shaker: picked {current.Kind} ({i + 1} of {effects.Count})");
     }
 
-    private void Isolate()
+    /// <summary>The picked effect highlighted or not: the first mutes every other one, the last puts them back.</summary>
+    private void Highlight()
     {
-        if (Isolated) { Restore(); return; }
-        current = Current ?? active()!.Effects[0];
-        wasMuted = active()!.Effects.ToDictionary(e => e, e => e.Muted);
-        Apply();
-        Logging.Log.Here.Info($"Shaker: {current.Kind} isolated");
-    }
-
-    /// <summary>Only the picked effect plays.</summary>
-    private void Apply()
-    {
-        foreach (var e in active()!.Effects) e.Muted = e != current;
+        var e = Pick();
+        if (highlighted.Remove(e))
+        {
+            if (highlighted.Count == 0) { Restore(); return; }
+            e.Muted = true;
+        }
+        else
+        {
+            if (highlighted.Count == 0)
+            {
+                wasMuted = active()!.Effects.ToDictionary(x => x, x => x.Muted);
+                foreach (var x in active()!.Effects) x.Muted = true;
+            }
+            highlighted.Add(e);
+            e.Muted = false;
+        }
+        Logging.Log.Here.Info($"Shaker: highlighted {string.Join(", ", highlighted.Select(x => x.Kind))}");
     }
 
     private void Mute()
     {
-        var e = current = Current ?? active()!.Effects[0];
+        var e = Pick();
         e.Muted = !e.Muted;
-        // (isolated: it stays so when the isolation ends too)
+        // (while highlighting: it stays so when the highlights end too)
         if (wasMuted != null) wasMuted[e] = e.Muted;
     }
 
-    /// <summary>The isolation ended: every effect's mute as it was (the Level Wizard opening, another profile, closing).</summary>
+    private void Nudge(double step)
+    {
+        var e = Pick();
+        e.Volume = Math.Clamp(Math.Round(e.Volume + step, 2), 0, 1);
+    }
+
+    /// <summary>No highlights: every effect's mute as it was (the last one off, the Level Wizard opening, another profile, closing).</summary>
     public void Restore()
     {
+        highlighted.Clear();
         if (wasMuted == null) return;
         foreach (var (e, muted) in wasMuted) e.Muted = muted;
         wasMuted = null;
-        Logging.Log.Here.Info("Shaker: isolation ended");
+        Logging.Log.Here.Info("Shaker: highlights ended");
         Changed?.Invoke();
     }
 
-    /// <summary>Another profile: isolation ended, nothing picked.</summary>
+    /// <summary>Another profile: no highlights, nothing picked.</summary>
     public void Reset()
     {
         Restore();

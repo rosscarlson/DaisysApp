@@ -46,10 +46,12 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   **Plays On** (each device by its name without Windows' description in brackets: on or off for this effect, and a
   level for how much of it that device gets), then **Test** (it plays for a moment, even when off) and **Remove**
   at the bottom right. The card's icons (since 4.16.2): **Reset Effects**, the **Level Wizard**, **Effect Shortcuts**
-  and **Add Effect**. Effect Shortcuts binds **Previous Effect** and **Next Effect** (pick one, round the end; it's
-  outlined in the list and bright in the meters), **Isolate on / off** (only the picked one plays; again, every effect's
-  mute as it was, as when the Level Wizard opens or the profile changes) and **Mute on / off** (the picked one alone);
-  they do nothing while the Level Wizard is open. Drag one by its grip (left) onto another to move it: above it in its top half, below in its bottom
+  and **Add Effect**. Effect Shortcuts binds **Next Effect** and **Previous Effect** (pick one, round the end; it's
+  outlined in the list and bright in the meters), **Highlight** (on / off for the picked one: while any are highlighted
+  only those play, outlined in the meters; the last one off puts every effect's mute back as it was, as the Level Wizard
+  opening or the profile changing does), **Mute** (the picked one alone; a muted column in the meters has a thin grey
+  line top to bottom) and **Effect +** / **Effect -** (the picked one's volume, 5% a press) (since 4.17.1); they do
+  nothing while the Level Wizard is open. Drag one by its grip (left) onto another to move it: above it in its top half, below in its bottom
   half. **Add Effect** adds any kind (the same kind twice is fine: two engine tones on different devices, say).
 - **Level Wizard** (beside Add Effect): a window, kept above the game (**On Top**), that takes you through the
   profile's effects one at a time, so each can be set while you drive. Its first step is its shortcuts (keys or
@@ -166,6 +168,6 @@ The games' telemetry (`Game`, `TelemetryFrame`, each game's reader) is the modul
 | `LevelWizard.cs` | The Level Wizard (`Showing` and `Changed` for the tab, which re-draws the effects at most every 100 ms): the shortcuts step (`WizardKeys` as Core `Hotkeys` added by `AddKeys` at the start, listed in Settings → Shortcuts, registered only while it's open, "Needed"), a step per effect (meter, Level and its `EffectParam`s as sliders, each `Knob`'s keys or "No shortcut"), Solo / All (`ApplySolo`: mutes saved when it opens, put back when it closes), `Nudge` |
 | `DeviceVolumes.cs` | Each device's volume and mute = Windows' endpoint volume (Shared's `Audio/EndpointVolume`): read when the device is found, the app's changes sent as they're made (`ShakerDevice.Edited`), Windows' changes taken from its notification, a device plugged in found by `DeviceService`'s notice (nothing polled since 4.0.0); entries of one device share it |
 | `Volume.cs` | `VolumeHotkeys` (every volume's shortcuts and the on / off one as Core `Hotkeys`, put in place again when devices, effects or the profile change; `For(volume)` for Core's `HotkeyWindow`), `VolumeControl` (mute, slider, %, shortcut button) |
-| `EffectPicker.cs` | The Effects card's shortcuts (`EffectKeys`, Core `Hotkeys`): the picked effect (`Current`), Isolate (mutes saved, put back by `Restore`) and Mute |
+| `EffectPicker.cs` | The Effects card's shortcuts (`EffectKeys`, Core `Hotkeys`): the picked effect (`Current`), Highlight (several; mutes saved at the first, put back by `Restore`), Mute and Effect + / - |
 | `Meters.cs` | `SpectrumMeter` (a column per device first, its volume marker, a spacer, then the column per effect with held peaks; the Level Wizard's effect bright, its label bold; a second one is the meters' widget, in Core's `Widget`) and `MiniMeter` (the line in a row; `Bright`) |
 | `AddDeviceWindow.cs` | Add Device: device, transducer, channels |

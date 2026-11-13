@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.1 (Shaker → Effect Shortcuts: Highlight, Effect + / -):** bind them on the wheel, then in a game: Next /
+  Previous to an effect, Highlight two or three (only those should shake; outlined in the meters, the rest with a grey
+  line), Effect + / - on one, then Highlight each off again (every mute back as before). Tried in a test copy with
+  keys, no game and no shaker playing.
 - **4.17.0 (Analysis → Share Session):** needs Daisy's Server with the `sessions` module (the brief from this
   session). Then open the share icon on the Analysis card: share Session 1 with an edited title, see it listed, change
   the title and Share again, Remove it; tick Share each session automatically, race with Video and YouTube upload on,

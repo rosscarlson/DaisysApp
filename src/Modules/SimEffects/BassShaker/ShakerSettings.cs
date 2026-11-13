@@ -140,7 +140,7 @@ public sealed class ShakerSettings
     public string? OnOffKey { get; set; }
     /// <summary>The Level Wizard's shortcuts.</summary>
     public WizardKeys Wizard { get; set; } = new();
-    /// <summary>The Effects card's shortcuts: pick an effect, isolate it, mute it (<see cref="EffectPicker"/>).</summary>
+    /// <summary>The Effects card's shortcuts: pick an effect, highlight it, mute it, its volume (<see cref="EffectPicker"/>).</summary>
     public EffectKeys EffectKeys { get; set; } = new();
     /// <summary>How strong the Test buttons play, 0.1..1 (Settings → SimEffects → Shaker).</summary>
     public double TestLevel { get; set; } = 1;
@@ -199,13 +199,19 @@ public sealed class MetersWidget : IOverlayPlace
     public bool ClickThrough { get; set; }
 }
 
-/// <summary>The Effects card's shortcuts (keys or controller buttons): the next or previous effect, Isolate and Mute.</summary>
+/// <summary>The Effects card's shortcuts (keys or controller buttons): the next or previous effect, Highlight, Mute,
+/// and its volume up and down.</summary>
 public sealed class EffectKeys
 {
-    public string? Previous { get; set; }
     public string? Next { get; set; }
-    public string? Isolate { get; set; }
+    public string? Previous { get; set; }
+    public string? Highlight { get; set; }
     public string? Mute { get; set; }
+    public string? Up { get; set; }
+    public string? Down { get; set; }
+    /// <summary>4.16.2's Isolate: read once as Highlight.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Isolate { get => null; set => Highlight ??= value; }
 }
 
 /// <summary>The Level Wizard's shortcuts (keys or controller buttons): steps, level, the four settings, and Solo / All.</summary>
