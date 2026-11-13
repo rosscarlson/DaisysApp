@@ -23,7 +23,8 @@ small window since 4.13.1, from the compass on the Session card's title row (its
 - **ON / OFF** (top left): records laps (until 3.33.0 it showed the widgets too; they're Overlays' now). It's kept per SimEffects profile, and starts on in every game's (since 4.10.0; Forza Horizon's before). The blocks on the tab show the
   game's data either way. The **shortcut** button beside it (since 3.24.3) sets a key or a controller button for it
   (also in Settings → Shortcuts).
-- **Video** (since 4.8.0; right of ON, the shortcut button after it; the same in every profile): records each race
+- **Video** (since 4.8.0; right of ON, the shortcut button after it; the same in every profile; since 4.16.1 dimmed as
+  ON is while the profile is stopped): records each race
   with Video → [Recording](../../Video/Gaming/README.md)'s settings (what its Record card has chosen: monitor, region
   or game, quality, sound; a region is the one picked last), from the race clock starting until the race's log ends
   (the finish, a restart, free roam, the data stopping). A race not kept (no lap or result) has its video deleted
@@ -275,7 +276,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
     line, this one is ahead; amber; a chip shows or hides it), speed, throttle, brake and steering.
   - Since 4.6.3 each channel has its colour (speed blue, throttle green, brake red, steering white; since 4.7.0
     clutch violet, hidden at first), Session 2's lines dotted (before, this run blue and the other orange). On each
-    Session row (since 4.7.0; a row of their own under the picks, with the run's name, before) a chip per channel: its
+    Session row (since 4.7.0; a row of their own under the picks, with the run's name, before; since 4.16.1 in a
+    **Channels** drop-down with a dot in the colour of each shown, RPM and Gear too) a chip per channel: its
     box shows or hides that line (a lane goes when both its lines are hidden; Session 2's chips and **Delta** only
     while there's a Session 2), its
     name (or a click on the line, until 4.10.3) highlights it, bold, the others faded; again, back to all. Kept. The

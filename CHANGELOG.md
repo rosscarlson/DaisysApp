@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.16.1**
+- **SimEffects → Analysis → Compare:** each Session row's channels (Speed, Throttle, Brake, Steering, Clutch, RPM,
+  Gear) are all in one **Channels** drop-down, a box, colour and name each as before, with a dot on the button in the
+  colour of each one shown; the Video timeline's too.
+- **SimEffects → Analysis:** **Video** is dimmed as **ON** is while the profile is stopped (or Analysis is off).
+
 **4.16.0**
 - **Plex → Scanner** (a new sub-tab): tools that look through the libraries' files, in three parts.
   - **Duplicates:** titles with more than one file (a 720p and a 1080p of the same movie, say), from Plex's own list,

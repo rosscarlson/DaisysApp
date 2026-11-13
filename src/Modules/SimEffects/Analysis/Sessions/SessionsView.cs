@@ -1541,13 +1541,12 @@ internal sealed class SessionsView
 
     private void ShowLegend()
     {
-        var all = new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering, Channel.Clutch };
-        // (since 4.15.4 the rpm and the gear in a drop-down after them)
-        var more = new[] { Channel.Rpm, Channel.Gear };
-        Entry(thisChannels, compareChart, lastA, 1, all, SaveChannels, ShowLegend, combineChip, more);
-        Entry(otherChannels, compareChart, lastB, 2, all, SaveChannels, ShowLegend, more: more);
-        // (since 4.10.9) the Video's timeline: Session 1's, no Clutch
-        Entry(videoChannels, videoChart, videoRun, 1, all[..^1], () =>
+        // (since 4.16.1 all in a drop-down)
+        var all = new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering, Channel.Clutch, Channel.Rpm, Channel.Gear };
+        Entry(thisChannels, compareChart, lastA, 1, all, SaveChannels, ShowLegend, combineChip);
+        Entry(otherChannels, compareChart, lastB, 2, all, SaveChannels, ShowLegend);
+        // (since 4.10.9) the Video's timeline: Session 1's, no Clutch (nor the rpm and the gear)
+        Entry(videoChannels, videoChart, videoRun, 1, all[..4], () =>
         {
             settings.VideoHidden = videoChart.Hidden.Where(h => h.Channel is not (Channel.Clutch or Channel.Rpm or Channel.Gear)).Select(h => h.Channel.ToString()).ToList();
             settings.Save();
@@ -1558,27 +1557,19 @@ internal sealed class SessionsView
         ShowPickerLinks();
     }
 
-    /// <summary>A run's channels on a chart: a box (shown or not) and a name (highlighted) each, after <paramref name="first"/>;
-    /// (since 4.15.4) then <paramref name="more"/> in a drop-down.</summary>
-    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again, UIElement? first = null, Channel[]? more = null)
+    /// <summary>A run's channels on a chart, after <paramref name="first"/>: (since 4.16.1) a drop-down of a box (shown or
+    /// not) and a name (highlighted) each.</summary>
+    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again, UIElement? first = null)
     {
         toggles.Children.Clear();
         toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
         if (r == null) return;
         if (first != null) toggles.Children.Add(first);
-        foreach (var c in channels)
-        {
-            var item = ChannelItem(toggles, chart, which, c, save, again);
-            item.Margin = new Thickness(10, 0, 0, 0);
-            // (a channel the run hasn't, its room kept so the rows line up)
-            if (!CompareChart.Logged(r.Data, c)) item.Visibility = Visibility.Hidden;
-            toggles.Children.Add(item);
-        }
-        if (more != null) toggles.Children.Add(MoreChannels(toggles, chart, r, which, more, save, again));
+        toggles.Children.Add(MoreChannels(toggles, chart, r, which, channels, save, again));
     }
 
-    /// <summary>(since 4.15.4) A drop-down of a run's other channels, each with its box, colour and name as the rows';
-    /// on the button a dot in the colour of each shown.</summary>
+    /// <summary>(since 4.15.4) A drop-down of a run's channels, each with its box, colour and name; on the button a dot in
+    /// the colour of each shown.</summary>
     private static FrameworkElement MoreChannels(StackPanel toggles, CompareChart chart, Run r, int which, Channel[] channels, Action save, Action again)
     {
         var dots = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
@@ -1586,18 +1577,22 @@ internal sealed class SessionsView
         {
             dots.Children.Clear();
             foreach (var c in channels.Where(c => !chart.Hidden.Contains((c, which)) && CompareChart.Logged(r.Data, c)))
-                dots.Children.Add(new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Margin = new Thickness(0, 0, 4, 0), Fill = PedalColours.Frozen(CompareChart.ColourOf(c)) });
+                dots.Children.Add(new System.Windows.Shapes.Ellipse
+                {
+                    Width = 7, Height = 7, Margin = new Thickness(0, 0, 4, 0),
+                    Fill = c == Channel.Steering ? PedalColours.Theme(toggles, "TextBrush") : PedalColours.Frozen(CompareChart.ColourOf(c)),
+                });
         }
         Dots();
         var chevron = new TextBlock { Text = "", FontSize = 8, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 1, 0, 0) };
         chevron.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
         var button = new Border
         {
-            CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 8, 3), Margin = new Thickness(10, 0, 0, 0), Cursor = Cursors.Hand, ToolTip = T("More channels"),
+            CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 8, 3), Margin = new Thickness(10, 0, 0, 0), Cursor = Cursors.Hand,
             BorderThickness = new Thickness(1), BorderBrush = PedalColours.Frozen(Colors.Gray, 0x60), Background = Brushes.Transparent, VerticalAlignment = VerticalAlignment.Center,
-            Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { dots, new TextBlock { Text = T("More"), VerticalAlignment = VerticalAlignment.Center }, chevron } },
+            Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { dots, new TextBlock { Text = T("Channels"), VerticalAlignment = VerticalAlignment.Center }, chevron } },
         };
-        System.Windows.Automation.AutomationProperties.SetName(button, T("More channels") + (which == 2 ? " 2" : ""));
+        System.Windows.Automation.AutomationProperties.SetName(button, T("Channels") + (which == 2 ? " 2" : ""));
         var list = new StackPanel();
         var frame = new Border { Child = list, Padding = new Thickness(8, 6, 10, 2), BorderThickness = new Thickness(1) };
         frame.SetResourceReference(Border.BackgroundProperty, "PopupBrush");
@@ -1612,8 +1607,6 @@ internal sealed class SessionsView
             list.Children.Add(item);
         }
         button.MouseLeftButtonUp += (_, _) => popup.IsOpen = !popup.IsOpen;
-        // (neither in this run's log: its room kept so the rows line up)
-        if (!channels.Any(c => CompareChart.Logged(r.Data, c))) button.Visibility = Visibility.Hidden;
         return button;
     }
 

@@ -102,7 +102,7 @@ internal sealed class AnalysisView : UserControl
         videoOn.SetResourceReference(FrameworkElement.StyleProperty, "ChipToggle");
         AutomationProperties.SetName(videoOn, T("Record video"));
         ToolTipService.SetShowOnDisabled(videoOn, true);
-        videoOn.Click += (_, _) => applet.SetRecordVideo(videoOn.IsChecked == true);
+        videoOn.Click += (_, _) => { applet.SetRecordVideo(videoOn.IsChecked == true); ShowVideo(); };
         ShowVideo();
         DaisysApp.Shell.ScreenRecordings.Changed += ShowVideo;
         DockPanel.SetDock(videoOn, Dock.Left);
@@ -254,13 +254,23 @@ internal sealed class AnalysisView : UserControl
         ClickToOpen(table);
     }
 
-    public void ShowOnOff() => SimUi.ShowOnOff(onOff, settings.Enabled);
+    public void ShowOnOff()
+    {
+        SimUi.ShowOnOff(onOff, settings.Enabled);
+        ShowVideo();
+    }
 
+    /// <summary>Video: greyed out while Recording is off; (since 4.16.1) an on one dimmed as ON is while the profile is
+    /// stopped or Analysis is off (nothing recorded).</summary>
     private void ShowVideo()
     {
         bool can = DaisysApp.Shell.ScreenRecordings.Recorder != null;
+        bool stopped = !DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
         videoOn.IsEnabled = can;
-        videoOn.ToolTip = can ? T("Record each race (Video → Recording's settings)") : T("Needs Video → Recording switched on");
+        videoOn.Opacity = can && videoOn.IsChecked == true && (stopped || !settings.Enabled) ? 0.4 : 1;
+        videoOn.ToolTip = !can ? T("Needs Video → Recording switched on")
+            : videoOn.IsChecked == true && stopped ? T("Profile stopped")
+            : T("Record each race (Video → Recording's settings)");
     }
 
     /// <summary>(since 4.13.1) Current Location's small window, from the Session card's link. One window; its name box and

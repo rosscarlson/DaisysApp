@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.16.1 (Compare's Channels drop-down; Video dimmed):** in Analysis → Compare, each Session row should show only
+  **Channels** (after Combine on Session 1's); open it, untick and tick a few, click a name to highlight; the dots on
+  the button should follow. The Video pop-out's timeline the same. Stop the profile: **Video** should dim with **ON**.
+  Tried: builds only.
 - **4.16.0 (Plex → Scanner: duplicates, space, transcode; video profiles in Core):** in Plex → Scanner → Duplicates,
   look through the list (Across libraries too), pick a file you don't want and **Delete Files**; in **Space**, check
   a show's sizes and seasons; in **Transcode**, **Get FFmpeg**, then queue a season you don't mind (Space → a show →

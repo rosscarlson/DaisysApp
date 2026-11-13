@@ -58,6 +58,8 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.16.1:** `Entry` now puts every channel in `MoreChannels` ("Channels"; the user: all of them in the menu, not
+  the row). Video's chip dims (`ShowVideo`, from `ShowOnOff`) when on and the profile is stopped or Analysis is off.
 - **4.15.5:** `Tracks.json` rebuilt from this PC's `Analysis.json` (FH4/5/6, 324; Export's fields, `Type` as stored,
   `Entry` when set; sorted by game, name). Nexus and Watersled Speed Circuit (FH5) were dropped on this PC: users who
   had them keep them (Merge never deletes).
