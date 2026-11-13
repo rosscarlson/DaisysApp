@@ -131,8 +131,8 @@ Read only when working in this folder. Current state and lessons; history is in 
   settings, the real devices' list without keys, Enabled off; `%TEMP%/dashk/ui.ps1`, `key.ps1 <n>` sends Ctrl+Alt+Shift+Fn).
 - **4.17.1 Shaker:** Isolate became Highlight (several at once; 4.16.2's `Isolate` key read once as `Highlight`), with
   Effect + / - (`EffectKeys.Up/Down`); a highlight changes only its own effect's mute, so Mute in between holds.
-- **4.17.3 Shaker, effect volume marker:** `VolumeHotkeys.Adjusted` / `EffectPicker.Adjusted` stamp the effect; the view
-  passes `Marker` (1 for 5 s, fading over the next 1) to `SpectrumMeter`. Sliders don't show it (the user: only shortcuts).
+- **4.17.5 Shaker, volume markers always:** the user wanted every effect's marker shown all the time (grey when muted),
+  so 4.17.3's shortcut-only fade (`Adjusted` events, `Marker`) went; `SpectrumMeter` draws one per column.
 - **4.17.2 Shaker, Big Effects:** the user's "intense" feel (FH6, one car at low revs, Engine alone, BST-300EX on the
   Plugable "Buttkicker" device) recorded by WASAPI loopback of that device (`D:\Temp\shakerlisten`: `listen.exe
   <id part> <s> <wav>`, `analyse.py`): a clean sine 30–33.5 Hz at only ~6% level, so it's the rig's resonance.

@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.5**
+- **SimEffects → Shaker**: every effect's column in the meters (and the meters' widget) shows its volume marker all
+  the time, like the devices', so each effect's volume can be seen at a glance; grey while the effect (or device) is
+  muted. (4.17.3 showed it only for 5 seconds after a shortcut.)
+
 **4.17.4**
 - **SimEffects → Analysis → Share Session**, laid out again:
   - **Session** (new) is a drop-down of every session of yours (Session 1 at first); picking one fills its **Title**

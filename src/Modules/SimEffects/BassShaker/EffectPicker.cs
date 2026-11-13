@@ -23,8 +23,6 @@ internal sealed class EffectPicker
 
     /// <summary>The pick, a highlight, a mute or a volume changed (on the UI thread).</summary>
     public event Action? Changed;
-    /// <summary>Effect + / - changed this effect's volume (on the UI thread).</summary>
-    public event Action<ShakerEffect>? Adjusted;
 
     public EffectPicker(ShakerSettings settings, Func<ShakerProfile?> active, Func<bool> paused)
     {
@@ -120,7 +118,6 @@ internal sealed class EffectPicker
     {
         var e = Pick();
         e.Volume = Math.Clamp(Math.Round(e.Volume + step, 2), 0, 1);
-        Adjusted?.Invoke(e);
     }
 
     /// <summary>No highlights: every effect's mute as it was (the last one off, the Level Wizard opening, another profile, closing).</summary>
