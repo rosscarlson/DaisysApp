@@ -1,4 +1,5 @@
 using System.IO;
+using DaisysApp.Shell;
 using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
@@ -7,7 +8,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// (since 4.15.0) Race videos going to YouTube (Core's <see cref="YouTube"/>), one at a time: each one marked
 /// <see cref="RaceVideoLink.Upload"/> until it's up (so a restart picks it up again), then its link kept in
 /// <see cref="RaceVideoLink.YouTube"/> and (with <see cref="RaceVideos.YouTubeDeleteLocal"/>) its file deleted. Named
-/// from its session (<see cref="Describe"/>). Everything here is on the UI thread.
+/// from its session (<see cref="Describe"/>). While one goes, the title bar shows it (since 4.15.1): "YT: 24%,
+/// 4.5Mb/s, 1:24" (done, speed, time left). Everything here is on the UI thread.
 /// </summary>
 internal static class RaceUploads
 {
@@ -15,6 +17,9 @@ internal static class RaceUploads
     private static readonly Dictionary<string, string> failed = new(StringComparer.OrdinalIgnoreCase);
     private static bool pumping;
     private static CancellationTokenSource? cancel;
+    /// <summary>The upload going's last few seconds (when, bytes sent), for its speed.</summary>
+    private static readonly Queue<(long Ms, double Bytes)> recent = new();
+    private const string BadgeId = "YouTubeUpload";
 
     static RaceUploads()
     {
@@ -83,7 +88,17 @@ internal static class RaceUploads
                 going[log] = 0;
                 Changed?.Invoke();
                 cancel = new CancellationTokenSource();
-                var progress = new Progress<double>(p => { if (going.ContainsKey(log)) { going[log] = p; Changed?.Invoke(); } });
+                long size = 0;
+                try { size = new FileInfo(link.File).Length; } catch (IOException) { }
+                recent.Clear();
+                Badge(title, 0, size);
+                var progress = new Progress<double>(p =>
+                {
+                    if (!going.ContainsKey(log) || p < going[log]) return;
+                    going[log] = p;
+                    Badge(title, p, size);
+                    Changed?.Invoke();
+                });
                 try
                 {
                     var up = await YouTube.Upload(link.File, title, description + (description.Length > 0 ? "\n\n" : "") + T("Recorded with Daisy's App"),
@@ -105,11 +120,34 @@ internal static class RaceUploads
                     cancel.Dispose();
                     cancel = null;
                     going.Remove(log);
+                    TitleBadges.Set(BadgeId, null);
                     Changed?.Invoke();
                 }
             }
         }
-        finally { pumping = false; }
+        finally { pumping = false; TitleBadges.Set(BadgeId, null); }
+    }
+
+    /// <summary>The title bar's bubble for the upload going: how far, how fast (bits a second, over the last 8 s) and
+    /// how long left; pointing at it names the video (and how many wait after it).</summary>
+    private static void Badge(string title, double done, long size)
+    {
+        long now = Environment.TickCount64;
+        recent.Enqueue((now, done * size));
+        while (recent.Count > 2 && now - recent.Peek().Ms > 8000) recent.Dequeue();
+        var first = recent.Peek();
+        double seconds = (now - first.Ms) / 1000.0, bytesPerSecond = seconds >= 1 ? (done * size - first.Bytes) / seconds : 0;
+        string text = $"YT: {(int)(done * 100)}%";
+        if (bytesPerSecond > 0)
+        {
+            double bits = bytesPerSecond * 8;
+            string rate = bits >= 1e9 ? $"{bits / 1e9:0.0}Gb/s" : bits >= 1e6 ? $"{bits / 1e6:0.0}Mb/s" : $"{bits / 1e3:0.0}kb/s";
+            var left = TimeSpan.FromSeconds(Math.Min((1 - done) * size / bytesPerSecond, 359999));
+            text += $", {rate}, " + (left.TotalHours >= 1 ? $"{(int)left.TotalHours}:{left.Minutes:00}:{left.Seconds:00}" : $"{(int)left.TotalMinutes}:{left:ss}");
+        }
+        int waiting = going.Count - 1;
+        string tip = waiting > 0 ? F("Uploading to YouTube: {0} ({1} more waiting)", title, waiting) : F("Uploading to YouTube: {0}", title);
+        TitleBadges.Set(BadgeId, text, tip, TitleBadges.Green, "SimEffects/" + SimEffectsApplet.Analysis);
     }
 
     /// <summary>Deletes these sessions' video files where they're on YouTube (the link kept: watched from there).</summary>

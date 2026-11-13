@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.15.1 (YouTube's one-button sign-in, title bar status):** in the installed app, Analysis Manager → YouTube:
+  only **Sign In** shows (Sign Out first if signed in); sign in, upload a race's video and watch the title bar's
+  **YT: n%, speed, time left**. On another PC or Google account: the consent screen must be published (or the account
+  added as a test user). Tried: it builds; the client's in the built Core. Not tried: anything in the app's window.
 - **4.15.0 (YouTube, two videos, time axis, same-session laps):** make a Google Cloud project with the YouTube Data
   API v3 on, a Desktop app OAuth client (add yourself as a test user), and in Analysis Manager → YouTube put in its ID
   and secret, **Sign In**; **Upload to YouTube** a race's video (Unlisted), watch the column go to On YouTube; then

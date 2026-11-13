@@ -36,6 +36,9 @@ jobs:
 
       - name: Build installer
         shell: pwsh
+        env:
+          # the app's Google OAuth client for YouTube's sign-in (Core's YouTube.AppClient), kept out of the source
+          YOUTUBE_CLIENT: ${{ secrets.YOUTUBE_CLIENT }}
         run: |
           $v = '${{ github.ref_name }}'.TrimStart('v')
           if ('${{ inputs.full }}' -eq 'true') { ./build.ps1 -Version $v -Full } else { ./build.ps1 -Version $v }

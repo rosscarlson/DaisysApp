@@ -15,8 +15,9 @@ namespace DaisysApp.Shared.Network;
 /// <summary>Who can watch a video uploaded: YouTube's privacy status.</summary>
 public enum YouTubePrivacy { Unlisted, Private, Public }
 
-/// <summary>(since Core 0.62, 4.15.0) The YouTube account the app uploads with: the user's own Google OAuth client
-/// (a Desktop app client of a Google Cloud project with the YouTube Data API on) and the sign-in it gave.
+/// <summary>(since Core 0.62, 4.15.0) The YouTube account the app uploads with: the app's own Google OAuth client
+/// (since 4.15.1; <see cref="YouTube.AppClient"/>) or the user's own (a Desktop app client of a Google Cloud project
+/// with the YouTube Data API on; <see cref="ClientId"/> "" = the app's), and the sign-in it gave.
 /// YouTube.json; the secret and the sign-in encrypted for this Windows user.</summary>
 public sealed class YouTubeAccount
 {
@@ -66,7 +67,28 @@ public static class YouTube
     public static YouTubeAccount Account => account ??= JsonStore.Load<YouTubeAccount>(FileName);
 
     /// <summary>Signed in: uploads can go.</summary>
-    public static bool SignedIn => Account.RefreshProtected.Length > 0 && Account.ClientId.Length > 0;
+    public static bool SignedIn => Account.RefreshProtected.Length > 0 && ClientId.Length > 0;
+
+    /// <summary>(since Core 0.63, 4.15.1) The app has its own OAuth client (built in by the release from its
+    /// YOUTUBE_CLIENT secret): anyone signs in with their Google account, no client of their own.</summary>
+    public static bool AppClient => builtIn.Value.Id.Length > 0;
+
+    private static readonly Lazy<(string Id, string Secret)> builtIn = new(() =>
+    {
+        try
+        {
+            string? packed = typeof(YouTube).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+                .Cast<System.Reflection.AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "YouTubeClient")?.Value;
+            if (string.IsNullOrWhiteSpace(packed)) return ("", "");
+            var parts = Encoding.UTF8.GetString(Convert.FromBase64String(packed.Trim())).Split('\n', 2);
+            return parts.Length == 2 ? (parts[0].Trim(), parts[1].Trim()) : ("", "");
+        }
+        catch { return ("", ""); }
+    });
+
+    /// <summary>The client signing in: the user's own if they've given one, else the app's.</summary>
+    private static string ClientId => Account.ClientId.Length > 0 ? Account.ClientId : builtIn.Value.Id;
+    private static string Secret => Account.ClientId.Length > 0 ? Account.Secret : builtIn.Value.Secret;
 
     /// <summary>Raised (on the thread that changed it) when it's signed in or out, or the client changes.</summary>
     public static event Action? Changed;
@@ -90,7 +112,7 @@ public static class YouTube
     /// <summary>Signs in in the browser (the page Google shows, then back to the app); the channel's name, or why not.</summary>
     public static async Task<(bool Ok, string Message)> SignIn(CancellationToken cancel)
     {
-        if (Account.ClientId.Length == 0) return (false, T("Needs the OAuth client's ID"));
+        if (ClientId.Length == 0) return (false, T("Needs the OAuth client's ID"));
         var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         try
@@ -100,7 +122,7 @@ public static class YouTube
             string verifier = Base64Url(RandomNumberGenerator.GetBytes(32)), state = Base64Url(RandomNumberGenerator.GetBytes(16));
             string challenge = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier)));
             string url = "https://accounts.google.com/o/oauth2/v2/auth?response_type=code&access_type=offline&prompt=consent"
-                + $"&client_id={Uri.EscapeDataString(Account.ClientId)}&redirect_uri={Uri.EscapeDataString(redirect)}&scope={Uri.EscapeDataString(Scope)}"
+                + $"&client_id={Uri.EscapeDataString(ClientId)}&redirect_uri={Uri.EscapeDataString(redirect)}&scope={Uri.EscapeDataString(Scope)}"
                 + $"&code_challenge={challenge}&code_challenge_method=S256&state={state}";
             Ui.Open(url);
 
@@ -132,7 +154,7 @@ public static class YouTube
 
             var tokens = await Post("https://oauth2.googleapis.com/token", new Dictionary<string, string>
             {
-                ["code"] = code, ["client_id"] = Account.ClientId, ["client_secret"] = Account.Secret, ["redirect_uri"] = redirect,
+                ["code"] = code, ["client_id"] = ClientId, ["client_secret"] = Secret, ["redirect_uri"] = redirect,
                 ["grant_type"] = "authorization_code", ["code_verifier"] = verifier,
             }, cancel);
             string? refresh = tokens["refresh_token"]?.GetValue<string>();
@@ -220,7 +242,8 @@ public static class YouTube
             source.Position = sent;
             int n = 0;
             while (n < buffer.Length) { int r = await source.ReadAsync(buffer.AsMemory(n), cancel); if (r == 0) break; n += r; }
-            var put = new HttpRequestMessage(HttpMethod.Put, session) { Content = new ByteArrayContent(buffer, 0, n) };
+            long at = sent;
+            var put = new HttpRequestMessage(HttpMethod.Put, session) { Content = new PieceContent(buffer, n, w => progress?.Report((double)(at + w) / Math.Max(1, total))) };
             put.Content.Headers.ContentType = new MediaTypeHeaderValue(Mime(file));
             put.Content.Headers.ContentRange = n > 0 ? new ContentRangeHeaderValue(sent, sent + n - 1, total) : new ContentRangeHeaderValue(total);
             HttpResponseMessage answer;
@@ -253,6 +276,28 @@ public static class YouTube
                 throw new IOException(await Problem(answer));
             }
         }
+    }
+
+    /// <summary>A piece of an upload, telling how much of it has gone (64 KB at a time, at most 4 times a second), so
+    /// progress moves while it goes rather than once a piece.</summary>
+    private sealed class PieceContent(byte[] buffer, int count, Action<long> written) : HttpContent
+    {
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context) => await Write(stream, default);
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancel) => await Write(stream, cancel);
+
+        private async Task Write(Stream stream, CancellationToken cancel)
+        {
+            long last = 0;
+            for (int at = 0; at < count;)
+            {
+                int n = Math.Min(64 * 1024, count - at);
+                await stream.WriteAsync(buffer.AsMemory(at, n), cancel);
+                at += n;
+                if (Environment.TickCount64 - last >= 250 || at == count) { last = Environment.TickCount64; written(at); }
+            }
+        }
+
+        protected override bool TryComputeLength(out long length) { length = count; return true; }
     }
 
     /// <summary>How much of an upload YouTube has (null: couldn't ask).</summary>
@@ -341,7 +386,7 @@ public static class YouTube
             {
                 Took(await Post("https://oauth2.googleapis.com/token", new Dictionary<string, string>
                 {
-                    ["client_id"] = Account.ClientId, ["client_secret"] = Account.Secret, ["refresh_token"] = Account.Refresh, ["grant_type"] = "refresh_token",
+                    ["client_id"] = ClientId, ["client_secret"] = Secret, ["refresh_token"] = Account.Refresh, ["grant_type"] = "refresh_token",
                 }, cancel));
             }
             catch (YouTubeRefused ex) when (ex.Code == "invalid_grant")

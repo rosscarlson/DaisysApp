@@ -58,6 +58,10 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.15.1:** the app's own OAuth client (Google Cloud project of the user's Workspace account, 2SV on): the
+  GitHub secret `YOUTUBE_CLIENT` (base64 of "id\nsecret", made from this PC's `%APPDATA%\DaisysApp\YouTube.json`)
+  → release.yml's env → Core's `AssemblyMetadata` → `YouTube.AppClient`; not in the (public) source. A local build
+  without the env var asks for the user's own client. Title bar: `RaceUploads.Badge` (`TitleBadges` "YouTubeUpload").
 - **Next:** the user tries 4.10.8 in FH5, then 4.10.0 in each game, then 4.7.0, 4.6.10, 4.6.9, 4.6.5, 4.6.4 and 4.6.3 on the rig (`docs/UNTESTED.md`); asked whether Position should drop Lap too
   (only Done went), and whether the Trace's "Both pedals" marks, the zones' "throttle on too" note and the
   split's "Both together" go too (left-foot braking; only the tip went in 4.6.5). Ordinal suffixes ("1st") are English-only.

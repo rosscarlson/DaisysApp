@@ -966,5 +966,7 @@
   "Unlisted": "Unlisted",
   "Upload as": "Upload as",
   "Delete the video file once it's uploaded": "Delete the video file once it's uploaded",
-  "Watched from YouTube": "Watched from YouTube"
+  "Watched from YouTube": "Watched from YouTube",
+  "Uploading to YouTube: {0}": "Uploading to YouTube: {0}",
+  "Uploading to YouTube: {0} ({1} more waiting)": "Uploading to YouTube: {0} ({1} more waiting)"
 }

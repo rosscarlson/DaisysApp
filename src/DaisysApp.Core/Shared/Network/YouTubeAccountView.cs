@@ -5,8 +5,9 @@ using System.Windows.Controls;
 namespace DaisysApp.Shared.Network;
 
 /// <summary>
-/// (since Core 0.62, 4.15.0) The YouTube account's rows for any module's settings: the OAuth client's ID and secret
-/// (a link to where one's made), Sign In (in the browser) or Sign Out, and who's signed in. One account for the app
+/// (since Core 0.62, 4.15.0) The YouTube account's rows for any module's settings: Sign In (in the browser) or Sign Out,
+/// and who's signed in; the OAuth client's ID and secret (a link to where one's made) above them when the app has no
+/// client of its own, else folded away under "Your own OAuth client" (since 4.15.1). One account for the app
 /// (<see cref="YouTube"/>).
 /// </summary>
 public sealed class YouTubeAccountView : StackPanel
@@ -19,24 +20,35 @@ public sealed class YouTubeAccountView : StackPanel
 
     public YouTubeAccountView()
     {
-        Children.Add(new TextBlock { Text = T("OAuth client ID") });
+        var own = new StackPanel();
+        own.Children.Add(new TextBlock { Text = T("OAuth client ID") });
         AutomationProperties.SetName(id, T("OAuth client ID"));
         id.Text = YouTube.Account.ClientId;
-        Children.Add(id);
-        Children.Add(new TextBlock { Text = T("Client secret") });
+        own.Children.Add(id);
+        own.Children.Add(new TextBlock { Text = T("Client secret") });
         AutomationProperties.SetName(secret, T("Client secret"));
         secret.Password = YouTube.ClientSecret;
-        Children.Add(secret);
+        own.Children.Add(secret);
         var how = Ui.Link(T("Make a Desktop app client (YouTube Data API v3 on)"), YouTube.ConsoleUrl);
         how.Margin = new Thickness(0, 0, 0, 10);
-        Children.Add(how);
+        own.Children.Add(how);
         status.VerticalAlignment = VerticalAlignment.Center;
         status.TextWrapping = TextWrapping.Wrap;
         var row = new DockPanel();
         DockPanel.SetDock(sign, Dock.Left);
         row.Children.Add(sign);
         row.Children.Add(status);
-        Children.Add(row);
+        if (YouTube.AppClient)
+        {
+            Children.Add(row);
+            own.Margin = new Thickness(0, 6, 0, 0);
+            Children.Add(new Expander { Header = T("Your own OAuth client"), Content = own, Margin = new Thickness(0, 10, 0, 0), ToolTip = T("Blank: the app's") });
+        }
+        else
+        {
+            Children.Add(own);
+            Children.Add(row);
+        }
 
         id.LostFocus += (_, _) => YouTube.SetClient(id.Text, secret.Password);
         secret.LostFocus += (_, _) => YouTube.SetClient(id.Text, secret.Password);

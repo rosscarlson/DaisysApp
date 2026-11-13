@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.15.1**
+- **SimEffects → Analysis → YouTube:** sign in with just your Google account: the app has its own Google OAuth
+  client now, so **Sign In** opens Google's page in the browser and that's all (your own client is still there, folded
+  under **Your own OAuth client**). While a video uploads the title bar shows it: **YT: 24%, 4.5Mb/s, 1:24** (done,
+  speed, time left), the video's name when you point at it; clicking it opens Analysis. The upload's progress moves as
+  it goes rather than every 8 MB.
+- Core 0.63: YouTube.AppClient (the release builds the client in from a GitHub secret: it isn't in the source).
+
 **4.15.0**
 - **SimEffects → Analysis → YouTube** (new): the YouTube mark in the Analysis Manager (left of the Event Shortcuts
   button) signs in to YouTube with your own Google OAuth client (a Desktop app client with the YouTube Data API on)

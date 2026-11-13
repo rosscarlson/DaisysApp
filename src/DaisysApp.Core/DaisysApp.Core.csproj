@@ -41,14 +41,22 @@
          0.59 (4.6.10): SessionTelemetry's Rpm, MaxRpm, Gear and Power, logged (SimEffects → Analysis → Shifting);
          0.60 (4.8.0): Shell/ScreenRecordings (Video → Recording's recorder for other modules: Analysis' race videos);
          0.61 (4.10.7): ScreenRecordings.Recording and RecordingChanged (the tray icon's red centre);
-         0.62 (4.15.0): Shared/Network/YouTube (one YouTube account: sign-in, upload, delete, links) and YouTubeAccountView -->
-    <AssemblyVersion>0.62.0.0</AssemblyVersion>
+         0.62 (4.15.0): Shared/Network/YouTube (one YouTube account: sign-in, upload, delete, links) and YouTubeAccountView;
+         0.63 (4.15.1): YouTube's app client (built in from the YOUTUBE_CLIENT secret), Upload's progress in bytes -->
+    <AssemblyVersion>0.63.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Vortice (Mini Mirror, Performance) needs this newer System.Text.Json; the app ships it so every module gets the
          same one (two versions can't be loaded side by side) -->
     <PackageReference Include="System.Text.Json" Version="9.0.1" />
+  </ItemGroup>
+
+  <!-- (4.15.1) The app's own Google OAuth client for YouTube's sign-in (base64 of "id
+secret"), from the release
+       workflow's YOUTUBE_CLIENT secret: not in the source. A build without it asks for the user's own client. -->
+  <ItemGroup Condition="'$(YOUTUBE_CLIENT)' != ''">
+    <AssemblyMetadata Include="YouTubeClient" Value="$(YOUTUBE_CLIENT)" />
   </ItemGroup>
 
 </Project>

@@ -519,5 +519,7 @@
   "Not found on YouTube (deleted or private)": "Not found on YouTube (deleted or private)",
   "Its owner doesn't let it play outside YouTube (or it's private)": "Its owner doesn't let it play outside YouTube (or it's private)",
   "Not a YouTube video": "Not a YouTube video",
-  "YouTube error {0}": "YouTube error {0}"
+  "YouTube error {0}": "YouTube error {0}",
+  "Your own OAuth client": "Your own OAuth client",
+  "Blank: the app's": "Blank: the app's"
 }
