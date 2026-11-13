@@ -28,8 +28,8 @@ internal static class MeterColours
 /// <summary>
 /// The spectrum-analyser-style meter above the effects: a column of segments per effect, in the effects' order, lit
 /// from the bottom as it shakes, with the highest point held at the top for a moment and falling back. On its left,
-/// apart, a column per device: what it's playing, its volume as a small marker beside it (red while it's muted).
-/// A muted column has a thin grey line top to bottom; a highlighted effect's (EffectPicker) is outlined.
+/// apart, a column per device: what it's playing, its volume as a small marker beside it (red while it's muted); an
+/// effect's marker shows only for a while after a shortcut turned it up or down, then fades. A muted column has a thin grey line top to bottom; a highlighted effect's (EffectPicker) is outlined.
 /// </summary>
 internal sealed class SpectrumMeter : FrameworkElement
 {
@@ -38,14 +38,14 @@ internal sealed class SpectrumMeter : FrameworkElement
     /// <summary>The gap between the devices and the effects, with a faint line in it.</summary>
     private const double Spacer = 14;
     private (string Label, float Level, double Volume, bool Muted)[] devices = Array.Empty<(string, float, double, bool)>();
-    private (string Label, float Level, bool Muted, bool Bright, bool Highlighted)[] items = Array.Empty<(string, float, bool, bool, bool)>();
+    private (string Label, float Level, bool Muted, bool Bright, bool Highlighted, double Volume, double Marker)[] items = Array.Empty<(string, float, bool, bool, bool, double, double)>();
     private float[] peaks = Array.Empty<float>();
     private double[] peakHeld = Array.Empty<double>();
 
     public SpectrumMeter() => Height = 150;
 
     /// <summary>The levels now (0..1), one per device and one per effect; called by the view's timer.</summary>
-    public void Update((string Label, float Level, double Volume, bool Muted)[] devicesNow, (string Label, float Level, bool Muted, bool Bright, bool Highlighted)[] now, double dt)
+    public void Update((string Label, float Level, double Volume, bool Muted)[] devicesNow, (string Label, float Level, bool Muted, bool Bright, bool Highlighted, double Volume, double Marker)[] now, double dt)
     {
         int n = devicesNow.Length + now.Length;
         if (peaks.Length != n) { peaks = new float[n]; peakHeld = new double[n]; }
@@ -78,7 +78,8 @@ internal sealed class SpectrumMeter : FrameworkElement
         for (int c = 0; c < n; c++)
         {
             bool device = c < nd;
-            var (label, level, muted, bright, highlighted) = device ? (devices[c].Label, devices[c].Level, devices[c].Muted, false, false) : items[c - nd];
+            var (label, level, muted, bright, highlighted, volume, marker) = device
+                ? (devices[c].Label, devices[c].Level, devices[c].Muted, false, false, devices[c].Volume, 1.0) : items[c - nd];
             double left = c * col + (device ? 0 : spacer), x = left + (col - bar) / 2;
             int lit = (int)Math.Round(Math.Clamp(level, 0, 1) * Segments);
             int peak = (int)Math.Ceiling(Math.Clamp(peaks[c], 0, 1) * Segments) - 1;
@@ -90,7 +91,12 @@ internal sealed class SpectrumMeter : FrameworkElement
                 // (muted: faint, picked or not)
                 dc.DrawRectangle(on && !muted ? MeterColours.Lit(band, bright) : MeterColours.Unlit(band, bright && !muted), null, rect);
             }
-            if (device) VolumeMarker(dc, x, h, devices[c].Volume, muted);
+            if (marker > 0)
+            {
+                if (marker < 1) dc.PushOpacity(marker);
+                VolumeMarker(dc, x, h, volume, muted);
+                if (marker < 1) dc.Pop();
+            }
             if (muted) dc.DrawRectangle(MeterColours.MutedLine, null, new Rect(x + bar / 2 - 0.75, 0, 1.5, h));
             if (highlighted)
             {
@@ -109,7 +115,7 @@ internal sealed class SpectrumMeter : FrameworkElement
         }
     }
 
-    /// <summary>A device's volume: a small triangle left of its column pointing at the height it's set to.</summary>
+    /// <summary>A device's or effect's volume: a small triangle left of its column pointing at the height it's set to.</summary>
     private void VolumeMarker(DrawingContext dc, double x, double h, double volume, bool muted)
     {
         double y = h - Math.Clamp(volume, 0, 1) * h, size = 4;

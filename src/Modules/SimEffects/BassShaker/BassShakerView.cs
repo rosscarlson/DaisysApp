@@ -38,6 +38,8 @@ internal sealed class BassShakerView : UserControl
     private Widget? metersWidget;
     private readonly Dictionary<string, MiniMeter> effectMeters = new(), deviceMeters = new();
     private readonly Dictionary<string, float> deviceLevels = new();
+    /// <summary>When a shortcut last turned each effect up or down: its volume marker shows in the meters for a while.</summary>
+    private readonly Dictionary<ShakerEffect, DateTime> adjusted = new();
     private readonly Dictionary<string, TextBlock> deviceProblems = new();
     private readonly DispatcherTimer meterTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private readonly Debounce saveTimer;
@@ -114,6 +116,8 @@ internal sealed class BassShakerView : UserControl
         meterTimer.Tick += (_, _) => Tick();
         IsVisibleChanged += (_, _) => Meters();
         hotkeys.Changed += () => { VolumeControl.Refresh(); Save(); };
+        hotkeys.Adjusted += v => { if (v is ShakerEffect e) adjusted[e] = DateTime.UtcNow; };
+        picker.Adjusted += e => adjusted[e] = DateTime.UtcNow;
     }
 
     /// <summary>The effects of the SimEffects profile in use.</summary>
@@ -265,7 +269,7 @@ internal sealed class BassShakerView : UserControl
     {
         var signals = engine.Signals;
         var showing = Picked;
-        var levels = signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing, picker.IsHighlighted(s.Effect))).ToArray();
+        var levels = signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing, picker.IsHighlighted(s.Effect), s.Effect.Volume, Marker(s.Effect))).ToArray();
         // each device's output (its peak, falling back), its volume and mute: the meters' columns on the left
         var devices = settings.Devices.Select(d =>
         {
@@ -292,6 +296,17 @@ internal sealed class BassShakerView : UserControl
     }
 
     /// <summary>The effect outlined and bright: the Level Wizard's step while it's open, else the one picked by shortcuts.</summary>
+    /// <summary>An effect's volume marker in the meters: shown 5 s after a shortcut turned it up or down, then fading (0: hidden).</summary>
+    private double Marker(ShakerEffect e)
+    {
+        if (!adjusted.TryGetValue(e, out var at)) return 0;
+        double age = (DateTime.UtcNow - at).TotalSeconds;
+        if (age < 5) return 1;
+        if (age < 6) return 6 - age;
+        adjusted.Remove(e);
+        return 0;
+    }
+
     private ShakerEffect? Picked => wizard != null ? wizard.Showing : picker.Current;
 
     /// <summary>A device's column in the meters: its short name, and its channel when it's one of two on a device.</summary>

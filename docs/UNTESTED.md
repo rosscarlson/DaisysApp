@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.3 (Shaker → an effect's volume marker):** press **Effect +** / **-** (or an effect's own Volume Up / Down): the
+  marker should appear beside that effect's column in the meters (and widget), follow each press, and fade 5 s after the last.
 - **4.17.2 (Shaker → Big Effects, BST-300EX at 32 Hz):** in a game, curbs, impacts and crashes should now hit like
   the engine's low-rev shake did; the device's Big Effects slider (opened device) moves it, Off for the old sound,
   and its Test plays it. Built from a recording of the rig; the change itself not felt yet.

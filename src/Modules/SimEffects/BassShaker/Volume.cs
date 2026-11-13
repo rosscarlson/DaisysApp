@@ -25,6 +25,8 @@ internal sealed class VolumeHotkeys : IDisposable
 
     /// <summary>A shortcut changed a volume (on the UI thread).</summary>
     public event Action? Changed;
+    /// <summary>A shortcut turned this volume up or down (on the UI thread).</summary>
+    public event Action<IVolume>? Adjusted;
 
     /// <summary>The on / off shortcut.</summary>
     public Hotkey OnOff { get; private set; } = null!;
@@ -46,8 +48,8 @@ internal sealed class VolumeHotkeys : IDisposable
         var volumes = targets().ToList();
         foreach (var (id, title, v) in volumes)
         {
-            items.Add((Spec(id + ".Up", title, T("Volume Up"), () => v.Keys.Up, k => v.Keys.Up = k), () => Nudge(() => { v.Volume = Math.Min(1, Math.Round(v.Volume + Step, 2)); v.Muted = false; })));
-            items.Add((Spec(id + ".Down", title, T("Volume Down"), () => v.Keys.Down, k => v.Keys.Down = k), () => Nudge(() => v.Volume = Math.Max(0, Math.Round(v.Volume - Step, 2)))));
+            items.Add((Spec(id + ".Up", title, T("Volume Up"), () => v.Keys.Up, k => v.Keys.Up = k), () => Nudge(() => { v.Volume = Math.Min(1, Math.Round(v.Volume + Step, 2)); v.Muted = false; }, v)));
+            items.Add((Spec(id + ".Down", title, T("Volume Down"), () => v.Keys.Down, k => v.Keys.Down = k), () => Nudge(() => v.Volume = Math.Max(0, Math.Round(v.Volume - Step, 2)), v)));
             items.Add((Spec(id + ".Mute", title, T("Mute"), () => v.Keys.Mute, k => v.Keys.Mute = k), () => Nudge(() => v.Muted = !v.Muted)));
         }
         var all = Hotkeys.Replace(Prefix, items);
@@ -62,9 +64,10 @@ internal sealed class VolumeHotkeys : IDisposable
         Get = get, Set = k => { set(k); settings.Save(); },
     };
 
-    private void Nudge(Action change)
+    private void Nudge(Action change, IVolume? adjusted = null)
     {
         change();
+        if (adjusted != null) Adjusted?.Invoke(adjusted);
         Changed?.Invoke();
     }
 

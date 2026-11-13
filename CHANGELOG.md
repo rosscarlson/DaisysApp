@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.3**
+- **SimEffects → Shaker:** turning one effect up or down with a shortcut (its own **Volume Up** / **Down**, or **Effect +** /
+  **-**) shows its volume in the meters (and the meters' widget) as the devices' is: the small marker beside its column,
+  for 5 seconds after the last press, then fading.
+
 **4.17.2**
 - **SimEffects → Shaker:** **Curbs**, **Impacts** and **Crashes** play at a device's **Big Effects** frequency (a new
   slider in the device's settings; Off: their own Hz), held there, with a curb's bumps at least two waves long. The

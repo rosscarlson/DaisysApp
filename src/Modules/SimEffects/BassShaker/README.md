@@ -40,7 +40,7 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its background, On top
   and Click through, then **Done**; right-click it to move it again, its **Delete** closes it. It stays open at the next start
   (`MetersWidget`), and moves while the tab isn't showing. Since 4.16.2 the meters start with a column per device
-  (set apart by a faint line): what it's playing, a small marker beside it at its volume, red while it's muted. Since 3.24.2 its edit strip has **Background** (0%: only the
+  (set apart by a faint line): what it's playing, a small marker beside it at its volume, red while it's muted; since 4.17.3 an effect turned up or down by a shortcut shows its marker too, for 5 seconds after the last press, then fading. Since 3.24.2 its edit strip has **Background** (0%: only the
   meters, over the game), and it hides while the profile is stopped. While it's open, a **Widgets** card at the bottom left
   lists it with **Edit** and **Delete** (since 3.8.6, Core's `Widget.ListCard`; a deleted one can be made again: 3.7.0
   failed with "already the logical child of another element").
