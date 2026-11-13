@@ -70,6 +70,8 @@ internal sealed class SessionData
     public bool HasG { get; private set; }
     public bool HasDistance { get; private set; }
     public bool HasGear { get; private set; }
+    /// <summary>(since 4.15.4) Has the engine's rpm.</summary>
+    public bool HasRpm { get; private set; }
 
     public Lap? BestLap => Laps.Where(l => l.Complete).MinBy(l => l.Seconds);
 
@@ -205,6 +207,7 @@ internal sealed class SessionData
         data.HasG = data.LatG.Any(v => !double.IsNaN(v));
         data.HasDistance = data.Distance.Any(v => !double.IsNaN(v));
         data.HasGear = data.Gear.Any(v => v >= 1) && data.Rpm.Any(v => v > 0);
+        data.HasRpm = data.Rpm.Any(v => v > 0);
         data.Pauses.AddRange(pauses);
         data.FindLaps();
         return data;

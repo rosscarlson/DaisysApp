@@ -94,8 +94,8 @@ internal sealed class Run
     }
 }
 
-/// <summary>What the comparison chart draws, a lane each.</summary>
-internal enum Channel { Delta, Speed, Throttle, Brake, Steering, Clutch }
+/// <summary>What the comparison chart draws, a lane each (since 4.15.4 the rpm and the gear too).</summary>
+internal enum Channel { Delta, Speed, Throttle, Brake, Steering, Clutch, Rpm, Gear }
 
 /// <summary>
 /// Two runs (laps or sessions; this one and another, maybe someone else's) drawn over each other, along the distance
@@ -144,6 +144,8 @@ internal sealed class CompareChart : LayeredChart
     public HashSet<(Channel Channel, int Run)> Hidden { get; } = new();
     /// <summary>The line drawn bold, the others faded (null: none).</summary>
     public (Channel Channel, int Run)? Highlight { get; set; }
+    /// <summary>(since 4.15.4) The run (1 or 2) whose lines are all drawn bold in white, the others faded (null: none).</summary>
+    public int? HighlightRun { get; set; }
     /// <summary>Whether the Delta lane shows.</summary>
     public bool ShowDelta { get; set; } = true;
     /// <summary>(since 4.13.0) One timeline per run, every channel on it, instead of a lane per channel.</summary>
@@ -233,7 +235,31 @@ internal sealed class CompareChart : LayeredChart
         Channel.Brake => PedalColours.Brake,
         Channel.Steering => Colors.White,
         Channel.Clutch => PedalColours.Impact,
+        Channel.Rpm => Color.FromRgb(0x2E, 0xD3, 0xD3),
+        Channel.Gear => Color.FromRgb(0xFF, 0x7E, 0xB6),
         _ => PedalColours.Warning,
+    };
+
+    /// <summary>(since 4.15.4) A channel's name.</summary>
+    public static string NameOf(Channel c) => c switch
+    {
+        Channel.Delta => T("Delta"),
+        Channel.Speed => T("Speed"),
+        Channel.Throttle => T("Throttle"),
+        Channel.Brake => T("Brake"),
+        Channel.Clutch => T("Clutch"),
+        Channel.Rpm => T("RPM"),
+        Channel.Gear => T("Gear"),
+        _ => T("Steering"),
+    };
+
+    /// <summary>(since 4.15.4) Whether a session's log has a channel (speed, rpm and gear not in every game's).</summary>
+    public static bool Logged(SessionData d, Channel c) => c switch
+    {
+        Channel.Speed => d.HasSpeed,
+        Channel.Rpm => d.HasRpm,
+        Channel.Gear => d.HasGear,
+        _ => true,
     };
 
     public bool Shown(Channel c, int run) => (run == 1 ? a : b) != null && !Hidden.Contains((c, run));
@@ -398,7 +424,7 @@ internal sealed class CompareChart : LayeredChart
     private List<Channel> Overlaid(int run)
     {
         var r = run == 1 ? a : b;
-        return r == null ? new() : Enum.GetValues<Channel>().Where(c => c != Channel.Delta && Shown(c, run) && (c != Channel.Speed || r.Data.HasSpeed)).ToList();
+        return r == null ? new() : Enum.GetValues<Channel>().Where(c => c != Channel.Delta && Shown(c, run) && Logged(r.Data, c)).ToList();
     }
 
     /// <summary>The lanes shown, top to bottom, with their heights.</summary>
@@ -417,7 +443,7 @@ internal sealed class CompareChart : LayeredChart
             }
             return lanes;
         }
-        var shown = Enum.GetValues<Channel>().Where(c => (c == Channel.Delta ? ShowDelta : Shown(c, 1) || Shown(c, 2)) && Has(c)).ToList();
+        var shown = Enum.GetValues<Channel>().Where(c => c == Channel.Delta ? ShowDelta && Has(c) : (Shown(c, 1) && Logged(a!.Data, c)) || (Shown(c, 2) && Logged(b!.Data, c))).ToList();
         double weights = shown.Sum(c => c is Channel.Speed ? 1.4 : 1);
         double y = 4 + MarkerRow;
         foreach (var c in shown)
@@ -432,8 +458,7 @@ internal sealed class CompareChart : LayeredChart
     private bool Has(Channel c) => c switch
     {
         Channel.Delta => delta != null,
-        Channel.Speed => (a?.Data.HasSpeed ?? false) || (b?.Data.HasSpeed ?? false),
-        _ => a != null || b != null,
+        _ => (a != null && Logged(a.Data, c)) || (b != null && Logged(b.Data, c)),
     };
 
     private static double[] Series(SessionData d, Channel c) => c switch
@@ -442,19 +467,32 @@ internal sealed class CompareChart : LayeredChart
         Channel.Throttle => d.Throttle,
         Channel.Brake => d.Brake,
         Channel.Clutch => d.Clutch,
+        Channel.Rpm => d.Rpm,
+        Channel.Gear => d.Gear,
         _ => d.Steer,
     };
 
-    private double TopSpeed()
+    /// <summary>A lane's top: the speed's (since 4.15.4 the rpm's, the gear's) highest of both runs; the pedals' 1.</summary>
+    private double Top(Channel c)
     {
+        if (c is not (Channel.Speed or Channel.Rpm or Channel.Gear)) return 1;
         double top = 1;
         foreach (var r in new[] { a, b })
         {
             if (r == null) continue;
-            for (int i = r.From; i <= r.To; i++) if (r.Data.Speed[i] > top) top = r.Data.Speed[i];
+            var s = Series(r.Data, c);
+            for (int i = r.From; i <= r.To; i++) if (s[i] > top) top = s[i];
         }
-        return top * 1.05;
+        return c == Channel.Gear ? top + 0.5 : top * 1.05;
     }
+
+    /// <summary>(since 4.15.4) A lane's top as its label: the speed in its unit, the rpm, the gear.</summary>
+    private static string TopText(Channel c, double top) => c switch
+    {
+        Channel.Speed => $"{Speeds.Of(top):0}",
+        Channel.Rpm => $"{top:0}",
+        _ => $"{top - 0.5:0}",
+    };
 
     private double DeltaRange()
     {
@@ -510,25 +548,18 @@ internal sealed class CompareChart : LayeredChart
             dc.DrawText(PedalColours.Text(this, T("Pick a session"), 13, dim), new Point(r.Left + 12, r.Top + 12));
             return;
         }
-        double speedTop = TopSpeed(), deltaRange = DeltaRange();
+        var tops = Enum.GetValues<Channel>().ToDictionary(c => c, Top);
+        double deltaRange = DeltaRange();
         var white = PedalColours.Theme(this, "TextBrush");
         foreach (var (c, laneRun, area) in lanes)
         {
             dc.DrawRectangle(room, null, area);
             if (laneRun != 0)
             {
-                DrawOverlaid(dc, laneRun, area, speedTop, deltaRange, dim, gridPen, white);
+                DrawOverlaid(dc, laneRun, area, tops, deltaRange, dim, gridPen, white);
                 continue;
             }
-            string name = c switch
-            {
-                Channel.Delta => T("Delta"),
-                Channel.Speed => Speeds.Unit,
-                Channel.Throttle => T("Throttle"),
-                Channel.Brake => T("Brake"),
-                Channel.Clutch => T("Clutch"),
-                _ => T("Steering"),
-            };
+            string name = c == Channel.Speed ? Speeds.Unit : NameOf(c);
             var label = PedalColours.Text(this, name, 10, dim);
             label.MaxTextWidth = Left - 6;
             dc.DrawText(label, new Point(2, area.Top + area.Height / 2 - label.Height / 2));
@@ -540,11 +571,11 @@ internal sealed class CompareChart : LayeredChart
                 dc.DrawText(PedalColours.Text(this, F("+{0:0.0} s", deltaRange), 9, dim), new Point(area.Left + 3, area.Top + 1));
                 dc.DrawText(PedalColours.Text(this, F("-{0:0.0} s", deltaRange), 9, dim), new Point(area.Left + 3, area.Bottom - 13));
                 // above the line: the other run slower (this one gaining), in this one's colour
-                DrawSeries(dc, a!, delta!, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(c)), 1.6, Highlight != null ? 0.35 : 1), area);
+                DrawSeries(dc, a!, delta!, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(c)), 1.6, Highlight != null || HighlightRun != null ? 0.35 : 1), area);
             }
             else
             {
-                double top = c == Channel.Speed ? speedTop : 1;
+                double top = tops[c];
                 double Y(double v) => c == Channel.Steering
                     ? area.Bottom - Math.Clamp(v, 0, 1) * area.Height
                     : area.Bottom - Math.Clamp(v / top, 0, 1) * area.Height;
@@ -553,17 +584,15 @@ internal sealed class CompareChart : LayeredChart
                     double y = area.Top + area.Height * q / 4;
                     dc.DrawLine(c == Channel.Steering && q == 2 ? PedalColours.Pen(dim, 1, 0.45) : gridPen, new Point(area.Left, y), new Point(area.Right, y));
                 }
-                if (c == Channel.Speed)
-                    dc.DrawText(PedalColours.Text(this, $"{Speeds.Of(top):0}", 9, dim), new Point(area.Left + 3, area.Top + 1));
+                if (c is Channel.Speed or Channel.Rpm or Channel.Gear)
+                    dc.DrawText(PedalColours.Text(this, TopText(c, top), 9, dim), new Point(area.Left + 3, area.Top + 1));
                 // the faded one first, the highlighted one on top
-                var order = Highlight == (c, 1) ? new[] { 2, 1 } : new[] { 1, 2 };
+                var order = Highlight == (c, 1) || HighlightRun == 1 ? new[] { 2, 1 } : new[] { 1, 2 };
                 foreach (int which in order)
                 {
                     var r = which == 1 ? a : b;
-                    if (r == null || !Shown(c, which)) continue;
-                    bool hi = Highlight == (c, which), faded = Highlight != null && !hi;
-                    var brush = c == Channel.Steering ? white : PedalColours.Frozen(ColourOf(c));
-                    DrawSeries(dc, r, Series(r.Data, c), r.From, Y, LinePen(brush, hi ? 2.6 : 1.5, faded ? 0.3 : 1, which == 2), area);
+                    if (r == null || !Shown(c, which) || !Logged(r.Data, c)) continue;
+                    DrawSeries(dc, r, Series(r.Data, c), r.From, Y, Line(c, which, white), area);
                 }
             }
             dc.Pop();
@@ -680,6 +709,16 @@ internal sealed class CompareChart : LayeredChart
         }
     }
 
+    /// <summary>A run's line of a channel: in its colour (the other run's dotted); bold if it's highlighted (since 4.15.4
+    /// in white, its run highlighted), faded if another is.</summary>
+    private Pen Line(Channel c, int run, Brush white, bool dotted = true)
+    {
+        bool runHi = HighlightRun == run, hi = Highlight == (c, run) || runHi;
+        bool faded = (Highlight != null || HighlightRun != null) && !hi;
+        var brush = runHi || c == Channel.Steering ? white : PedalColours.Frozen(ColourOf(c));
+        return LinePen(brush, hi ? 2.6 : 1.5, faded ? 0.3 : 1, dotted && run == 2);
+    }
+
     /// <summary>(since 4.15.2) What the chart was last drawn with, for its top layer (null: nothing to compare).</summary>
     private (List<Lane> Lanes, double Bottom, bool Tip)? drawn;
 
@@ -711,6 +750,9 @@ internal sealed class CompareChart : LayeredChart
         lines.Add(T("Brake") + " " + Pair(Channel.Brake, d => d.Brake, v => $"{v * 100:0}%"));
         lines.Add(T("Steering") + " " + Pair(Channel.Steering, d => d.Steer, v => $"{(v - 0.5) * 450:+0;-0;0}°"));
         if (Shown(Channel.Clutch, 1) || Shown(Channel.Clutch, 2)) lines.Add(T("Clutch") + " " + Pair(Channel.Clutch, d => d.Clutch, v => $"{v * 100:0}%"));
+        if (Has(Channel.Rpm) && (Shown(Channel.Rpm, 1) || Shown(Channel.Rpm, 2))) lines.Add(T("RPM") + " " + Pair(Channel.Rpm, d => d.Rpm, v => $"{v:0}"));
+        if (Has(Channel.Gear) && (Shown(Channel.Gear, 1) || Shown(Channel.Gear, 2)))
+            lines.Add(T("Gear") + " " + Pair(Channel.Gear, d => d.Gear, v => Math.Round(v) switch { < 0 => "R", 0 => "N", var g => $"{g:0}" }));
         var ft = PedalColours.Text(this, string.Join("\n", lines), 11, text);
         double bx = px + 12 + ft.Width + 12 > w ? px - 12 - ft.Width - 12 : px + 12;
         dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(bx, lanes[0].Area.Top + 4, ft.Width + 12, ft.Height + 8), 4, 4);
@@ -732,7 +774,7 @@ internal sealed class CompareChart : LayeredChart
 
     /// <summary>(since 4.13.0) A run's timeline, combined: every channel it shows drawn over each other, each on its own
     /// scale, and on the first the Delta.</summary>
-    private void DrawOverlaid(DrawingContext dc, int run, Rect area, double speedTop, double deltaRange, Brush dim, Pen gridPen, Brush white)
+    private void DrawOverlaid(DrawingContext dc, int run, Rect area, Dictionary<Channel, double> tops, double deltaRange, Brush dim, Pen gridPen, Brush white)
     {
         var label = PedalColours.Text(this, run == 1 ? T("Session 1") : T("Session 2"), 10, dim);
         label.MaxTextWidth = Left - 6;
@@ -745,21 +787,19 @@ internal sealed class CompareChart : LayeredChart
         }
         var channels = Overlaid(run);
         if (channels.Contains(Channel.Speed))
-            dc.DrawText(PedalColours.Text(this, $"{Speeds.Of(speedTop):0}", 9, dim), new Point(area.Left + 3, area.Top + 1));
+            dc.DrawText(PedalColours.Text(this, TopText(Channel.Speed, tops[Channel.Speed]), 9, dim), new Point(area.Left + 3, area.Top + 1));
         var r = run == 1 ? a! : b!;
         if (run == 1 && ShowDelta && delta != null)
         {
             double Yd(double v) => area.Top + area.Height / 2 - v / deltaRange * area.Height / 2;
-            DrawSeries(dc, r, delta, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(Channel.Delta)), 1.6, Highlight != null ? 0.35 : 1), area);
+            DrawSeries(dc, r, delta, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(Channel.Delta)), 1.6, Highlight != null || HighlightRun != null ? 0.35 : 1), area);
         }
         // (the highlighted one on top)
         foreach (var c in channels.OrderBy(c => Highlight == (c, run)))
         {
-            double top = c == Channel.Speed ? speedTop : 1;
+            double top = tops[c];
             double Y(double v) => area.Bottom - Math.Clamp(v / top, 0, 1) * area.Height;
-            bool hi = Highlight == (c, run), faded = Highlight != null && !hi;
-            var brush = c == Channel.Steering ? white : PedalColours.Frozen(ColourOf(c));
-            DrawSeries(dc, r, Series(r.Data, c), r.From, Y, LinePen(brush, hi ? 2.6 : 1.5, faded ? 0.3 : 1, false), area);
+            DrawSeries(dc, r, Series(r.Data, c), r.From, Y, Line(c, run, white, dotted: false), area);
         }
         dc.Pop();
     }

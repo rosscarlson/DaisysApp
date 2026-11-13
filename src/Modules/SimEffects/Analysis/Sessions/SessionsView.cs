@@ -452,6 +452,11 @@ internal sealed class SessionsView
             player.Seek(i);
             fromVideo = false;
         };
+        // (since 4.15.4) a click on either video plays or pauses Compare (YouTube's own play, under it, played a moment
+        // and was paused again to keep in step)
+        void PlayOrPause() { if (lastA != null) player.Play(player.Playing ? 0 : 1); }
+        video.Clicked += PlayOrPause;
+        video2.Clicked += PlayOrPause;
         RaceVideos.Changed += ShowVideos;
         // (since 4.15.0) a race video's name and description on YouTube, from its session
         RaceUploads.Describe = key => items.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is not { } i ? null
@@ -862,6 +867,8 @@ internal sealed class SessionsView
         s.Children.Add(compareOverview);
         s.Children.Add(new PlaybackBar(player));
         videoChart.Hidden.Add((Channel.Clutch, 1));
+        videoChart.Hidden.Add((Channel.Rpm, 1));
+        videoChart.Hidden.Add((Channel.Gear, 1));
         video.SetVolume(settings.VideoVolume, settings.VideoMuted);
         video.VolumeChanged += () =>
         {
@@ -957,6 +964,8 @@ internal sealed class SessionsView
         if (both == bothVideos) return;
         bothVideos = both;
         videoLabel1.Visibility = videoLabel2.Visibility = both ? Visibility.Visible : Visibility.Collapsed;
+        // (since 4.15.4 the two the same: the names over them clear the pop-out button)
+        video.Room = video2.Room = both ? 10 : 32;
         videoPair.ColumnDefinitions[1].Width = new GridLength(both ? 10 : 0);
         videoPair.ColumnDefinitions[2].Width = both ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
         videoPair.Children[1].Visibility = both ? Visibility.Visible : Visibility.Collapsed;
@@ -1106,27 +1115,61 @@ internal sealed class SessionsView
                 Chip(T("Throttle"), settings.FrictionThrottle, v => settings.FrictionThrottle = friction.ShowThrottle = v),
             },
         };
+        // (since 4.15.4) the g averaged over a moment, so a bumpy corner doesn't scatter it
+        friction.Smooth = settings.FrictionSmooth;
+        var smooth = new ComboBox { Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Smoothing") };
+        System.Windows.Automation.AutomationProperties.SetName(smooth, T("Smoothing"));
+        foreach (double s in new[] { 0, 0.1, 0.25, 0.5, 1 })
+            smooth.Items.Add(new ComboBoxItem { Content = s == 0 ? T("Smooth: off") : F("Smooth: {0} s", s), Tag = s });
+        smooth.SelectedItem = smooth.Items.OfType<ComboBoxItem>().MinBy(i => Math.Abs((double)i.Tag - settings.FrictionSmooth));
+        smooth.SelectionChanged += (_, _) =>
+        {
+            if (smooth.SelectedItem is not ComboBoxItem { Tag: double s }) return;
+            friction.Smooth = settings.FrictionSmooth = s;
+            settings.Save();
+        };
+        chips.Children.Add(smooth);
         DockPanel.SetDock(chips, Dock.Top);
         System.Windows.Automation.AutomationProperties.SetName(friction, T("Friction Circle"));
         return new DockPanel { Children = { chips, friction } };
     }
 
     /// <summary>(since 4.13.0) S1 or S2 ("Session 1" or "Session 2" until 4.13.2), outlined as the channels' but blue: a
-    /// click opens the <see cref="SessionPicker"/>.</summary>
+    /// click opens the <see cref="SessionPicker"/>; since 4.15.4 a click highlights the session on Compare's chart
+    /// (every line of it white, the other's faded; again: not) and a right-click opens the picker.</summary>
     private Button PickerLink(string label, int slot)
     {
         var text = new TextBlock { Text = label, FontWeight = FontWeights.SemiBold };
         text.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
         var outline = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 8, 3), BorderThickness = new Thickness(1), Background = Brushes.Transparent, Child = text };
         outline.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+        pickerOutlines[slot - 1] = outline;
         var link = new Button
         {
             Content = outline, Template = new ControlTemplate(typeof(Button)) { VisualTree = new FrameworkElementFactory(typeof(ContentPresenter)) },
-            Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Find a session"),
+            Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = T("Click: highlight · Right-click: find a session"),
         };
-        System.Windows.Automation.AutomationProperties.SetName(link, F("Find {0}", label));
-        link.Click += (_, _) => SessionPicker.Show(Host, this, slot);
+        System.Windows.Automation.AutomationProperties.SetName(link, F("Highlight {0}", label));
+        link.Click += (_, _) =>
+        {
+            compareChart.HighlightRun = compareChart.HighlightRun == slot ? null : slot;
+            compareChart.Highlight = null;
+            ShowLegend();
+            compareChart.InvalidateVisual();
+        };
+        link.MouseRightButtonUp += (_, e) => { e.Handled = true; SessionPicker.Show(Host, this, slot); };
         return link;
+    }
+
+    /// <summary>(since 4.15.4) S1's and S2's outlines: filled while their session's highlighted.</summary>
+    private readonly Border?[] pickerOutlines = new Border?[2];
+
+    private void ShowPickerLinks()
+    {
+        for (int k = 0; k < 2; k++)
+            if (pickerOutlines[k] is { } o)
+                o.Background = compareChart.HighlightRun == k + 1 ? PedalColours.Frozen(Colors.White, 0x26) : Brushes.Transparent;
     }
 
     /// <summary>(since 4.13.0) The sessions a slot of Compare can have: every one for Session 1, Session 2's list for 2.</summary>
@@ -1468,7 +1511,6 @@ internal sealed class SessionsView
             var lb = (otherPart.SelectedItem as Part)?.Lap;
             if (la is { Complete: true } && lb is { Complete: true })
                 status.Add(F("{0} vs {1} ({2:+0.000;-0.000;0.000} s)", Lap.LapClock(la.Seconds), Lap.LapClock(lb.Seconds), lb.Seconds - la.Seconds));
-            if (!compareChart.ByDistance) status.Add(T("By time (no distance in the telemetry)"));
             if (!SameTrack(a, b, la, lb)) status.Add(T("Not the same track?"));
         }
         compareStatus.Text = string.Join(" · ", status);
@@ -1500,19 +1542,25 @@ internal sealed class SessionsView
     private void ShowLegend()
     {
         var all = new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering, Channel.Clutch };
-        Entry(thisChannels, compareChart, lastA, 1, all, SaveChannels, ShowLegend, combineChip);
-        Entry(otherChannels, compareChart, lastB, 2, all, SaveChannels, ShowLegend);
+        // (since 4.15.4 the rpm and the gear in a drop-down after them)
+        var more = new[] { Channel.Rpm, Channel.Gear };
+        Entry(thisChannels, compareChart, lastA, 1, all, SaveChannels, ShowLegend, combineChip, more);
+        Entry(otherChannels, compareChart, lastB, 2, all, SaveChannels, ShowLegend, more: more);
         // (since 4.10.9) the Video's timeline: Session 1's, no Clutch
         Entry(videoChannels, videoChart, videoRun, 1, all[..^1], () =>
         {
-            settings.VideoHidden = videoChart.Hidden.Where(h => h.Channel != Channel.Clutch).Select(h => h.Channel.ToString()).ToList();
+            settings.VideoHidden = videoChart.Hidden.Where(h => h.Channel is not (Channel.Clutch or Channel.Rpm or Channel.Gear)).Select(h => h.Channel.ToString()).ToList();
             settings.Save();
         }, ShowLegend);
         deltaChip.Visibility = lastB != null && compareChart.ByDistance ? Visibility.Visible : Visibility.Collapsed;
+        // (since 4.15.4 S2 highlighted with no Session 2: not)
+        if (compareChart.HighlightRun == 2 && lastB == null) compareChart.HighlightRun = null;
+        ShowPickerLinks();
     }
 
-    /// <summary>A run's channels on a chart: a box (shown or not) and a name (highlighted) each, after <paramref name="first"/>.</summary>
-    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again, UIElement? first = null)
+    /// <summary>A run's channels on a chart: a box (shown or not) and a name (highlighted) each, after <paramref name="first"/>;
+    /// (since 4.15.4) then <paramref name="more"/> in a drop-down.</summary>
+    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again, UIElement? first = null, Channel[]? more = null)
     {
         toggles.Children.Clear();
         toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
@@ -1520,40 +1568,88 @@ internal sealed class SessionsView
         if (first != null) toggles.Children.Add(first);
         foreach (var c in channels)
         {
-            var channel = c;
-            string text = c switch { Channel.Speed => T("Speed"), Channel.Throttle => T("Throttle"), Channel.Brake => T("Brake"), Channel.Clutch => T("Clutch"), _ => T("Steering") };
-            bool hi = chart.Highlight == (c, which);
-            var box = new CheckBox { IsChecked = !chart.Hidden.Contains((c, which)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Show") };
-            System.Windows.Automation.AutomationProperties.SetName(box, F("Show {0}", text) + (which == 2 ? " 2" : ""));
-            Ui.OnToggle(box, on =>
-            {
-                if (on) chart.Hidden.Remove((channel, which)); else chart.Hidden.Add((channel, which));
-                save();
-                chart.InvalidateVisual();
-            });
-            Brush colour = c == Channel.Steering ? PedalColours.Theme(toggles, "TextBrush") : PedalColours.Frozen(CompareChart.ColourOf(c));
-            var swatch = new Border { Width = 16, Height = 3, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, Background = colour };
-            // (Session 2's dotted, as its lines)
-            if (which == 2)
-                swatch.Background = new VisualBrush(new Border { Width = 3, Height = 3, Background = colour })
-                {
-                    TileMode = TileMode.Tile, Stretch = Stretch.None, Viewport = new Rect(0, 0, 6, 3), ViewportUnits = BrushMappingMode.Absolute,
-                    Viewbox = new Rect(0, 0, 6, 3), ViewboxUnits = BrushMappingMode.Absolute,
-                };
-            var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, FontWeight = hi ? FontWeights.SemiBold : FontWeights.Normal };
-            var tag = new Border
-            {
-                CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 10, 3), Cursor = Cursors.Hand, ToolTip = T("Highlight"),
-                BorderThickness = new Thickness(1), BorderBrush = hi ? colour : PedalColours.Frozen(Colors.Gray, 0x60),
-                Background = hi ? PedalColours.Frozen(Colors.White, 0x26) : Brushes.Transparent,
-                Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, label } },
-            };
-            tag.MouseLeftButtonUp += (_, _) => { chart.Highlight = hi ? null : (channel, which); again(); chart.InvalidateVisual(); };
+            var item = ChannelItem(toggles, chart, which, c, save, again);
+            item.Margin = new Thickness(10, 0, 0, 0);
             // (a channel the run hasn't, its room kept so the rows line up)
-            var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), Children = { box, tag } };
-            if (c == Channel.Speed && !r.Data.HasSpeed) item.Visibility = Visibility.Hidden;
+            if (!CompareChart.Logged(r.Data, c)) item.Visibility = Visibility.Hidden;
             toggles.Children.Add(item);
         }
+        if (more != null) toggles.Children.Add(MoreChannels(toggles, chart, r, which, more, save, again));
+    }
+
+    /// <summary>(since 4.15.4) A drop-down of a run's other channels, each with its box, colour and name as the rows';
+    /// on the button a dot in the colour of each shown.</summary>
+    private static FrameworkElement MoreChannels(StackPanel toggles, CompareChart chart, Run r, int which, Channel[] channels, Action save, Action again)
+    {
+        var dots = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        void Dots()
+        {
+            dots.Children.Clear();
+            foreach (var c in channels.Where(c => !chart.Hidden.Contains((c, which)) && CompareChart.Logged(r.Data, c)))
+                dots.Children.Add(new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Margin = new Thickness(0, 0, 4, 0), Fill = PedalColours.Frozen(CompareChart.ColourOf(c)) });
+        }
+        Dots();
+        var chevron = new TextBlock { Text = "", FontSize = 8, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 1, 0, 0) };
+        chevron.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var button = new Border
+        {
+            CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 8, 3), Margin = new Thickness(10, 0, 0, 0), Cursor = Cursors.Hand, ToolTip = T("More channels"),
+            BorderThickness = new Thickness(1), BorderBrush = PedalColours.Frozen(Colors.Gray, 0x60), Background = Brushes.Transparent, VerticalAlignment = VerticalAlignment.Center,
+            Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { dots, new TextBlock { Text = T("More"), VerticalAlignment = VerticalAlignment.Center }, chevron } },
+        };
+        System.Windows.Automation.AutomationProperties.SetName(button, T("More channels") + (which == 2 ? " 2" : ""));
+        var list = new StackPanel();
+        var frame = new Border { Child = list, Padding = new Thickness(8, 6, 10, 2), BorderThickness = new Thickness(1) };
+        frame.SetResourceReference(Border.BackgroundProperty, "PopupBrush");
+        frame.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+        frame.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "TextBrush");
+        var popup = new Popup { PlacementTarget = button, Placement = PlacementMode.Bottom, StaysOpen = false, Child = frame, VerticalOffset = 2 };
+        foreach (var c in channels)
+        {
+            var item = ChannelItem(toggles, chart, which, c, () => { save(); Dots(); }, () => { popup.IsOpen = false; again(); });
+            item.Margin = new Thickness(0, 0, 0, 4);
+            if (!CompareChart.Logged(r.Data, c)) item.IsEnabled = false;
+            list.Children.Add(item);
+        }
+        button.MouseLeftButtonUp += (_, _) => popup.IsOpen = !popup.IsOpen;
+        // (neither in this run's log: its room kept so the rows line up)
+        if (!channels.Any(c => CompareChart.Logged(r.Data, c))) button.Visibility = Visibility.Hidden;
+        return button;
+    }
+
+    /// <summary>A run's channel on a chart: a box (shown or not) and a name in its colour (highlighted).</summary>
+    private static StackPanel ChannelItem(FrameworkElement owner, CompareChart chart, int which, Channel c, Action save, Action again)
+    {
+        var channel = c;
+        string text = CompareChart.NameOf(c);
+        bool hi = chart.Highlight == (c, which);
+        var box = new CheckBox { IsChecked = !chart.Hidden.Contains((c, which)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Show") };
+        System.Windows.Automation.AutomationProperties.SetName(box, F("Show {0}", text) + (which == 2 ? " 2" : ""));
+        Ui.OnToggle(box, on =>
+        {
+            if (on) chart.Hidden.Remove((channel, which)); else chart.Hidden.Add((channel, which));
+            save();
+            chart.InvalidateVisual();
+        });
+        Brush colour = c == Channel.Steering ? PedalColours.Theme(owner, "TextBrush") : PedalColours.Frozen(CompareChart.ColourOf(c));
+        var swatch = new Border { Width = 16, Height = 3, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, Background = colour };
+        // (Session 2's dotted, as its lines)
+        if (which == 2)
+            swatch.Background = new VisualBrush(new Border { Width = 3, Height = 3, Background = colour })
+            {
+                TileMode = TileMode.Tile, Stretch = Stretch.None, Viewport = new Rect(0, 0, 6, 3), ViewportUnits = BrushMappingMode.Absolute,
+                Viewbox = new Rect(0, 0, 6, 3), ViewboxUnits = BrushMappingMode.Absolute,
+            };
+        var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, FontWeight = hi ? FontWeights.SemiBold : FontWeights.Normal };
+        var tag = new Border
+        {
+            CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 10, 3), Cursor = Cursors.Hand, ToolTip = T("Highlight"),
+            BorderThickness = new Thickness(1), BorderBrush = hi ? colour : PedalColours.Frozen(Colors.Gray, 0x60),
+            Background = hi ? PedalColours.Frozen(Colors.White, 0x26) : Brushes.Transparent,
+            Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, label } },
+        };
+        tag.MouseLeftButtonUp += (_, _) => { chart.Highlight = hi ? null : (channel, which); chart.HighlightRun = null; again(); chart.InvalidateVisual(); };
+        return new StackPanel { Orientation = Orientation.Horizontal, Children = { box, tag } };
     }
 
     /// <summary>Compare's lines kept: Delta in CompareChannels (with every channel, so none is hidden as one left out

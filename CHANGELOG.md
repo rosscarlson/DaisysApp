@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.15.4**
+- **SimEffects → Analysis → Compare:** the friction circle is smoothed: each dot is the g averaged over a moment
+  round it (a quarter of a second at first; **Smooth:** off, 0.1, 0.25, 0.5 or 1 s beside its Brake and Throttle), so a
+  bumpy corner no longer scatters it. What's recorded doesn't change, only how it's drawn.
+- **Compare's chart:** **RPM** and **Gear** can be drawn too (each its own lane, or on the combined timeline), from a
+  **More** drop-down at the end of each Session row: a box, colour and name for each, as the others, and a dot in its
+  colour on the button for each shown. The readout shows them.
+- **S1 and S2:** a click highlights that session on the chart (every line of it in white, the other's faded; again:
+  not); a right-click opens the window to find a session, as a click did.
+- **The race videos:** a click on a video (YouTube's too) plays or pauses Compare, everything with it; it used to
+  reach YouTube's player, which played a moment and was paused again to keep in step. Two videos side by side now
+  have the same room above them and a black frame round the picture, whether they play from the file or YouTube.
+- "By time (no distance in the telemetry)" is no longer shown above the chart.
+
 **4.15.3**
 - **SimEffects → Analysis → Compare:** a race video played from YouTube no longer stutters as it plays. It was played
   again from its place each time the app asked YouTube where it was while it was still loading, so it started loading

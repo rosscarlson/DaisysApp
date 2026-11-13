@@ -38,6 +38,8 @@ public sealed class SessionSettings
     /// <summary>(since 4.13.0) The friction circle: what it shows.</summary>
     public bool FrictionBrake { get; set; } = true;
     public bool FrictionThrottle { get; set; } = true;
+    /// <summary>(since 4.15.4) The friction circle's g smoothed over this long (seconds; 0: as logged).</summary>
+    public double FrictionSmooth { get; set; } = 0.25;
 
     /// <summary>(since 4.13.3) Under Compare's chart: the Video's, Track Map's and friction circle's widths as last
     /// dragged (shares; empty: 4, 1 and 3).</summary>

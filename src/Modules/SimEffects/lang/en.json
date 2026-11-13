@@ -487,7 +487,6 @@
   "None": "None",
   "No other race on this track yet": "No other race on this track yet",
   "{0} vs {1} ({2:+0.000;-0.000;0.000} s)": "{0} vs {1} ({2:+0.000;-0.000;0.000} s)",
-  "By time (no distance in the telemetry)": "By time (no distance in the telemetry)",
   "Not the same track?": "Not the same track?",
   "Speed": "Speed",
   "Show": "Show",
@@ -910,8 +909,6 @@
   "Combine": "Combine",
   "One timeline per session, every channel on it": "One timeline per session, every channel on it",
   "Friction Circle": "Friction Circle",
-  "Find a session": "Find a session",
-  "Find {0}": "Find {0}",
   "Has a video": "Has a video",
   "-- No Matches --": "-- No Matches --",
   "A new track: {0} (name it in Known Tracks)": "A new track: {0} (name it in Known Tracks)",
@@ -968,5 +965,13 @@
   "Delete the video file once it's uploaded": "Delete the video file once it's uploaded",
   "Watched from YouTube": "Watched from YouTube",
   "Uploading to YouTube: {0}": "Uploading to YouTube: {0}",
-  "Uploading to YouTube: {0} ({1} more waiting)": "Uploading to YouTube: {0} ({1} more waiting)"
+  "Uploading to YouTube: {0} ({1} more waiting)": "Uploading to YouTube: {0} ({1} more waiting)",
+  "RPM": "RPM",
+  "Gear": "Gear",
+  "More": "More",
+  "More channels": "More channels",
+  "Smooth: off": "Smooth: off",
+  "Smooth: {0} s": "Smooth: {0} s",
+  "Click: highlight · Right-click: find a session": "Click: highlight · Right-click: find a session",
+  "Highlight {0}": "Highlight {0}"
 }

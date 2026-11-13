@@ -18,7 +18,9 @@ namespace DaisysApp.Shared.YouTube;
 /// (<see cref="Time"/>, <see cref="Updated"/> ten times a second, asked of the page). A paused seek shows that frame.
 /// Seeks go at most every 120 ms (the last one wins). The page is served from a made-up https address (YouTube wants
 /// one to embed). Since 4.15.3 a video loaded is played a moment muted and paused before it's <see cref="Ready"/>, so
-/// YouTube buffers its start ahead of a play; <see cref="Buffering"/> says when a play waits for more.
+/// YouTube buffers its start ahead of a play; <see cref="Buffering"/> says when a play waits for more. Since 4.15.4 a
+/// click on the video doesn't reach YouTube's player (which played it a moment, then was paused again): it's
+/// <see cref="Clicked"/>, for the caller to play or pause.
 /// </summary>
 public sealed class YouTubePlayer : Grid
 {
@@ -55,6 +57,9 @@ public sealed class YouTubePlayer : Grid
 
     /// <summary>Where it is, what it's doing or an error changed (on the UI thread).</summary>
     public event Action? Updated;
+    /// <summary>(since 4.15.4) The video was clicked (on the UI thread).</summary>
+    public event Action? Clicked;
+    private int clicks;
 
     public YouTubePlayer()
     {
@@ -158,7 +163,7 @@ public sealed class YouTubePlayer : Grid
             view.CoreWebView2.Settings.IsZoomControlEnabled = false;
             // (links in the player, such as its title, go to the browser)
             view.CoreWebView2.NewWindowRequested += (_, e) => { e.Handled = true; Ui.Open(e.Uri); };
-            view.CoreWebView2.NavigationStarting += (_, _) => { apiReady = false; loaded = null; };
+            view.CoreWebView2.NavigationStarting += (_, _) => { apiReady = false; loaded = null; clicks = 0; };
             view.CoreWebView2.Navigate($"https://{Host}/player.html");
             pageReady = true;
         }
@@ -213,6 +218,11 @@ public sealed class YouTubePlayer : Grid
                 Run(VolumeScript());
                 ShowNote(null);
                 if (!double.IsNaN(seekTo)) SendSeek();
+            }
+            if (m.TryGetProperty("c", out var c) && c.GetInt32() is var n && n != clicks)
+            {
+                clicks = n;
+                Clicked?.Invoke();
             }
             if (m.TryGetProperty("d", out var d) && d.ValueKind == JsonValueKind.Number && d.GetDouble() > 0) Duration = d.GetDouble();
             if (Ready && m.TryGetProperty("t", out var t) && t.ValueKind == JsonValueKind.Number)
@@ -274,9 +284,10 @@ public sealed class YouTubePlayer : Grid
 
     private const string Page = """
         <!doctype html><html><head><meta charset="utf-8"><meta name="referrer" content="strict-origin-when-cross-origin">
-        <style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#p{position:absolute;inset:0;width:100%;height:100%}</style></head>
-        <body><div id="p"></div><script>
-        var api=false,player=null,primed=false,priming=false,err=0,want=false;
+        <style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#p{position:absolute;inset:0;width:100%;height:100%}#c{position:absolute;inset:0;z-index:2;cursor:pointer}</style></head>
+        <body><div id="p"></div><div id="c"></div><script>
+        var api=false,player=null,primed=false,priming=false,err=0,want=false,clicks=0;
+        document.getElementById('c').onclick=function(){clicks++;};
         function onYouTubeIframeAPIReady(){api=true;}
         function prime(){priming=true;player.mute();player.playVideo();setTimeout(function(){if(priming){priming=false;primed=true;}},10000);}
         function load(id){
@@ -296,7 +307,7 @@ public sealed class YouTubePlayer : Grid
         function pause(){want=false;player.pauseVideo();}
         function stop(){primed=false;priming=false;want=false;if(player)player.stopVideo();}
         function poll(){
-          var o={a:api,p:primed,e:err,w:want};
+          var o={a:api,p:primed,e:err,w:want,c:clicks};
           if(player&&player.getCurrentTime){o.t=player.getCurrentTime();o.s=player.getPlayerState();o.d=player.getDuration();}
           return JSON.stringify(o);
         }

@@ -51,6 +51,22 @@ internal sealed class RaceVideoView : DockPanel
 
     /// <summary>(since 4.10.9) The volume or mute changed (to be kept).</summary>
     public event Action? VolumeChanged;
+    /// <summary>(since 4.15.4) The picture was clicked (YouTube's too): Compare plays or pauses.</summary>
+    public event Action? Clicked;
+    /// <summary>(since 4.15.4) The picture, the note and YouTube's player: the same room either way, so two side by side
+    /// line up whichever plays from where (under Compare room at the top for the slot's pop-out button).</summary>
+    private readonly Grid screen = new() { ClipToBounds = true, Margin = new Thickness(0, 32, 0, 0) };
+    private double room = 32;
+
+    /// <summary>(since 4.15.4) Under Compare, the room over the picture (less with a name over it).</summary>
+    public double Room
+    {
+        set
+        {
+            room = value;
+            if (tools.Visibility != Visibility.Visible) screen.Margin = new Thickness(0, room, 0, 0);
+        }
+    }
 
     private SessionData? data;
     private string? log;
@@ -143,7 +159,10 @@ internal sealed class RaceVideoView : DockPanel
         ShowLevel();
 
         RenderOptions.SetBitmapScalingMode(picture, BitmapScalingMode.HighQuality);
-        Children.Add(new Grid { Children = { picture, note }, ClipToBounds = true });
+        screen.Children.Add(picture);
+        screen.Children.Add(note);
+        screen.MouseLeftButtonUp += (_, _) => { if (link != null) Clicked?.Invoke(); };
+        Children.Add(screen);
         ShowNote(T("No video of this race"));
         Ui.Every(this, 30, Tick);
     }
@@ -155,7 +174,7 @@ internal sealed class RaceVideoView : DockPanel
         {
             tools.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
             if (!value) Pause();
-            if (tube != null) tube.Margin = TubeMargin;
+            screen.Margin = value ? new Thickness(0) : new Thickness(0, room, 0, 0);
             // (the volume on the tools' first line, right of the clock; back under the picture)
             ((Panel)volume.Parent).Children.Remove(volume);
             if (value)
@@ -227,6 +246,7 @@ internal sealed class RaceVideoView : DockPanel
         picture.Source = bitmap = null;
         tube?.Load(null);
         if (tube != null) tube.Visibility = Visibility.Collapsed;
+        screen.Background = link == null ? null : Brushes.Black;
         export.IsEnabled = link?.HasFile == true;
         if (link == null) { ShowNote(T("No video of this race")); ShowSync(); return; }
         if (!link.HasFile && YouTube.IdOf(link.YouTube) is { } id)
@@ -234,9 +254,10 @@ internal sealed class RaceVideoView : DockPanel
             ShowNote(null);
             if (tube == null)
             {
-                tube = new YouTubePlayer { Margin = TubeMargin };
+                tube = new YouTubePlayer();
                 tube.Updated += TubeUpdated;
-                ((Grid)picture.Parent).Children.Insert(1, tube);
+                tube.Clicked += () => Clicked?.Invoke();
+                screen.Children.Insert(1, tube);
             }
             tube.Visibility = Visibility.Visible;
             tube.SetVolume(soundLevel, muted);
@@ -252,9 +273,6 @@ internal sealed class RaceVideoView : DockPanel
         ShowSync();
     }
 
-    /// <summary>(since 4.15.0) YouTube's page is a window of its own, over anything WPF draws: under Compare it leaves
-    /// room at the top for the slot's pop-out button.</summary>
-    private Thickness TubeMargin => tools.Visibility == Visibility.Visible ? new Thickness(0) : new Thickness(0, 32, 0, 0);
 
     /// <summary>(since 4.15.0) Played from YouTube (its file deleted, or someone else's session's).</summary>
     private bool OnTube => tube != null && tube.Visibility == Visibility.Visible;

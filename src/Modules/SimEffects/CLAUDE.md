@@ -58,6 +58,12 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.15.4:** the log is resampled to 100 Hz from whatever rate it was logged at: the friction circle's noise
+  was the bumps, so it's smoothed when drawn (`FrictionCircle.Smooth`, a centred average; `FrictionSmooth`, 0.25 s),
+  not by logging less. `Channel.Rpm`/`Gear` (hidden at first: not in old `CompareChannels`; always hidden on the
+  Video's timeline) in `MoreChannels`' popup; `CompareChart.Logged` says which a log has. `HighlightRun` (S1/S2's
+  click; the picker on right-click). YouTube's page has a div over the iframe counting clicks (`c` in the poll →
+  `YouTubePlayer.Clicked`), so YouTube never sees a click; `RaceVideoView.screen` holds the margin for both sources.
 - **4.15.3:** YouTube in Compare stuttered: the poll's `s==1` test made buffering (3) look stopped, so Follow called
   `tube.Play` (a seek) every poll and it buffered again. Now Playing includes buffering, drift uses `Now` (Time moved
   on since heard), a loaded video is primed (muted play, pause, seek 0) before `Ready`, and `Playback.Waiting` holds the
