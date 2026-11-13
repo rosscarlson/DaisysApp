@@ -58,6 +58,11 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.17.4 (Share Session laid out again, the user's list):** `ShareWindow` picks any own session (`pick`, refilled on
+  `view.Listed`), Share hidden once shared (no re-send from the UI; `ShareQueue.Share`'s edit path stays), Auto a
+  toggle icon (`AccentButton` style while on), no search prefill or count, double-click/Enter compare and close;
+  `SessionsView.Export(Item)` saves a whole race. Seen in DaisysDev with the fake server (layout, Auto on/off saved);
+  the drop-down with sessions and the double-click not tried (DaisysDev has no races; no mouse on its windows).
 - **4.17.0 (Share Session, "Remote Logging"):** `Sessions/SessionShares.cs` (`SessionServer`: the server's `sessions`
   channel, rid-matched asks, gzip export file in 512 KB `put`s, `get` 1 MB; `ShareQueue`: one at a time, auto from
   `AutoSince`, waits while YouTube's going or marked `Upload` and not failed, and 60 s after the log's last write;

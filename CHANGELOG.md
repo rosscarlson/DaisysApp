@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.4**
+- **SimEffects → Analysis → Share Session**, laid out again:
+  - **Session** (new) is a drop-down of every session of yours (Session 1 at first); picking one fills its **Title**
+    and **Description**, which now sit side by side (Session and Title on the left, Description on the right). The
+    "This session" line went.
+  - A session is shared once: **Share** goes once it's shared, and **Remove** is there instead. **Export** saves the
+    session picked (Session 1's lap picked, as before).
+  - **Share each session automatically** is a button at the bottom right, between Refresh and Close: blue while it's on.
+  - **All Shared Sessions** (was On Daisy's Server): the **Search** box is at the top right and starts empty; the "n of
+    n shown" count went.
+  - A double-click (or Enter) on a shared session puts it in Compare and closes the window.
+
 **4.17.3**
 - **SimEffects → Shaker:** turning one effect up or down with a shortcut (its own **Volume Up** / **Down**, or **Effect +** /
   **-**) shows its volume in the meters (and the meters' widget) as the devices' is: the small marker beside its column,

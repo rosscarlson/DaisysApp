@@ -349,17 +349,21 @@ not; those older files aren't listed (they name no race), and stay in the folder
   - Speeds are in mph where the region isn't metric, km/h elsewhere.
 - **Share Session** (since 4.17.0; the share icon at the top right of the Analysis card, where Import was): sessions
   shared on [Daisy's Server](../../../../README.md#settings--general) (set up in Settings → General), everyone's.
-  - **This session** is Session 1: its **Title** and **Description** (the track, car, best, laps and date at first,
-    as its YouTube video's), **Share** (since shared, it sends the title, description and YouTube link again),
-    **Remove** (Confirm?), **Export** to a file (the lap picked, or the race) and **Import** from one. Only your own
-    sessions are shared (not an imported one). **Share each session automatically**: each race kept from then on is
-    shared by itself a minute after it ends, and when its video is going to YouTube (Upload each race's video), only
-    once it's there, so it's shared with the link.
-  - **On Daisy's Server**: every session shared, newest first: Date, Driver, Game, Track, Car, Class, Laps, Best,
-    Video, Title (the description in its tooltip), Shared by (the server's user and PC) and Shared. **Search** looks
-    in every column as you type (each word anywhere in the row); it starts with Session 1's track. A right-click on
+  - **Session** (since 4.17.4; Session 1 only, 4.17.0–4.17.3): a drop-down of your own sessions (not imported ones),
+    Session 1 at first. Under it its **Title**, and beside them its **Description** (the track, car, best, laps and
+    date at first, as its YouTube video's). **Share** (once: it goes when the session's shared; it sent the title and
+    description again 4.17.0–4.17.3), **Remove** (Confirm?) in its place, **Export** to a file (Session 1: the lap
+    picked, or the race; another: the whole race) and **Import** from one.
+  - **Share each session automatically** (the button between Refresh and Close at the bottom right since 4.17.4, blue
+    while on; a tick box at the top before): each race kept from then on is shared by itself a minute after it ends,
+    and when its video is going to YouTube (Upload each race's video), only once it's there, so it's shared with the
+    link.
+  - **All Shared Sessions** (On Daisy's Server 4.17.0–4.17.3): every session shared, newest first: Date, Driver, Game, Track, Car, Class, Laps, Best,
+    Video, Title (the description in its tooltip), Shared by (the server's user and PC) and Shared. **Search** (top right)
+    looks in every column as you type (each word anywhere in the row); it starts empty (Session 1's track
+    4.17.0–4.17.3). A right-click on
     Driver, Game, Track, Car, Class, Video or Shared by filters it, a click on a header sorts. **Compare** (or a
-    double-click, or Enter) downloads the session picked into `ForzaSessions\Imported\` (once; one of yours is read
+    double-click, or Enter, which also close the window since 4.17.4) downloads the session picked into `ForzaSessions\Imported\` (once; one of yours is read
     from its own log) and puts it in Session 2 (Session 1 when there's none); **Open on YouTube**; **Delete** takes one
     of yours off the server. The list follows what anyone shares or deletes while it's open.
   - The Session Manager's **Server** column says each session's share: Shared, Sharing n%, Waiting for YouTube or

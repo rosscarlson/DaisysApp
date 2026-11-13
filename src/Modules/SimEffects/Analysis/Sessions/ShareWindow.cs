@@ -15,12 +15,13 @@ using DaisysServer.Protocol;
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
-/// (since 4.17.0) Share Session, from the Analysis card's share icon (Import was there before): Session 1 shared on
-/// Daisy's Server with a title and description (the track, car and so on at first; edited, and sent again once shared),
-/// taken off it, exported to a file or a file imported, and each session shared by itself; under it every session
-/// shared on the server, everyone's, searched as you type (every column) and filtered from a right-click on a header,
-/// sorted by a header. Compare downloads the one picked (once) into Imported and puts it in Session 2. The search starts
-/// with Session 1's track. One window.
+/// (since 4.17.0) Share Session, from the Analysis card's share icon (Import was there before): one of this PC's sessions
+/// (picked in a drop-down; Session 1 at first) shared on Daisy's Server once, with a title and description (the track,
+/// car and so on at first) beside each other, taken off it, exported to a file or a file imported; each session shared
+/// by itself (a toggle at the bottom); under it every session shared on the server, everyone's, searched as you type
+/// (every column, the box at the top right) and filtered from a right-click on a header, sorted by a header. Compare
+/// downloads the one picked (once) into Imported and puts it in Session 2; a double-click does too and closes the window.
+/// One window.
 /// </summary>
 internal sealed class ShareWindow
 {
@@ -28,13 +29,13 @@ internal sealed class ShareWindow
 
     private readonly SessionsView view;
     private readonly Window window;
-    private readonly TextBlock session = new() { FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
-    private readonly TextBlock shareState = new() { Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly ComboBox pick = new() { VerticalContentAlignment = VerticalAlignment.Center };
+    private readonly TextBlock shareState = new() { Margin = new Thickness(4, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBox title = new() { VerticalContentAlignment = VerticalAlignment.Center };
-    private readonly TextBox description = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 64, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+    private readonly TextBox description = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     private readonly Button share = Tool("", T("Share on Daisy's Server"), new Thickness(0)), unshare = Tool("", T("Remove from Daisy's Server"), new Thickness(8, 0, 0, 0)),
         export = Tool("", T("Export to a file"), new Thickness(8, 0, 0, 0)), import = Tool("", T("Import from a file"), new Thickness(8, 0, 0, 0));
-    private readonly CheckBox auto = new() { Content = T("Share each session automatically"), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Once it's kept; after its YouTube upload when that's on") };
+    private readonly Button auto = Tool("\uE895", T("Share each session automatically"), new Thickness(0, 0, 8, 0));
     private Action disarmUnshare = () => { };
 
     private readonly TextBox search = new() { VerticalContentAlignment = VerticalAlignment.Center, ToolTip = T("Every column") };
@@ -118,19 +119,19 @@ internal sealed class ShareWindow
         body.Children.Add(top);
 
         var head = new DockPanel { Margin = new Thickness(0, 18, 0, 8) };
-        var header = Ui.Header(T("On Daisy's Server"));
+        var header = Ui.Header(T("All Shared Sessions"));
         header.VerticalAlignment = VerticalAlignment.Center;
         header.Margin = new Thickness(0, 0, 16, 0);
         DockPanel.SetDock(header, Dock.Left);
         head.Children.Add(header);
-        var label = new TextBlock { Text = T("Search"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-        DockPanel.SetDock(label, Dock.Left);
-        head.Children.Add(label);
         search.Width = 320;
         System.Windows.Automation.AutomationProperties.SetName(search, T("Search"));
         search.TextChanged += (_, _) => shown?.Refresh();
-        DockPanel.SetDock(search, Dock.Left);
+        DockPanel.SetDock(search, Dock.Right);
         head.Children.Add(search);
+        var label = new TextBlock { Text = T("Search"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 8, 0) };
+        DockPanel.SetDock(label, Dock.Right);
+        head.Children.Add(label);
         status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         head.Children.Add(status);
         DockPanel.SetDock(head, Dock.Top);
@@ -145,7 +146,18 @@ internal sealed class ShareWindow
         refresh.Click += (_, _) => _ = List();
         var close = Tool("", T("Close"), new Thickness(0));
         close.Click += (_, _) => window.Close();
-        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { refresh, close } };
+        auto.Click += (_, _) =>
+        {
+            var all = SessionShares.All;
+            all.Auto = !all.Auto;
+            // (from now: not every session kept before)
+            if (all.Auto) all.AutoSince = DateTime.Now;
+            all.Save();
+            ShowAuto();
+            if (all.Auto) view.Refresh();
+        };
+        ShowAuto();
+        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { refresh, auto, close } };
         DockPanel.SetDock(right, Dock.Right);
         buttons.Children.Add(right);
         buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { compare, watch, delete } });
@@ -156,15 +168,14 @@ internal sealed class ShareWindow
         body.Children.Add(grid);
         window.Content = body;
 
-        // (Session 1's track, to find others' runs of it)
-        if (view.Session1 is { TrackName.Length: > 0 } s1) search.Text = s1.TrackName;
-        ShowSession();
-        window.Activated += (_, _) => { if (!Same(view.Session1, item)) ShowSession(); };
+        Fill(view.Session1);
+        view.Listed += Listed;
         ShareQueue.Changed += ShareChanged;
         SessionServer.Pushed += Pushed;
         ServerLink.Changed += LinkChanged;
         window.Closed += (_, _) =>
         {
+            view.Listed -= Listed;
             ShareQueue.Changed -= ShareChanged;
             SessionServer.Pushed -= Pushed;
             ServerLink.Changed -= LinkChanged;
@@ -174,73 +185,102 @@ internal sealed class ShareWindow
         _ = List();
     }
 
-    private static bool Same(SessionsView.Item? a, SessionsView.Item? b) => a?.Key == b?.Key;
+    /// <summary>The automatic sharing button: blue while it's on.</summary>
+    private void ShowAuto()
+    {
+        bool on = SessionShares.All.Auto;
+        if (on) auto.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
+        else auto.ClearValue(FrameworkElement.StyleProperty);
+        System.Windows.Automation.AutomationProperties.SetItemStatus(auto, on ? T("On") : T("Off"));
+    }
 
-    // ---------------------------------------------------------------- Session 1
+    // ---------------------------------------------------------------- the session to share
 
     private FrameworkElement BuildShare()
     {
         var panel = new StackPanel();
-        var line = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
-        var header = Ui.Header(T("This session"));
-        header.VerticalAlignment = VerticalAlignment.Center;
-        header.Margin = new Thickness(0, 0, 16, 0);
-        DockPanel.SetDock(header, Dock.Left);
-        line.Children.Add(header);
-        DockPanel.SetDock(session, Dock.Left);
-        line.Children.Add(session);
-        shareState.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        line.Children.Add(shareState);
-        panel.Children.Add(line);
-
         var form = new Grid();
-        form.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         form.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        form.RowDefinitions.Add(new RowDefinition());
-        form.RowDefinitions.Add(new RowDefinition());
-        void Field(string name, Control box, int row)
+        form.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
+        form.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        for (int r = 0; r < 4; r++) form.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        TextBlock Label(string name, int row, int column)
         {
-            var l = new TextBlock { Text = name, VerticalAlignment = row == 0 ? VerticalAlignment.Center : VerticalAlignment.Top, Margin = new Thickness(0, row == 0 ? 0 : 4, 10, 0) };
+            var l = new TextBlock { Text = name, Margin = new Thickness(0, row == 0 ? 0 : 8, 0, 4) };
             Grid.SetRow(l, row);
+            Grid.SetColumn(l, column);
             form.Children.Add(l);
-            System.Windows.Automation.AutomationProperties.SetName(box, name);
-            box.Margin = new Thickness(0, 0, 0, 6);
-            Grid.SetRow(box, row);
-            Grid.SetColumn(box, 1);
-            form.Children.Add(box);
+            return l;
         }
-        Field(T("Title"), title, 0);
-        Field(T("Description"), description, 1);
+        Label(T("Session"), 0, 0);
+        System.Windows.Automation.AutomationProperties.SetName(pick, T("Session"));
+        pick.SelectionChanged += (_, _) => { if (!filling) ShowPicked(); };
+        Grid.SetRow(pick, 1);
+        form.Children.Add(pick);
+        var titleLabel = Label(T("Title"), 2, 0);
+        System.Windows.Automation.AutomationProperties.SetName(title, T("Title"));
+        Grid.SetRow(title, 3);
+        form.Children.Add(title);
+        Label(T("Description"), 0, 2);
+        System.Windows.Automation.AutomationProperties.SetName(description, T("Description"));
+        Grid.SetRow(description, 1);
+        Grid.SetRowSpan(description, 3);
+        Grid.SetColumn(description, 2);
+        form.Children.Add(description);
+        // (the description as tall as the session and title beside it, however long it is)
+        void Fit() => description.Height = pick.ActualHeight + titleLabel.ActualHeight + 12 + title.ActualHeight;
+        pick.SizeChanged += (_, _) => Fit();
+        title.SizeChanged += (_, _) => Fit();
         panel.Children.Add(form);
 
-        var actions = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+        var actions = new DockPanel { Margin = new Thickness(0, 10, 0, 0) };
         share.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
         share.Click += async (_, _) => await Share();
         disarmUnshare = ConfirmButton.ArmIcon(unshare, async () => { if (item != null && SessionShares.Of(item.Key) is { } s) await Unshare(s.Id); });
-        export.Click += (_, _) => view.Export();
-        import.Click += (_, _) => view.Import();
-        auto.IsChecked = SessionShares.All.Auto;
-        auto.Click += (_, _) =>
+        export.Click += (_, _) =>
         {
-            var all = SessionShares.All;
-            all.Auto = auto.IsChecked == true;
-            // (from now: not every session kept before)
-            if (all.Auto) all.AutoSince = DateTime.Now;
-            all.Save();
-            if (all.Auto) view.Refresh();
+            if (item == null) return;
+            // (Session 1: the lap picked, as Compare's export did; another: the whole session)
+            if (view.Session1?.Key == item.Key && view.CanExport) view.Export();
+            else view.Export(item);
         };
-        DockPanel.SetDock(auto, Dock.Right);
-        actions.Children.Add(auto);
-        actions.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { share, unshare, export, import } });
+        import.Click += (_, _) => view.Import();
+        shareState.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        // (Share, gone once it's shared, or Remove; then Export and Import)
+        share.Margin = unshare.Margin = export.Margin = import.Margin = new Thickness(0, 0, 8, 0);
+        var tools = new StackPanel { Orientation = Orientation.Horizontal, Children = { share, unshare, export, import } };
+        DockPanel.SetDock(tools, Dock.Left);
+        actions.Children.Add(tools);
+        actions.Children.Add(shareState);
         panel.Children.Add(actions);
         return panel;
     }
 
-    /// <summary>Session 1, its share and the title and description it has (or would have).</summary>
-    private void ShowSession()
+    private bool filling;
+
+    /// <summary>This PC's sessions in the drop-down (not imported ones), <paramref name="keep"/> picked (else the one
+    /// picked, else the newest).</summary>
+    private void Fill(SessionsView.Item? keep)
     {
-        item = view.Session1;
-        session.Text = item?.Title ?? T("No session picked");
+        string? key = keep is { Imported: false } ? keep.Key : item?.Key;
+        var mine = view.Items.Where(i => !i.Imported).ToList();
+        filling = true;
+        pick.ItemsSource = mine;
+        pick.SelectedItem = mine.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) ?? mine.FirstOrDefault();
+        filling = false;
+        var was = item;
+        item = pick.SelectedItem as SessionsView.Item;
+        // (the same session listed again: what's being typed stays)
+        if (was == null || was.Key != item?.Key) ShowPicked();
+        else ShareChanged();
+    }
+
+    private void Listed() => window.Dispatcher.BeginInvoke(() => Fill(null));
+
+    /// <summary>The session picked, its share and the title and description it has (or would have).</summary>
+    private void ShowPicked()
+    {
+        item = pick.SelectedItem as SessionsView.Item;
         var shared = item == null ? null : SessionShares.Of(item.Key);
         var (t, d) = item == null ? ("", "") : shared != null ? (shared.Title, shared.Description) : SessionsView.Describe(item);
         title.Text = t;
@@ -254,7 +294,7 @@ internal sealed class ShareWindow
         disarmUnshare();
         var shared = item == null ? null : SessionShares.Of(item.Key);
         string state = item == null ? "" : ShareQueue.State(item);
-        shareState.Text = item == null ? "" : item.Imported ? T("Someone else's: only your own sessions are shared")
+        shareState.Text = item == null ? T("No sessions of yours yet")
             : ShareQueue.Progress(item.Key) != null ? state
             : ShareQueue.Failure(item.Key) is { } why ? F("Couldn't be shared: {0}", why)
             : shared != null ? F("Shared {0}", shared.Shared.ToString("g", CultureInfo.CurrentCulture))
@@ -264,7 +304,7 @@ internal sealed class ShareWindow
 
     private async Task Share()
     {
-        if (item == null || item.Imported) return;
+        if (item == null || item.Imported || SessionShares.Of(item.Key) != null) return;
         if (!ServerLink.Configured) { shareState.Text = T("Daisy's Server isn't set up (Settings → General)"); return; }
         string t = title.Text.Trim(), d = description.Text.Trim();
         if (t.Length == 0) t = SessionsView.Describe(item).Title;
@@ -309,11 +349,11 @@ internal sealed class ShareWindow
         grid.SelectionChanged += (_, _) => { disarmDelete(); Enable(); };
         grid.MouseDoubleClick += (_, e) =>
         {
-            if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow) Compare();
+            if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow) Compare(close: true);
         };
         grid.PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Enter && Picked != null) { Compare(); e.Handled = true; }
+            if (e.Key == Key.Enter && Picked != null) { Compare(close: true); e.Handled = true; }
         };
     }
 
@@ -388,9 +428,7 @@ internal sealed class ShareWindow
         foreach (var c in grid.Columns)
             c.SortDirection = sorts.FirstOrDefault(s => s.PropertyName == c.SortMemberPath) is { PropertyName: not null } s ? s.Direction : null;
         if (keep != null) grid.SelectedItem = shown.Cast<Row>().FirstOrDefault(r => r.S.Id == keep);
-        int n = shown.Cast<Row>().Count();
-        status.Text = ServerLink.Configured ? (n == rows.Count ? P(rows.Count, "{0} session", "{0} sessions") + " · " + ServerLink.Name
-            : F("{0} of {1} shown", n, rows.Count)) : status.Text;
+        if (ServerLink.Configured) status.Text = "";
         Enable();
     }
 
@@ -423,11 +461,15 @@ internal sealed class ShareWindow
         bool own = item is { Imported: false };
         bool going = item != null && ShareQueue.Progress(item.Key) != null;
         var shared = item == null ? null : SessionShares.Of(item.Key);
+        // (shared once only: Share goes, Remove's there instead)
+        share.Visibility = shared != null ? Visibility.Collapsed : Visibility.Visible;
         share.IsEnabled = own && !going && ServerLink.Configured;
-        share.ToolTip = shared != null ? T("Update on Daisy's Server") : T("Share on Daisy's Server");
-        unshare.IsEnabled = shared != null && !going;
+        unshare.Visibility = shared != null ? Visibility.Visible : Visibility.Collapsed;
+        unshare.IsEnabled = !going;
         title.IsEnabled = description.IsEnabled = own;
-        export.IsEnabled = view.CanExport;
+        title.IsReadOnly = description.IsReadOnly = shared != null || going;
+        pick.IsEnabled = view.Items.Any(i => !i.Imported);
+        export.IsEnabled = own;
         var r = Picked;
         compare.IsEnabled = r != null && !busy;
         watch.IsEnabled = r?.S.Video != null;
@@ -435,8 +477,8 @@ internal sealed class ShareWindow
     }
 
     /// <summary>The session picked put in Compare: one of this PC's straight from its log, else downloaded (once) into
-    /// Imported.</summary>
-    private async void Compare()
+    /// Imported. <paramref name="close"/> (a double-click, Enter): the window closes once it's there.</summary>
+    private async void Compare(bool close = false)
     {
         if (Picked is not { } r || busy) return;
         var all = SessionShares.All;
@@ -476,6 +518,6 @@ internal sealed class ShareWindow
             }
         }
         await view.CompareDownloaded(key);
-        ShowSession();
+        if (close) window.Close();
     }
 }

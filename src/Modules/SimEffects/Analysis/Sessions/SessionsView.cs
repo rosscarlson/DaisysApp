@@ -1712,6 +1712,26 @@ internal sealed class SessionsView
         catch (Exception ex) { MessageBox.Show(Window.GetWindow(Host), F("It couldn't be saved: {0}", ex.Message), T("Analysis")); }
     }
 
+    /// <summary>(since 4.17.4) A whole session of this PC's saved as a session file (Share Session's pick, when it isn't
+    /// Session 1).</summary>
+    internal void Export(Item item)
+    {
+        if (item.Imported) return;
+        string driver = Driver;
+        string suggested = string.Join("_", $"{driver} - {item.Title}".Split(Path.GetInvalidFileNameChars()));
+        var dialog = new Microsoft.Win32.SaveFileDialog { FileName = suggested + ".csv", Filter = T("Session") + " (*.csv)|*.csv", DefaultExt = ".csv" };
+        if (dialog.ShowDialog(Window.GetWindow(Host)) != true) return;
+        try
+        {
+            var started = SessionLog.StartedOf(item.File);
+            var link = RaceVideos.Of(item.Key);
+            double? at = link?.YouTube != null ? link.VideoAt(started, 0) : null;
+            File.WriteAllText(dialog.FileName, ExportText(item.File.FullName, started, 0, long.MaxValue, driver, item.Title, link?.YouTube, at), new UTF8Encoding(false));
+            Logging.Log.Here.Info($"Analysis: exported {dialog.FileName}");
+        }
+        catch (Exception ex) { MessageBox.Show(Window.GetWindow(Host), F("It couldn't be saved: {0}", ex.Message), T("Analysis")); }
+    }
+
     /// <summary>A session's log from <paramref name="from"/> to <paramref name="to"/> (ms) as a session file of its own,
     /// with the driver's name and the session's (since 4.17.0 also what Daisy's Server shares): their Analysis imports it.</summary>
     internal static string ExportText(string path, DateTime started, long from, long to, string driver, string name, string? video, double? videoAt)
