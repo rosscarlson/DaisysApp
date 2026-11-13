@@ -1006,5 +1006,10 @@
   "Class: {0}": "Class: {0}",
   "Server": "Server",
   "All Shared Sessions": "All Shared Sessions",
-  "No sessions of yours yet": "No sessions of yours yet"
+  "No sessions of yours yet": "No sessions of yours yet",
+  "Preparing": "Preparing",
+  "Share Complete": "Share Complete",
+  "Share Failed": "Share Failed",
+  "Analysis: {0}": "Analysis: {0}",
+  "Shared once its video is on YouTube": "Shared once its video is on YouTube"
 }

@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.6**
+- **SimEffects → Analysis → Share Session**: a share shows in the title bar while it goes, as **Analysis: Preparing**
+  and **Analysis: Uploading n%** (blue), then **Analysis: Share Complete** (green) or **Analysis: Share Failed** (red)
+  for 10 seconds; with Share each session automatically on, **Analysis: Waiting for YouTube** while a race to share
+  waits for its video. Clicking it opens Analysis.
+- **SimEffects → Analysis → Compare**: the **Channels** drop-down stays open while channels are shown, hidden or
+  highlighted, so several can be changed at once; a click on its button closes it (or leaving the window).
+
 **4.17.5**
 - **SimEffects → Shaker**: every effect's column in the meters (and the meters' widget) shows its volume marker all
   the time, like the devices', so each effect's volume can be seen at a glance; grey while the effect (or device) is

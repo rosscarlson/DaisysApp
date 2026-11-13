@@ -277,7 +277,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
   - Since 4.6.3 each channel has its colour (speed blue, throttle green, brake red, steering white; since 4.7.0
     clutch violet, hidden at first), Session 2's lines dotted (before, this run blue and the other orange). On each
     Session row (since 4.7.0; a row of their own under the picks, with the run's name, before; since 4.16.1 in a
-    **Channels** drop-down with a dot in the colour of each shown, RPM and Gear too) a chip per channel: its
+    **Channels** drop-down with a dot in the colour of each shown, RPM and Gear too; since 4.17.6 it stays open while
+    they're changed, till its button's clicked again) a chip per channel: its
     box shows or hides that line (a lane goes when both its lines are hidden; Session 2's chips and **Delta** only
     while there's a Session 2), its
     name (or a click on the line, until 4.10.3) highlights it, bold, the others faded; again, back to all. Kept. The
@@ -358,6 +359,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
     while on; a tick box at the top before): each race kept from then on is shared by itself a minute after it ends,
     and when its video is going to YouTube (Upload each race's video), only once it's there, so it's shared with the
     link.
+  - (Since 4.17.6) a share shows in the title bar: **Analysis: Preparing**, **Uploading n%** (blue), then **Share
+    Complete** (green) or **Share Failed** (red) for 10 seconds; **Waiting for YouTube** while a race to share by
+    itself waits for its video. Clicking it opens Analysis.
   - **All Shared Sessions** (On Daisy's Server 4.17.0–4.17.3): every session shared, newest first: Date, Driver, Game, Track, Car, Class, Laps, Best,
     Video, Title (the description in its tooltip), Shared by (the server's user and PC) and Shared. **Search** (top right)
     looks in every column as you type (each word anywhere in the row); it starts empty (Session 1's track

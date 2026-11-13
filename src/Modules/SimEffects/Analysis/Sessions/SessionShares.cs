@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using DaisysApp.Server;
 using DaisysApp.Settings;
+using DaisysApp.Shell;
 using DaisysServer.Protocol;
 
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
@@ -255,6 +256,11 @@ internal static class ShareQueue
     private static readonly Dictionary<string, double> going = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, (string Message, DateTime At)> failed = new(StringComparer.OrdinalIgnoreCase);
     private static bool busy;
+    private const string BadgeId = "AnalysisShare";
+    // (the title bar's blue while a share goes; green or red when it's done)
+    private const string Blue = "#58A6FF";
+    private static bool waiting, held;
+    private static int turn;
 
     /// <summary>A share started, moved on, finished or failed.</summary>
     public static event Action? Changed;
@@ -279,6 +285,7 @@ internal static class ShareQueue
         going[item.Key] = 0;
         failed.Remove(item.Key);
         Changed?.Invoke();
+        Badge(T("Preparing"), title, Blue);
         try
         {
             var link = RaceVideos.Of(item.Key);
@@ -292,6 +299,7 @@ internal static class ShareQueue
                 was.Video = link?.YouTube;
                 SessionShares.All.Save();
                 Logging.Log.Here.Info($"Analysis: {item.Key} on Daisy's Server changed");
+                Done(T("Share Complete"), title, TitleBadges.Green);
                 return null;
             }
             string text = await Task.Run(() => SessionsView.ExportText(item.File.FullName, started, 0, long.MaxValue, driver, title, link?.YouTube, videoAt));
@@ -301,17 +309,26 @@ internal static class ShareQueue
                 ["class"] = item.ClassName, ["laps"] = item.Laps, ["best"] = Math.Round(item.Best, 3), ["started"] = ServerSession.Ms(started),
                 ["video"] = link?.YouTube, ["videoAt"] = videoAt,
             };
-            var progress = new Progress<double>(p => { if (going.ContainsKey(item.Key)) { going[item.Key] = p; Changed?.Invoke(); } });
+            Badge(F("Uploading {0:0}%", 0), title, Blue);
+            var progress = new Progress<double>(p =>
+            {
+                if (!going.ContainsKey(item.Key)) return;
+                going[item.Key] = p;
+                Badge(F("Uploading {0:0}%", p * 100), title, Blue);
+                Changed?.Invoke();
+            });
             string id = await SessionServer.UploadAsync(meta, text, progress);
             SessionShares.All.Shared[item.Key] = new SharedSession { Id = id, Title = title, Description = description, Shared = DateTime.Now, Video = link?.YouTube };
             SessionShares.All.Save();
             Logging.Log.Here.Info($"Analysis: {item.Key} shared on Daisy's Server ({id})");
+            Done(T("Share Complete"), title, TitleBadges.Green);
             return null;
         }
         catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException or InvalidOperationException)
         {
             failed[item.Key] = (ex.Message.TrimEnd('.'), DateTime.Now);
             Logging.Log.Here.Warn($"Analysis: {item.Key} couldn't be shared: {ex.Message}");
+            Done(T("Share Failed"), ex.Message.TrimEnd('.'), TitleBadges.Red);
             return ex.Message.TrimEnd('.');
         }
         finally
@@ -320,6 +337,29 @@ internal static class ShareQueue
             Changed?.Invoke();
         }
     }
+
+    /// <summary>(since 4.17.6) The title bar's bubble, Core's <see cref="TitleBadges"/>: "Analysis: " and what a share is
+    /// doing (Preparing, Uploading n%), then Share Complete (green) or Share Failed (red) for 10 seconds; between shares,
+    /// Waiting for YouTube while one to share by itself waits for its race video. Clicking it opens Analysis.</summary>
+    private static void Badge(string? text, string? tip, string? color)
+    {
+        turn++;
+        TitleBadges.Set(BadgeId, text == null ? null : F("Analysis: {0}", text), tip, color, "SimEffects/" + SimEffectsApplet.Analysis);
+    }
+
+    private static async void Done(string text, string tip, string? color)
+    {
+        Badge(text, tip, color);
+        held = true;
+        int mine = turn;
+        await Task.Delay(10000);
+        if (mine != turn) return;
+        held = false;
+        Idle();
+    }
+
+    /// <summary>No share going: Waiting for YouTube, or no bubble.</summary>
+    private static void Idle() => Badge(waiting ? T("Waiting for YouTube") : null, waiting ? T("Shared once its video is on YouTube") : null, Blue);
 
     /// <summary>Takes a session off the server (the user's own). Null, or the problem.</summary>
     public static async Task<string?> Unshare(string id)
@@ -344,6 +384,14 @@ internal static class ShareQueue
     /// listed again, an upload to YouTube moves on, and each minute.</summary>
     public static async void Consider(IReadOnlyList<SessionsView.Item> items, Func<SessionsView.Item, (string Title, string Description)> describe, string driver)
     {
+        bool wait = SessionShares.All.Auto && ServerLink.Configured
+            && items.Any(i => Wanted(i) && SessionShares.Of(i.Key) == null && Failure(i.Key) == null && WaitsForYouTube(i.Key));
+        if (wait != waiting)
+        {
+            waiting = wait;
+            // (not over a share going, or one just done)
+            if (going.Count == 0 && !held) Idle();
+        }
         if (busy || !SessionShares.All.Auto || !ServerLink.Configured) return;
         busy = true;
         try

@@ -58,6 +58,12 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.17.6 (share status in the title bar; Channels stays open):** `ShareQueue` sets Core's `TitleBadges`
+  ("AnalysisShare", blue `#58A6FF` while going, green/red for 10 s via `Done`/`turn`; Waiting for YouTube from
+  `Consider`). Compare's Channels popup `StaysOpen = true`, closed by its button, the window's Deactivated/LocationChanged
+  or the button going; `Entry` reopens it when the legend is rebuilt (`toggles.Tag` holds the popup). Seen in DaisysDev
+  with the fake server and the user's race list copied in (blue Uploading, green, red, cleared); Channels not tried (its
+  button is a Border: no UIA invoke, and no mouse on DaisysDev).
 - **4.17.4 (Share Session laid out again, the user's list):** `ShareWindow` picks any own session (`pick`, refilled on
   `view.Listed`), Share hidden once shared (no re-send from the UI; `ShareQueue.Share`'s edit path stays), Auto a
   toggle icon (`AccentButton` style while on), no search prefill or count, double-click/Enter compare and close;

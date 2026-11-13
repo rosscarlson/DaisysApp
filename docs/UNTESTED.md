@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.6 (share status in the title bar; Channels stays open):** end a race with Share each session automatically
+  on: the title bar should show Analysis: Waiting for YouTube (if its video uploads), Preparing, Uploading n%, then
+  Share Complete in green, gone 10 s later. In Compare, open Channels and tick and untick several, and highlight one:
+  it should stay open till its button is clicked again. Seen in DaisysDev with the fake server (Uploading, Share
+  Complete, Share Failed red then gone); the auto path and Channels not tried (no races there; no mouse on its windows).
 - **4.17.5 (Shaker → volume markers always shown):** every effect's column in the meters and the widget should have
   its marker at its volume, moving with Effect + / - and the sliders, grey while muted. Replaces 4.17.3's item.
 - **4.17.4 (Share Session laid out again):** pick another of your sessions in the Session drop-down (its title and

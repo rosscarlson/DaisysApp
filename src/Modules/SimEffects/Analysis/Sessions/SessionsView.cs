@@ -1590,15 +1590,23 @@ internal sealed class SessionsView
     /// not) and a name (highlighted) each.</summary>
     private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again, UIElement? first = null)
     {
+        // (since 4.17.6 its drop-down open again, built again, when it was)
+        var was = toggles.Tag as Popup;
+        bool open = was?.IsOpen == true;
+        if (was != null) was.IsOpen = false;
+        toggles.Tag = null;
         toggles.Children.Clear();
         toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
         if (r == null) return;
         if (first != null) toggles.Children.Add(first);
         toggles.Children.Add(MoreChannels(toggles, chart, r, which, channels, save, again));
+        if (open && toggles.Tag is Popup popup)
+            toggles.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => popup.IsOpen = true);
     }
 
     /// <summary>(since 4.15.4) A drop-down of a run's channels, each with its box, colour and name; on the button a dot in
-    /// the colour of each shown.</summary>
+    /// the colour of each shown. (Since 4.17.6) it stays open while channels are changed, till the button's clicked again
+    /// (or the window's left, or the chart's hidden).</summary>
     private static FrameworkElement MoreChannels(StackPanel toggles, CompareChart chart, Run r, int which, Channel[] channels, Action save, Action again)
     {
         var dots = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
@@ -1627,10 +1635,29 @@ internal sealed class SessionsView
         frame.SetResourceReference(Border.BackgroundProperty, "PopupBrush");
         frame.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
         frame.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "TextBrush");
-        var popup = new Popup { PlacementTarget = button, Placement = PlacementMode.Bottom, StaysOpen = false, Child = frame, VerticalOffset = 2 };
+        var popup = new Popup { PlacementTarget = button, Placement = PlacementMode.Bottom, StaysOpen = true, Child = frame, VerticalOffset = 2 };
+        toggles.Tag = popup;
+        Window? window = null;
+        void Shut(object? s, EventArgs e) => popup.IsOpen = false;
+        popup.Opened += (_, _) =>
+        {
+            window = Window.GetWindow(button);
+            if (window == null) return;
+            window.Deactivated += Shut;
+            window.LocationChanged += Shut;
+        };
+        popup.Closed += (_, _) =>
+        {
+            if (window == null) return;
+            window.Deactivated -= Shut;
+            window.LocationChanged -= Shut;
+            window = null;
+        };
+        button.IsVisibleChanged += (_, _) => { if (!button.IsVisible) popup.IsOpen = false; };
+        button.Unloaded += (_, _) => popup.IsOpen = false;
         foreach (var c in channels)
         {
-            var item = ChannelItem(toggles, chart, which, c, () => { save(); Dots(); }, () => { popup.IsOpen = false; again(); });
+            var item = ChannelItem(toggles, chart, which, c, () => { save(); Dots(); }, again);
             item.Margin = new Thickness(0, 0, 0, 4);
             if (!CompareChart.Logged(r.Data, c)) item.IsEnabled = false;
             list.Children.Add(item);
