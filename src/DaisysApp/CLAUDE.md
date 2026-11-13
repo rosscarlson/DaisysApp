@@ -61,6 +61,8 @@ short (under ~8 KB): condense what's done.
 - **Widgets (3.7.0, 3.17.2, Core 0.35/0.41):** `Shared/Widgets/Widget` (`Aspect` via WM_SIZING, edit strip via
   WM_NCHITTEST, `MakeText`/`MenuItem`/`Offer`/`Menu`, `DeleteButton`, `ListCard`); B2KR's `PopOutWindow` is one.
   4.6.8: every strip in rows (`stacked` ignored); a new widget (`Width <= 0`, strip) starts `ClickThrough`.
+  4.15.2: every widget not clicking through rests on the 1-alpha `CatchBrush` (card or not; before, card-less ones
+  caught right-clicks only where their body drew), and so does a click-through one while Ctrl+Shift is held.
 - **Title bubbles (3.13.0, 3.18.2, Core 0.39):** `TitleBadges` (`Green/Amber/Red`, `IsRed`, `Badge.Open` =
   "Module/SubTab"; AI's always last), drawn by `Shell/TitleBadgeStrip`. Tray icon colour follows (`Shell/TrayIcon.cs`).
 - **Update banner (3.23.2):** `UpdateService.CountBehindAsync` → " (N Behind)"; 0 on failure.

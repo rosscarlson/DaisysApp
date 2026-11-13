@@ -109,7 +109,7 @@ internal enum Channel { Delta, Speed, Throttle, Brake, Steering, Clutch }
 /// on its number picks one), its laps' starts, what's worth a look marked at the top (with a tooltip), and the moment picked (a
 /// zone, a shift) as a line. Since 4.13.0 <see cref="Combined"/>: one timeline per run, its channels over each other.
 /// </summary>
-internal sealed class CompareChart : FrameworkElement
+internal sealed class CompareChart : LayeredChart
 {
     private Run? a, b;
     private double[]? delta; // along A: B's time at A's distance less A's (+: B slower)
@@ -299,8 +299,9 @@ internal sealed class CompareChart : FrameworkElement
     {
         if (double.IsNaN(x) && double.IsNaN(playX)) return;
         playX = x;
-        if (pinned != null && a != null && (double.IsNaN(x) || Math.Abs(Px(x) - Px(a.XOf(pinned.At))) > 1)) pinned = null;
-        InvalidateVisual();
+        // (since 4.15.2 the cursor alone drawn again, unless the mark jumped to lets go)
+        if (pinned != null && a != null && (double.IsNaN(x) || Math.Abs(Px(x) - Px(a.XOf(pinned.At))) > 1)) { pinned = null; InvalidateVisual(); }
+        else InvalidateTop();
         PlayMoved?.Invoke();
     }
 
@@ -492,10 +493,11 @@ internal sealed class CompareChart : FrameworkElement
 
     private IEnumerable<BrakeZone> Zones() => a == null ? Enumerable.Empty<BrakeZone>() : a.Analysis.Brakes.Where(z => z.End >= a.From && z.Start <= a.To);
 
-    protected override void OnRender(DrawingContext dc)
+    protected override void RenderChart(DrawingContext dc)
     {
         double w = ActualWidth, h = ActualHeight;
         dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, w, h));
+        drawn = null;
         var text = PedalColours.Theme(this, "TextBrush");
         var dim = PedalColours.Theme(this, "TextSecondaryBrush");
         var room = PedalColours.Theme(this, "RoomBrush");
@@ -602,11 +604,6 @@ internal sealed class CompareChart : FrameworkElement
             for (double y = top0; y < bottom; y += 6) dc.DrawLine(pausePen, new Point(pa, y), new Point(pa, Math.Min(bottom, y + 3)));
             if (!pause.Hidden && pb - pa > 1) for (double y = top0; y < bottom; y += 6) dc.DrawLine(pausePen, new Point(pb, y), new Point(pb, Math.Min(bottom, y + 3)));
         }
-        if (!double.IsNaN(playX))
-        {
-            double px = Px(playX);
-            dc.DrawLine(PedalColours.Pen(Brushes.White, 1.5), new Point(px, top0 - 2), new Point(px, bottom));
-        }
         dc.Pop();
         // what's worth a look, above the lanes
         Marker? near = null;
@@ -666,30 +663,12 @@ internal sealed class CompareChart : FrameworkElement
 
         // (since 4.13.3) the mark jumped to, its tooltip as the mouse's while the mouse is off the chart
         if (near == null && hover == null && pinned != null && Px(a.XOf(pinned.At)) is var pinX && pinX >= Left && pinX <= Left + PlotWidth) near = pinned;
-        // the readout: at the mouse, else (since 4.10.3) at the cursor (not under a mark's tooltip)
-        Point? at = hover is { } hp2 && hp2.X >= Left && hp2.X <= Left + PlotWidth ? hp2 : null;
-        if (at == null && hover == null && near == null && !double.IsNaN(playX) && Px(playX) >= Left && Px(playX) <= Left + PlotWidth) at = new Point(Px(playX), 0);
-        if (at is { } p && dragFrom == null)
+        // the readout at the mouse (at the cursor: the top layer's)
+        drawn = (lanes, bottom, near != null);
+        if (hover is { } hp2 && hp2.X >= Left && hp2.X <= Left + PlotWidth && dragFrom == null)
         {
-            double x = XAt(p.X);
-            if (hover != null) dc.DrawLine(PedalColours.Pen(text, 1, 0.5), new Point(p.X, lanes[0].Area.Top), new Point(p.X, bottom));
-            var lines = new List<string> { ByDistance ? $"{x:0} m" + Times(x) : SessionChart.Clock(x, true) };
-            string Pair(Channel c, Func<SessionData, double[]> of, Func<double, string> fmt)
-            {
-                string va = a != null && !Hidden.Contains((c, 1)) ? Fmt(a.ValueAt(of(a.Data), x)) : "", vb = b != null && !Hidden.Contains((c, 2)) ? Fmt(b.ValueAt(of(b.Data), x)) : "";
-                return vb.Length == 0 ? va : va.Length == 0 ? vb : va + "  /  " + vb;
-                string Fmt(double v) => double.IsNaN(v) ? "–" : fmt(v);
-            }
-            if (delta != null && !double.IsNaN(DeltaAt(x))) lines.Add(F("Delta {0:+0.00;-0.00;0.00} s", DeltaAt(x)));
-            if (Has(Channel.Speed) && (Shown(Channel.Speed, 1) || Shown(Channel.Speed, 2))) lines.Add(Pair(Channel.Speed, d => d.Speed, v => $"{Speeds.Of(v):0} {Speeds.Unit}"));
-            lines.Add(T("Throttle") + " " + Pair(Channel.Throttle, d => d.Throttle, v => $"{v * 100:0}%"));
-            lines.Add(T("Brake") + " " + Pair(Channel.Brake, d => d.Brake, v => $"{v * 100:0}%"));
-            lines.Add(T("Steering") + " " + Pair(Channel.Steering, d => d.Steer, v => $"{(v - 0.5) * 450:+0;-0;0}°"));
-            if (Shown(Channel.Clutch, 1) || Shown(Channel.Clutch, 2)) lines.Add(T("Clutch") + " " + Pair(Channel.Clutch, d => d.Clutch, v => $"{v * 100:0}%"));
-            var ft = PedalColours.Text(this, string.Join("\n", lines), 11, text);
-            double bx = p.X + 12 + ft.Width + 12 > w ? p.X - 12 - ft.Width - 12 : p.X + 12;
-            dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(bx, lanes[0].Area.Top + 4, ft.Width + 12, ft.Height + 8), 4, 4);
-            dc.DrawText(ft, new Point(bx + 6, lanes[0].Area.Top + 8));
+            dc.DrawLine(PedalColours.Pen(text, 1, 0.5), new Point(hp2.X, lanes[0].Area.Top), new Point(hp2.X, bottom));
+            Readout(dc, hp2.X, lanes, w, text);
         }
         if (near != null && overPause == null) MarkerTip(dc, near, Px(a.XOf(near.At)));
         if (overPause != null)
@@ -701,17 +680,54 @@ internal sealed class CompareChart : FrameworkElement
         }
     }
 
+    /// <summary>(since 4.15.2) What the chart was last drawn with, for its top layer (null: nothing to compare).</summary>
+    private (List<Lane> Lanes, double Bottom, bool Tip)? drawn;
+
+    /// <summary>(since 4.15.2) The top layer: the cursor, and (since 4.10.3) the readout at it while the mouse is off the
+    /// chart (not under a mark's tooltip).</summary>
+    protected override void RenderTop(DrawingContext dc)
+    {
+        if (drawn is not { } d || a == null || double.IsNaN(playX)) return;
+        double px = Px(playX);
+        if (px < Left || px > Left + PlotWidth) return;
+        dc.DrawLine(PedalColours.Pen(Brushes.White, 1.5), new Point(px, d.Lanes[0].Area.Top - 2), new Point(px, d.Bottom));
+        if (hover == null && !d.Tip && dragFrom == null) Readout(dc, px, d.Lanes, ActualWidth, PedalColours.Theme(this, "TextBrush"));
+    }
+
+    /// <summary>The readout at a place on the chart (pixels across): where, the time, Delta and each channel's values.</summary>
+    private void Readout(DrawingContext dc, double px, List<Lane> lanes, double w, Brush text)
+    {
+        double x = XAt(px);
+        var lines = new List<string> { ByDistance ? $"{x:0} m" + Times(x) : SessionChart.Clock(x, true) };
+        string Pair(Channel c, Func<SessionData, double[]> of, Func<double, string> fmt)
+        {
+            string va = a != null && !Hidden.Contains((c, 1)) ? Fmt(a.ValueAt(of(a.Data), x)) : "", vb = b != null && !Hidden.Contains((c, 2)) ? Fmt(b.ValueAt(of(b.Data), x)) : "";
+            return vb.Length == 0 ? va : va.Length == 0 ? vb : va + "  /  " + vb;
+            string Fmt(double v) => double.IsNaN(v) ? "–" : fmt(v);
+        }
+        if (delta != null && !double.IsNaN(DeltaAt(x))) lines.Add(F("Delta {0:+0.00;-0.00;0.00} s", DeltaAt(x)));
+        if (Has(Channel.Speed) && (Shown(Channel.Speed, 1) || Shown(Channel.Speed, 2))) lines.Add(Pair(Channel.Speed, d => d.Speed, v => $"{Speeds.Of(v):0} {Speeds.Unit}"));
+        lines.Add(T("Throttle") + " " + Pair(Channel.Throttle, d => d.Throttle, v => $"{v * 100:0}%"));
+        lines.Add(T("Brake") + " " + Pair(Channel.Brake, d => d.Brake, v => $"{v * 100:0}%"));
+        lines.Add(T("Steering") + " " + Pair(Channel.Steering, d => d.Steer, v => $"{(v - 0.5) * 450:+0;-0;0}°"));
+        if (Shown(Channel.Clutch, 1) || Shown(Channel.Clutch, 2)) lines.Add(T("Clutch") + " " + Pair(Channel.Clutch, d => d.Clutch, v => $"{v * 100:0}%"));
+        var ft = PedalColours.Text(this, string.Join("\n", lines), 11, text);
+        double bx = px + 12 + ft.Width + 12 > w ? px - 12 - ft.Width - 12 : px + 12;
+        dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(bx, lanes[0].Area.Top + 4, ft.Width + 12, ft.Height + 8), 4, 4);
+        dc.DrawText(ft, new Point(bx + 6, lanes[0].Area.Top + 8));
+    }
+
     /// <summary>(since 4.15.0) A run's time (from its start, less the hidden pauses) at a distance along it; NaN past its ends.</summary>
     private static double TimeAlong(Run? r, double x) =>
         r == null || double.IsNaN(r.IndexAt(x)) ? double.NaN : r.TimeAt(r.From + r.IndexAt(x));
 
-    /// <summary>(since 4.15.0) The readout's times at a distance: " Â· 0:32.45", both runs' with another.</summary>
+    /// <summary>(since 4.15.0) The readout's times at a distance: " · 0:32.45", both runs' with another.</summary>
     private string Times(double x)
     {
         double ta = TimeAlong(a, x), tb = TimeAlong(b, x);
         if (double.IsNaN(ta) && double.IsNaN(tb)) return "";
-        string Fmt(double t) => double.IsNaN(t) ? "â€“" : SessionChart.Clock(t, true);
-        return " Â· " + (b == null ? Fmt(ta) : Fmt(ta) + "  /  " + Fmt(tb));
+        string Fmt(double t) => double.IsNaN(t) ? "–" : SessionChart.Clock(t, true);
+        return " · " + (b == null ? Fmt(ta) : Fmt(ta) + "  /  " + Fmt(tb));
     }
 
     /// <summary>(since 4.13.0) A run's timeline, combined: every channel it shows drawn over each other, each on its own

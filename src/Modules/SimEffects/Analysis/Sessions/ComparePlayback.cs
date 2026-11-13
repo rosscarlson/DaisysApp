@@ -11,7 +11,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// starts, the cursor, and a frame round the part the chart shows (dimmed either side). Dragging the frame moves the
 /// chart along, a click elsewhere brings it there, the wheel zooms, a double-click shows it all.
 /// </summary>
-internal sealed class CompareOverview : FrameworkElement
+internal sealed class CompareOverview : LayeredChart
 {
     private readonly CompareChart chart;
     /// <summary>Dragging the frame: where along it the mouse took hold (metres or seconds from its start).</summary>
@@ -24,7 +24,8 @@ internal sealed class CompareOverview : FrameworkElement
         ClipToBounds = true;
         System.Windows.Automation.AutomationProperties.SetName(this, T("Along"));
         chart.ViewChanged += InvalidateVisual;
-        chart.PlayMoved += InvalidateVisual;
+        // (since 4.15.2 only the cursor drawn again)
+        chart.PlayMoved += InvalidateTop;
         MouseLeftButtonDown += (_, e) =>
         {
             if (chart.A == null) return;
@@ -56,7 +57,7 @@ internal sealed class CompareOverview : FrameworkElement
     public double MenuX { get; private set; } = double.NaN;
     private double Px(double x) => x / chart.Total * ActualWidth;
 
-    protected override void OnRender(DrawingContext dc)
+    protected override void RenderChart(DrawingContext dc)
     {
         double w = ActualWidth, h = ActualHeight;
         dc.DrawRectangle(PedalColours.Theme(this, "RoomBrush"), null, new Rect(0, 0, w, h));
@@ -104,11 +105,14 @@ internal sealed class CompareOverview : FrameworkElement
         if (fb < w) dc.DrawRectangle(shade, null, new Rect(fb, 0, w - fb, h));
         dc.DrawRoundedRectangle(null, PedalColours.Pen(PedalColours.Theme(this, "AccentBrush"), 1.5), new Rect(fa + 0.75, 0.75, Math.Max(1, fb - fa - 1.5), h - 1.5), 3, 3);
         if (!double.IsNaN(chart.LoopFrom) || !double.IsNaN(chart.LoopTo)) CompareChart.DrawLoop(dc, this, Px(chart.LoopFrom), Px(chart.LoopTo), 0, h);
-        if (!double.IsNaN(chart.PlayX))
-        {
-            double px = Px(chart.PlayX);
-            dc.DrawLine(PedalColours.Pen(Brushes.White, 1.5), new Point(px, 0), new Point(px, h));
-        }
+    }
+
+    /// <summary>(since 4.15.2) The cursor, on the top layer.</summary>
+    protected override void RenderTop(DrawingContext dc)
+    {
+        if (chart.A is not { Xs.Length: >= 2 } || double.IsNaN(chart.PlayX)) return;
+        double px = Px(chart.PlayX);
+        dc.DrawLine(PedalColours.Pen(Brushes.White, 1.5), new Point(px, 0), new Point(px, ActualHeight));
     }
 }
 

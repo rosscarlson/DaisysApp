@@ -457,10 +457,12 @@ public class Widget : Window
     public bool ClickThrough => clickThrough || place.ClickThrough;
 
     /// <summary>
-    /// Not being edited: a card catches the mouse all over, however see-through its background (barely-there pixels;
-    /// fully clear ones let it through), unless clicks go through it; without a card, only where the body draws.
+    /// Not being edited: it catches the mouse all over, however see-through its background (barely-there pixels; fully
+    /// clear ones let it through), unless clicks go through it (and Ctrl+Shift isn't held). Until 4.15.2 a widget
+    /// without a card (SimEffects' overlays) caught it only where its body drew, so a right-click on the rest went to
+    /// what was under it.
     /// </summary>
-    private Brush Resting => card && !ClickThrough ? CatchBrush : Brushes.Transparent;
+    private Brush Resting => !ClickThrough || catching ? CatchBrush : Brushes.Transparent;
     private static readonly Brush CatchBrush = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
 
     /// <summary>A tool window that never takes the focus; one that lets clicks through does so while not being edited

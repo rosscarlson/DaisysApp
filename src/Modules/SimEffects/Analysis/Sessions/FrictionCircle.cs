@@ -11,7 +11,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// pedals leave them in a cross. Brake and throttle can be hidden. Since 4.14.1 a large white dot at Compare's cursor
 /// (<see cref="At"/>), moving as it plays; the rest drawn once and kept.
 /// </summary>
-internal sealed class FrictionCircle : FrameworkElement
+internal sealed class FrictionCircle : LayeredChart
 {
     private PedalAnalysis? a;
     private double maxG = 1.5;
@@ -32,7 +32,8 @@ internal sealed class FrictionCircle : FrameworkElement
         {
             if (value.Equals(at) || (double.IsNaN(value) && double.IsNaN(at))) return;
             at = value;
-            InvalidateVisual();
+            // (since 4.15.2 only the dot drawn again)
+            InvalidateTop();
         }
     }
 
@@ -59,7 +60,7 @@ internal sealed class FrictionCircle : FrameworkElement
         }
     }
 
-    protected override void OnRender(DrawingContext dc)
+    protected override void RenderChart(DrawingContext dc)
     {
         double w = ActualWidth, h = ActualHeight;
         dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, w, h));
@@ -74,8 +75,20 @@ internal sealed class FrictionCircle : FrameworkElement
             cacheFor = key;
         }
         dc.DrawDrawing(cache);
-        // (since 4.14.1) the cursor's moment
-        if (a == null || !a.Data.HasG || double.IsNaN(at)) return;
+        centre = c;
+        radius = r;
+    }
+
+    /// <summary>(since 4.15.2) Where the circle was last drawn, for the dot.</summary>
+    private Point centre;
+    private double radius;
+
+    /// <summary>(since 4.14.1) The cursor's moment, (since 4.15.2) on the top layer.</summary>
+    protected override void RenderTop(DrawingContext dc)
+    {
+        var c = centre;
+        double r = radius;
+        if (r <= 0 || a == null || !a.Data.HasG || double.IsNaN(at)) return;
         int i = Math.Clamp((int)Math.Round(at), 0, a.Data.Count - 1);
         double x = a.Data.LatG[i], y = a.Data.LonG[i];
         if (double.IsNaN(x) || double.IsNaN(y)) return;

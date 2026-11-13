@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.15.2 (Compare's playback, widgets' right-click):** in Analysis → Compare, play a session with its video (Play,
+  2×, ½×), then compare two sessions with videos (or Session 1's own laps) and play: the app should stay smooth, the
+  cursor, map dots, friction dot and readout moving. Right-click an Analysis block (the Track Map) or the Dash where
+  nothing is drawn: the edit strip opens (Inputs is set to Click through: hold Ctrl+Shift). Tried: a test window
+  off screen with 11/12 17:17's race and its video: playing went from the app busy (input waiting 0.5 s) to smooth
+  (15 ms), both videos following. Not tried: anything in the app's window.
 - **4.15.1 (YouTube's one-button sign-in, title bar status):** in the installed app, Analysis Manager → YouTube:
   only **Sign In** shows (Sign Out first if signed in); sign in, upload a race's video and watch the title bar's
   **YT: n%, speed, time left**. On another PC or Google account: the consent screen must be published (or the account

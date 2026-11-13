@@ -58,6 +58,11 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.15.2:** Compare's playback (CompositionTarget.Rendering, 144+ Hz) redrew every chart each frame: the UI thread
+  starved (input 0.5 s late), two videos froze the app (Application Hang). Charts now derive from `LayeredChart`
+  (what moves on a child DrawingVisual, `InvalidateTop`); `VideoFrames` swaps two buffers (`Take(Action)`). Harness:
+  `%TEMP%\playtest` (an off-screen window, the real race and video; needs `InternalsVisibleTo PlayTest` added to the
+  csproj for the build only, and `%APPDATA%\PlayTest\AnalysisVideos.json` copied from DaisysApp's).
 - **4.15.1:** the app's own OAuth client (Google Cloud project of the user's Workspace account, 2SV on): the
   GitHub secret `YOUTUBE_CLIENT` (base64 of "id\nsecret", made from this PC's `%APPDATA%\DaisysApp\YouTube.json`)
   → release.yml's env → Core's `AssemblyMetadata` → `YouTube.AppClient`; not in the (public) source. A local build

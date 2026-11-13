@@ -10,7 +10,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// two sessions on a track lie over each other as driven. The mouse on Compare's chart puts a dot on each line
 /// (<see cref="HoverAt"/>), a corner picked zooms to it; the wheel zooms, dragging moves, a double-click shows it all.
 /// </summary>
-internal sealed class LineMap : FrameworkElement
+internal sealed class LineMap : LayeredChart
 {
     private Run? a, b;
     private Point[] la = Array.Empty<Point>(), lb = Array.Empty<Point>();
@@ -84,7 +84,8 @@ internal sealed class LineMap : FrameworkElement
     public void HoverAt(double x)
     {
         hoverX = x;
-        InvalidateVisual();
+        // (since 4.15.2 only the dots drawn again)
+        InvalidateTop();
     }
 
     /// <summary>Zooms to this run between two points of Compare's axis (a corner), with some room round it.</summary>
@@ -120,7 +121,7 @@ internal sealed class LineMap : FrameworkElement
         return double.IsNaN(px) || double.IsNaN(pz) ? null : new Point(px, pz);
     }
 
-    protected override void OnRender(DrawingContext dc)
+    protected override void RenderChart(DrawingContext dc)
     {
         dc.DrawRectangle(PedalColours.Theme(this, "RoomBrush"), null, new Rect(0, 0, ActualWidth, ActualHeight));
         var dim = PedalColours.Theme(this, "TextSecondaryBrush");
@@ -152,6 +153,11 @@ internal sealed class LineMap : FrameworkElement
         double len = metres / scale, y = ActualHeight - 10;
         dc.DrawLine(PedalColours.Pen(dim, 1.5), new Point(10, y), new Point(10 + len, y));
         dc.DrawText(PedalColours.Text(this, metres >= 1000 ? $"{metres / 1000:0} km" : $"{metres:0} m", 10, dim), new Point(10, y - 15));
+    }
+
+    /// <summary>(since 4.15.2) The dot on each line, on the top layer.</summary>
+    protected override void RenderTop(DrawingContext dc)
+    {
         if (double.IsNaN(hoverX)) return;
         foreach (var (r, colour) in new[] { (a, PedalColours.RunA), (b, PedalColours.RunB) })
         {

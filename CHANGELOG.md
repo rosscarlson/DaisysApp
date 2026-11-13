@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.15.2**
+- **SimEffects → Analysis → Compare:** playing a session no longer stutters the whole app, or freezes it with two
+  sessions' videos: as it played, every chart (Compare's, the Video's timeline, the strip under it, the Track Map and,
+  since 4.14.1, the friction circle) was drawn again each frame of the screen, which took all of the app's time. Now
+  only the cursor, the dots and the readout move; the charts under them stay as they were. A video's frames also reuse
+  their memory rather than taking a new 3.7 MB each. The readout's time along the distance showed "Â·" for "·".
+- **Widgets:** SimEffects' overlays (Inputs, Dash, Analysis' blocks such as the Track Map, the Shaker's meters) catch
+  a right-click all over, as every other widget does, so it opens the edit strip; before, only where they drew
+  something (a right-click on the rest went to what was under them). One set to **Click through** still needs
+  Ctrl+Shift held, as every widget does.
+
 **4.15.1**
 - **SimEffects → Analysis → YouTube:** sign in with just your Google account: the app has its own Google OAuth
   client now, so **Sign In** opens Google's page in the browser and that's all (your own client is still there, folded

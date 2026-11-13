@@ -28,6 +28,9 @@ internal sealed class VideoFrames : IDisposable
     private long playStart;
 
     private byte[] pixels = Array.Empty<byte>();
+    /// <summary>(since 4.15.2) The next frame's buffer, the decoder's own: the two are swapped as a frame's ready (a
+    /// new 3.7 MB one each frame kept the garbage collector busy, the whole app stuttering as it played).</summary>
+    private byte[] spare = Array.Empty<byte>();
     private double pixelsAt = double.NaN;
     private int number, taken;
 
@@ -67,15 +70,15 @@ internal sealed class VideoFrames : IDisposable
         lock (gate) playing = false;
     }
 
-    /// <summary>The newest frame (BGRA, <see cref="Width"/> × <see cref="Height"/>) and its time, if there's one not taken yet.</summary>
-    public bool Take(out byte[] frame, out double at)
+    /// <summary>The newest frame (BGRA, <see cref="Width"/> × <see cref="Height"/>) and its time, if there's one not
+    /// taken yet, handed to <paramref name="use"/> (since 4.15.2 only while it's called: its buffer's used again).</summary>
+    public bool Take(Action<byte[], double> use)
     {
         lock (gate)
         {
-            frame = pixels;
-            at = pixelsAt;
             if (number == taken) return false;
             taken = number;
+            use(pixels, pixelsAt);
             return true;
         }
     }
@@ -242,11 +245,11 @@ internal sealed class VideoFrames : IDisposable
 
     private void Publish(IMFSample sample, double at)
     {
-        var frame = new byte[Width * Height * 4];
-        Copy(sample, Width, Height, frame);
+        if (spare.Length != Width * Height * 4) spare = new byte[Width * Height * 4];
+        Copy(sample, Width, Height, spare);
         lock (gate)
         {
-            pixels = frame;
+            (pixels, spare) = (spare, pixels);
             pixelsAt = at;
             number++;
         }

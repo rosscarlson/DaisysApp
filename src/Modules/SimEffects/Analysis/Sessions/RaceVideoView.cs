@@ -353,9 +353,14 @@ internal sealed class RaceVideoView : DockPanel
             picture.Source = bitmap;
             ShowNote(null);
         }
-        if (frames.Take(out var pixels, out double at) && pixels.Length == frames.Width * frames.Height * 4 && bitmap != null)
+        double at = double.NaN;
+        if (bitmap is { } bmp && frames.Take((pixels, t) =>
+            {
+                if (pixels.Length != bmp.PixelWidth * bmp.PixelHeight * 4) return;
+                bmp.WritePixels(new Int32Rect(0, 0, bmp.PixelWidth, bmp.PixelHeight), pixels, bmp.PixelWidth * 4, 0);
+                at = t;
+            }) && !double.IsNaN(at))
         {
-            bitmap.WritePixels(new Int32Rect(0, 0, frames.Width, frames.Height), pixels, frames.Width * 4, 0);
             shownAt = at;
             if (playing) FromVideo(at);
             else ShowPlace(at);
