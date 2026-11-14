@@ -243,8 +243,11 @@ not; those older files aren't listed (they name no race), and stay in the folder
   **Overall** (the others together, the brake release counting most) and **Consistency** (brake / throttle) in one,
   **Brake** (application / release), **Throttle** (application / release) and **Impacts / Crashes** (since 4.17.8;
   impacts orange from 1, red from 4, crashes orange at 1, red from 2, green at none); Steering until 4.17.7. With a
-  Session 2 (another race) since 4.17.11 both sessions' tiles and time splits side by side (S1 and S2 before them);
-  S1 or S2 highlighted: only that one's. The **time split** (full throttle, part throttle, braking, both together, coasting; since 4.17.8
+  Session 2 (another race; since 4.17.14 the same race too, another lap: each session's scores are its whole race's)
+  since 4.17.11 both sessions' tiles and time splits side by side (S1 and S2 before them); S1 or S2 highlighted: only
+  that one's. Since 4.17.14 before them, a little apart, the two laps' times when both are whole laps: S1's, S2's and
+  the difference (S2's less S1's) centred under them, red when S2 is slower, green when it's faster (in Session 1's
+  row, "1:02.240 vs 1:02.431 (+0.191 s)", before). The **time split** (full throttle, part throttle, braking, both together, coasting; since 4.17.8
   its names and shares on the colours); and (hidden since 4.17.8) **key numbers**: the
   average brake peak, application time, release time and trail braking; coasting from brake to throttle; throttle
   to brake; throttle application time; throttle stabs; steering corrections a minute; impacts and crashes.
@@ -260,8 +263,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
   compare with), so a track with one session can still be compared. **Compare With** from the table puts a race in Session 2 even if it's elsewhere, or another lap
   of Session 1's own. The session boxes are 140 px wide (their lines whole when open, the title as a tooltip; since
   4.13.0 an icon after a session with a race video, the date without the year), the lap boxes a fixed width, and each
-  row's channels are at its right end (since 4.9.1; Session 2's at the right of its cell since 4.17.11), so both rows
-  line up. Since 4.17.11 the title row's box and these two are set up alike, each race's line ending with its fastest
+  row's channels are at its right end (since 4.9.1; Session 2's at the right of its cell since 4.17.11; since 4.17.14
+  one Channels for both, in Session 1's row, and Combine in Session 2's), so both rows line up. Since 4.17.11 the title row's box and these two are set up alike, each race's line ending with its fastest
   lap and how many, "(2/3)", when it has more than one; Session 1's list is sorted by name (the track, then the car;
   imported last), the title row's by date. **Import…** at the bottom of Session 1's and 2's lists opens Share Session
   searched for Session 1's track ("No shared sessions for …" when none are), a double-click there (or Import from a
@@ -271,7 +274,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
     at first), Game, Kind and Video filtered from a right-click on their headers, **Search** by track or car. A row
     picked goes in the slot straight away, behind; **Select & Close** (or a double-click, or Enter) and **Close** close
     the window, keeping what's picked.
-  - **Combine** (since 4.13.0; left of Speed, Session 1's row only, kept): one timeline per session, every channel on it
+  - **Combine** (since 4.13.0; left of Speed, Session 1's row only, kept; since 4.17.14 at the right of Session 2's row): one timeline per session, every channel on it
     (Delta on Session 1's), instead of a lane each. The lanes are 12 px apart (6 before 4.13.0).
   - Session 1's brake zones are shaded and numbered (a click on one picks it; since 4.10.3 on its number); its laps' starts are marked; marks at
     the top show what's worth a look (impacts violet, crashes pink), each with a tooltip. Since 4.13.3 three small
@@ -285,7 +288,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
     gear change picked anywhere (Brake Point, Brake Release, Throttle, Shifting) shows here with a line at it, Session 1 switched to the lap it's in if another was picked (the
     Trace did this before 4.7.0).
   - A lane each, along the lap's distance: **Delta** (the other's time less this one's at each point: above the
-    line, this one is ahead; amber; a chip shows or hides it), speed, throttle, brake and steering.
+    line, this one is ahead; amber; a chip in Session 2's row showed or hid it until 4.17.14, now a line in Channels,
+    on at first), speed, throttle, brake and steering.
   - Since 4.6.3 each channel has its colour (speed blue, throttle green, brake red, steering white; since 4.7.0
     clutch violet, hidden at first), Session 2's lines dotted (before, this run blue and the other orange). On each
     Session row (since 4.7.0; a row of their own under the picks, with the run's name, before; since 4.16.1 in a
@@ -293,7 +297,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
     they're changed, till its button's clicked again) a chip per channel: its
     box shows or hides that line (a lane goes when both its lines are hidden; Session 2's chips and **Delta** only
     while there's a Session 2), its
-    name (or a click on the line, until 4.10.3) highlights it, bold, the others faded; again, back to all. Kept. The
+    name (or a click on the line, until 4.10.3) highlights it, bold, the others faded; again, back to all. Kept. Since
+    4.17.14 one drop-down for both sessions (Session 2's row had its own): a channel shown, hidden and highlighted in
+    both, its line solid in the list, Delta last while there's a Session 2 along the distance. The
     wheel zooms, dragging moves along, a double-click shows it all; the readout gives both runs' values at the mouse.
     Since 4.10.3 a click puts the **cursor** there (a white line; off the chart the readout, the video and the Track
     Map's dot are at it). Under the chart (since 4.10.3; a scroll bar since 4.6.9) the whole run drawn small
@@ -394,8 +400,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
   dotted, north up, the start a white square. Both are in the same coordinates, so two sessions on a track lie over
   each other as driven, a lane apart or a metre. The mouse on Compare's chart puts a dot on each line at that point; a
   corner picked zooms there; the wheel zooms, dragging moves, a double-click shows it all.
-- **Brake Point**, **Brake Release**, **Throttle** and **Shifting**, on one row with **Tips** at the right (since
-  4.13.0; four across since 4.6.10; "Braking" before, with a drop-down for the two line-ups; "Brake zones compared"
+- **Brake Point**, **Brake Release**, **Throttle** and **Shifting**, two by two (since 4.17.14; four across 4.6.10–4.17.13)
+  with **Tips** at the right as high as both rows (since 4.13.0; "Braking" before, with a drop-down for the two line-ups; "Brake zones compared"
   before 4.5.1), as tall as the Tips: every zone drawn over the others, the average dashed and the zone picked bold, lined up at the brake point,
   and at the release; Throttle the same for each time the throttle goes on.
 - **Shifting** (since 4.6.10): a row per upshift (1→2, 2→3…) and one for downshifts (↓), each gear change a dot at the

@@ -17,8 +17,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// time split, Compare (since 4.6.5 a race and lap of its own, yours or imported, against another on the same track, any
 /// car; with export and import) with the race's Video, the Track Map and (since 4.13.0, the corners table before) the
 /// friction circle under it; the brake zones lined up at the brake point and at the release and the throttle
-/// applications, drawn over each other, with Shifting, four across beside the Tips (red, white and green, a box each;
-/// since 4.13.0 a row together). Brake and Throttle Analysis' tables went in 4.13.0, Smoothness in 4.13.1.
+/// applications, drawn over each other, with Shifting, four (since 4.17.14 two by two) beside the Tips (red, white and
+/// green, a box each; since 4.13.0 a row together). Brake and Throttle Analysis' tables went in 4.13.0, Smoothness in 4.13.1.
 /// Its sessions are the races' logs (<see cref="RaceLog"/>), found from the laps and races that name them.
 /// </summary>
 internal sealed class SessionsView
@@ -72,8 +72,7 @@ internal sealed class SessionsView
     private readonly ComboBox otherSession = new() { Width = 280 };
     private readonly ComboBox otherPart = new() { Width = 110 };
     private readonly TextBlock compareStatus = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly StackPanel thisChannels = new() { Orientation = Orientation.Horizontal }, otherChannels = new() { Orientation = Orientation.Horizontal };
-    private readonly ToggleButton deltaChip = Ui.Chip(T("Delta"), true, T("The other's time less this one's: above the line, this one is ahead"));
+    private readonly StackPanel thisChannels = new() { Orientation = Orientation.Horizontal };
     /// <summary>(since 4.13.0) One timeline per session instead of a lane per channel.</summary>
     private readonly ToggleButton combineChip = Ui.Chip(T("Combine"), false, T("One timeline per session, every channel on it"));
     private PedalAnalysis? other;
@@ -517,7 +516,7 @@ internal sealed class SessionsView
 
         // the zones lined up at the brake point and at the release (since 4.6.2 a card each; a drop-down picked one
         // before), and the throttle applications, over each other; then (since 4.6.10) the gear changes; since 4.13.0 a
-        // row with the Tips
+        // row with the Tips (since 4.17.14 the four two by two)
         brakeOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         releaseOverlay.Picked += o => { if (o is BrakeZone z) Pick(z); };
         throttleOverlay.Picked += o => { if (o is ThrottleMove m) PickThrottle(m); };
@@ -531,11 +530,18 @@ internal sealed class SessionsView
             card("Shifting", T("Shifting"), shiftChart, true, Array.Empty<UIElement>()),
             card("Tips", T("Tips"), tips, false, Array.Empty<UIElement>()),
         };
+        // (since 4.17.14 two by two, Brake Point and Brake Release over Throttle and Shifting, the Tips beside them as
+        // high as both rows; five across before)
+        foreach (var w in new[] { 1, 0, 1, 0, 1.5 })
+            five.ColumnDefinitions.Add(new ColumnDefinition { Width = w == 0 ? new GridLength(12) : new GridLength(w, GridUnitType.Star) });
+        five.RowDefinitions.Add(new RowDefinition());
+        five.RowDefinitions.Add(new RowDefinition { Height = new GridLength(12) });
+        five.RowDefinitions.Add(new RowDefinition());
         for (int i = 0; i < fiveCards.Length; i++)
         {
-            if (i > 0) five.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-            five.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(i == 4 ? 1.5 : 1, GridUnitType.Star) });
-            Grid.SetColumn(fiveCards[i], i * 2);
+            Grid.SetColumn(fiveCards[i], i == 4 ? 4 : i % 2 * 2);
+            Grid.SetRow(fiveCards[i], i == 4 ? 0 : i / 2 * 2);
+            if (i == 4) Grid.SetRowSpan(fiveCards[i], 3);
             five.Children.Add(fiveCards[i]);
         }
         Cards.Add(five);
@@ -720,25 +726,61 @@ internal sealed class SessionsView
         return row;
     }
 
-    /// <summary>(since 4.17.11) The scores: Session 1's; with a Session 2 (another session) both side by side, or only
-    /// the one highlighted (S1 or S2 clicked).</summary>
+    /// <summary>(since 4.17.11) The scores: Session 1's; with a Session 2 both side by side, or only the one highlighted
+    /// (S1 or S2 clicked); since 4.17.14 each session's whole, Session 2 the same race too (another lap), and before them
+    /// the two laps' times.</summary>
     private void ShowScores()
     {
         scores.Children.Clear();
         scores.ColumnDefinitions.Clear();
-        var two = otherSession.SelectedItem is Item o && !Same(o, mineItem) && lastB != null ? other : null;
+        var two = otherSession.SelectedItem is Item && lastB != null ? other : null;
         var shown = analysis == null ? Array.Empty<(PedalAnalysis, int)>()
             : two == null || compareChart.HighlightRun == 1 ? new[] { (analysis, 1) }
             : compareChart.HighlightRun == 2 ? new[] { (two, 2) }
             : new[] { (analysis, 1), (two, 2) };
+        if (shown.Length > 0 && lastA != null && lastB != null && (thisPart.SelectedItem as Part)?.Lap is { Complete: true } la && (otherPart.SelectedItem as Part)?.Lap is { Complete: true } lb)
+        {
+            scores.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            scores.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+            var times = LapTimes(la.Seconds, lb.Seconds);
+            scores.Children.Add(times);
+        }
         foreach (var (a, slot) in shown)
         {
-            if (scores.ColumnDefinitions.Count > 0) scores.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            if (scores.ColumnDefinitions.Count > 0 && scores.ColumnDefinitions[^1].Width.IsStar) scores.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
             scores.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             var group = ScoreGroup(a, shown.Length > 1 ? slot : 0);
             Grid.SetColumn(group, scores.ColumnDefinitions.Count - 1);
             scores.Children.Add(group);
         }
+    }
+
+    /// <summary>(since 4.17.14; "1:02.240 vs 1:02.431 (+0.191 s)" in Session 1's row before) The laps' times in a block
+    /// as the tiles': S1's, S2's, then S2's less S1's in the middle, red when it's slower, green when it's faster.</summary>
+    private static FrameworkElement LapTimes(double s1, double s2)
+    {
+        var lines = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        TextBlock Line(string text)
+        {
+            var t = new TextBlock { Text = text, FontSize = 15, FontWeight = FontWeights.SemiBold };
+            System.Windows.Documents.Typography.SetNumeralAlignment(t, FontNumeralAlignment.Tabular);
+            lines.Children.Add(t);
+            return t;
+        }
+        Line(F("S1: {0}", Lap.LapClock(s1)));
+        Line(F("S2: {0}", Lap.LapClock(s2)));
+        double d = Math.Round(s2 - s1, 3);
+        var diff = Line(d.ToString("+0.000;-0.000;0.000", CultureInfo.CurrentCulture));
+        diff.HorizontalAlignment = HorizontalAlignment.Center;
+        if (d != 0) diff.Foreground = PedalColours.Frozen(d > 0 ? PedalColours.Brake : PedalColours.Throttle);
+        var b = new Border
+        {
+            Padding = new Thickness(10, 2, 10, 3), Margin = new Thickness(0, 0, 0, 6), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1),
+            Child = lines, ToolTip = T("Session 1's lap, Session 2's, and Session 2's less Session 1's"),
+        };
+        b.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
+        b.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
+        return b;
     }
 
     /// <summary>A number in a tile and its colour (null: the text's).</summary>
@@ -965,7 +1007,7 @@ internal sealed class SessionsView
         // (since 4.7.0) Session 1 (the session analysed) and Session 2 (a race on the same track, any car, anyone's, or
         // None: the Trace), each a row: its race, its lap, then its channels, so the rows line up (since 4.9.1 the
         // channels at the right)
-        void Row(string label, int slot, ComboBox session, ComboBox part, StackPanel channels, params UIElement[] after)
+        void Row(string label, int slot, ComboBox session, ComboBox part, FrameworkElement channels, params UIElement[] after)
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
             // (since 4.13.0 a click on it opens a window to find a session in)
@@ -975,7 +1017,8 @@ internal sealed class SessionsView
             row.Children.Add(session);
             row.Children.Add(part);
             channels.VerticalAlignment = VerticalAlignment.Center;
-            // (since 4.17.11 at the right of its cell: Session 2's has no Combine before it)
+            // (since 4.17.11 at the right of its cell; since 4.17.14 one Channels for both, in Session 1's row, and
+            // Combine in Session 2's)
             channels.HorizontalAlignment = HorizontalAlignment.Right;
             channels.Margin = new Thickness(0, 0, 0, 6);
             foreach (var x in after) row.Children.Add(x);
@@ -992,10 +1035,8 @@ internal sealed class SessionsView
         thisPart.ItemTemplate = otherPart.ItemTemplate = PartTemplate();
         compareStatus.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
         compareStatus.MaxWidth = 260;
-        deltaChip.VerticalAlignment = VerticalAlignment.Center;
-        deltaChip.Margin = new Thickness(14, 0, 0, 0);
         Row(T("S1"), 1, thisSession, thisPart, thisChannels, compareStatus);
-        Row(T("S2"), 2, otherSession, otherPart, otherChannels, deltaChip);
+        Row(T("S2"), 2, otherSession, otherPart, combineChip);
         // (since 4.17.11 Import at the bottom of each: Share Session for that slot, the box back to what it had)
         bool Importing(ComboBox box, SelectionChangedEventArgs e, int slot)
         {
@@ -1022,12 +1063,11 @@ internal sealed class SessionsView
             if (c != Channel.Delta && !settings.CompareChannels.Contains(c.ToString())) { compareChart.Hidden.Add((c, 1)); compareChart.Hidden.Add((c, 2)); }
         foreach (var h in settings.CompareHidden)
             if (h.Split('.') is [var name, var run] && Enum.TryParse<Channel>(name, out var c) && int.TryParse(run, out int r)) compareChart.Hidden.Add((c, r));
-        deltaChip.IsChecked = compareChart.ShowDelta;
-        Ui.OnToggle(deltaChip, on => { compareChart.ShowDelta = on; SaveChannels(); compareChart.InvalidateVisual(); });
+        // (since 4.17.14 one Channels for both sessions: Session 2's lines as Session 1's)
+        foreach (var c in Enum.GetValues<Channel>())
+            if (compareChart.Hidden.Contains((c, 1))) compareChart.Hidden.Add((c, 2)); else compareChart.Hidden.Remove((c, 2));
         compareChart.Combined = settings.CompareCombined;
         combineChip.IsChecked = compareChart.Combined;
-        combineChip.Margin = new Thickness(0, 0, 4, 0);
-        combineChip.VerticalAlignment = VerticalAlignment.Center;
         Ui.OnToggle(combineChip, on =>
         {
             compareChart.Combined = settings.CompareCombined = on;
@@ -1712,8 +1752,7 @@ internal sealed class SessionsView
         {
             var la = (thisPart.SelectedItem as Part)?.Lap;
             var lb = (otherPart.SelectedItem as Part)?.Lap;
-            if (la is { Complete: true } && lb is { Complete: true })
-                status.Add(F("{0} vs {1} ({2:+0.000;-0.000;0.000} s)", Lap.LapClock(la.Seconds), Lap.LapClock(lb.Seconds), lb.Seconds - la.Seconds));
+            // (since 4.17.14 the laps' times in a block before the scores)
             if (!SameTrack(a, b, la, lb)) status.Add(T("Not the same track?"));
         }
         compareStatus.Text = string.Join(" · ", status);
@@ -1736,7 +1775,8 @@ internal sealed class SessionsView
 
     /// <summary>The channels (since 4.6.2; since 4.7.0 on the Session rows, without the runs' names): a chip per channel
     /// in its colour, Session 2's dotted as its lines: its box shows or hides that line, its name highlights it (the
-    /// others faded). Session 2's, and Delta, only while there's one to compare with.</summary>
+    /// others faded). Session 2's, and Delta, only while there's one to compare with. Since 4.17.14 one drop-down for
+    /// both sessions' lines, Delta in it (a chip in Session 2's row before).</summary>
     private void ShowLegend(Run? a, Run? b)
     {
         lastA = a;
@@ -1748,24 +1788,24 @@ internal sealed class SessionsView
     {
         // (since 4.16.1 all in a drop-down)
         var all = new[] { Channel.Speed, Channel.Throttle, Channel.Brake, Channel.Steering, Channel.Clutch, Channel.Rpm, Channel.Gear };
-        Entry(thisChannels, compareChart, lastA, 1, all, SaveChannels, ShowLegend, combineChip);
-        Entry(otherChannels, compareChart, lastB, 2, all, SaveChannels, ShowLegend);
+        Entry(thisChannels, compareChart, lastA, lastB, true, all, SaveChannels, ShowLegend);
+        combineChip.Visibility = lastA != null ? Visibility.Visible : Visibility.Collapsed;
         // (since 4.10.9) the Video's timeline: Session 1's, no Clutch (nor the rpm and the gear)
-        Entry(videoChannels, videoChart, videoRun, 1, all[..4], () =>
+        Entry(videoChannels, videoChart, videoRun, null, false, all[..4], () =>
         {
             settings.VideoHidden = videoChart.Hidden.Where(h => h.Channel is not (Channel.Clutch or Channel.Rpm or Channel.Gear)).Select(h => h.Channel.ToString()).ToList();
             settings.Save();
         }, ShowLegend);
-        deltaChip.Visibility = lastB != null && compareChart.ByDistance ? Visibility.Visible : Visibility.Collapsed;
         // (since 4.15.4 S2 highlighted with no Session 2: not)
         if (compareChart.HighlightRun == 2 && lastB == null) compareChart.HighlightRun = null;
         ShowPickerLinks();
         ShowScores();
     }
 
-    /// <summary>A run's channels on a chart, after <paramref name="first"/>: (since 4.16.1) a drop-down of a box (shown or
-    /// not) and a name (highlighted) each.</summary>
-    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, int which, Channel[] channels, Action save, Action again, UIElement? first = null)
+    /// <summary>A run's channels on a chart: (since 4.16.1) a drop-down of a box (shown or not) and a name (highlighted)
+    /// each; since 4.17.14 with <paramref name="both"/> Session 2's lines (<paramref name="b"/>) going with Session 1's,
+    /// and Delta while there's a Session 2 by distance.</summary>
+    private static void Entry(StackPanel toggles, CompareChart chart, Run? r, Run? b, bool both, Channel[] channels, Action save, Action again)
     {
         // (since 4.17.6 its drop-down open again, built again, when it was)
         var was = toggles.Tag as Popup;
@@ -1775,8 +1815,8 @@ internal sealed class SessionsView
         toggles.Children.Clear();
         toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
         if (r == null) return;
-        if (first != null) toggles.Children.Add(first);
-        toggles.Children.Add(MoreChannels(toggles, chart, r, which, channels, save, again));
+        if (both && b != null && chart.ByDistance) channels = channels.Append(Channel.Delta).ToArray();
+        toggles.Children.Add(MoreChannels(toggles, chart, r, b, both, channels, save, again));
         if (open && toggles.Tag is Popup popup)
             toggles.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => popup.IsOpen = true);
     }
@@ -1784,13 +1824,13 @@ internal sealed class SessionsView
     /// <summary>(since 4.15.4) A drop-down of a run's channels, each with its box, colour and name; on the button a dot in
     /// the colour of each shown. (Since 4.17.6) it stays open while channels are changed, till the button's clicked again
     /// (or the window's left, or the chart's hidden).</summary>
-    private static FrameworkElement MoreChannels(StackPanel toggles, CompareChart chart, Run r, int which, Channel[] channels, Action save, Action again)
+    private static FrameworkElement MoreChannels(StackPanel toggles, CompareChart chart, Run r, Run? b, bool both, Channel[] channels, Action save, Action again)
     {
         var dots = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         void Dots()
         {
             dots.Children.Clear();
-            foreach (var c in channels.Where(c => !chart.Hidden.Contains((c, which)) && CompareChart.Logged(r.Data, c)))
+            foreach (var c in channels.Where(c => c != Channel.Delta && !chart.Hidden.Contains((c, 1)) && Logged(c)))
                 dots.Children.Add(new System.Windows.Shapes.Ellipse
                 {
                     Width = 7, Height = 7, Margin = new Thickness(0, 0, 4, 0),
@@ -1806,7 +1846,7 @@ internal sealed class SessionsView
             BorderThickness = new Thickness(1), BorderBrush = PedalColours.Frozen(Colors.Gray, 0x60), Background = Brushes.Transparent, VerticalAlignment = VerticalAlignment.Center,
             Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { dots, new TextBlock { Text = T("Channels"), VerticalAlignment = VerticalAlignment.Center }, chevron } },
         };
-        System.Windows.Automation.AutomationProperties.SetName(button, T("Channels") + (which == 2 ? " 2" : ""));
+        System.Windows.Automation.AutomationProperties.SetName(button, T("Channels"));
         var list = new StackPanel();
         var frame = new Border { Child = list, Padding = new Thickness(8, 6, 10, 2), BorderThickness = new Thickness(1) };
         frame.SetResourceReference(Border.BackgroundProperty, "PopupBrush");
@@ -1834,47 +1874,50 @@ internal sealed class SessionsView
         button.Unloaded += (_, _) => popup.IsOpen = false;
         foreach (var c in channels)
         {
-            var item = ChannelItem(toggles, chart, which, c, () => { save(); Dots(); }, again);
+            var item = ChannelItem(toggles, chart, both, c, () => { save(); Dots(); }, again);
             item.Margin = new Thickness(0, 0, 0, 4);
-            if (!CompareChart.Logged(r.Data, c)) item.IsEnabled = false;
+            if (c != Channel.Delta && !Logged(c)) item.IsEnabled = false;
             list.Children.Add(item);
         }
         button.MouseLeftButtonUp += (_, _) => popup.IsOpen = !popup.IsOpen;
         return button;
+
+        // (in either session)
+        bool Logged(Channel c) => CompareChart.Logged(r.Data, c) || (b != null && CompareChart.Logged(b.Data, c));
     }
 
-    /// <summary>A run's channel on a chart: a box (shown or not) and a name in its colour (highlighted).</summary>
-    private static StackPanel ChannelItem(FrameworkElement owner, CompareChart chart, int which, Channel c, Action save, Action again)
+    /// <summary>A run's channel on a chart: a box (shown or not) and a name in its colour (highlighted); with
+    /// <paramref name="both"/> (since 4.17.14) both sessions' line, and Delta (shown or not, no highlight).</summary>
+    private static StackPanel ChannelItem(FrameworkElement owner, CompareChart chart, bool both, Channel c, Action save, Action again)
     {
         var channel = c;
         string text = CompareChart.NameOf(c);
-        bool hi = chart.Highlight == (c, which);
-        var box = new CheckBox { IsChecked = !chart.Hidden.Contains((c, which)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Show") };
-        System.Windows.Automation.AutomationProperties.SetName(box, F("Show {0}", text) + (which == 2 ? " 2" : ""));
+        bool delta = c == Channel.Delta;
+        bool hi = !delta && chart.Highlight == (c, 1);
+        var box = new CheckBox { IsChecked = delta ? chart.ShowDelta : !chart.Hidden.Contains((c, 1)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Show") };
+        System.Windows.Automation.AutomationProperties.SetName(box, F("Show {0}", text));
         Ui.OnToggle(box, on =>
         {
-            if (on) chart.Hidden.Remove((channel, which)); else chart.Hidden.Add((channel, which));
+            if (delta) chart.ShowDelta = on;
+            else
+                foreach (int which in both ? new[] { 1, 2 } : new[] { 1 })
+                    if (on) chart.Hidden.Remove((channel, which)); else chart.Hidden.Add((channel, which));
             save();
             chart.InvalidateVisual();
         });
         Brush colour = c == Channel.Steering ? PedalColours.Theme(owner, "TextBrush") : PedalColours.Frozen(CompareChart.ColourOf(c));
         var swatch = new Border { Width = 16, Height = 3, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, Background = colour };
-        // (Session 2's dotted, as its lines)
-        if (which == 2)
-            swatch.Background = new VisualBrush(new Border { Width = 3, Height = 3, Background = colour })
-            {
-                TileMode = TileMode.Tile, Stretch = Stretch.None, Viewport = new Rect(0, 0, 6, 3), ViewportUnits = BrushMappingMode.Absolute,
-                Viewbox = new Rect(0, 0, 6, 3), ViewboxUnits = BrushMappingMode.Absolute,
-            };
         var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, FontWeight = hi ? FontWeights.SemiBold : FontWeights.Normal };
         var tag = new Border
         {
-            CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 10, 3), Cursor = Cursors.Hand, ToolTip = T("Highlight"),
+            CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 10, 3), Cursor = delta ? null : Cursors.Hand,
+            ToolTip = delta ? T("The other's time less this one's: above the line, this one is ahead") : T("Highlight"),
             BorderThickness = new Thickness(1), BorderBrush = hi ? colour : PedalColours.Frozen(Colors.Gray, 0x60),
             Background = hi ? PedalColours.Frozen(Colors.White, 0x26) : Brushes.Transparent,
             Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, label } },
         };
-        tag.MouseLeftButtonUp += (_, _) => { chart.Highlight = hi ? null : (channel, which); chart.HighlightRun = null; again(); chart.InvalidateVisual(); };
+        // (since 4.17.14 the channel in both sessions)
+        if (!delta) tag.MouseLeftButtonUp += (_, _) => { chart.Highlight = hi ? null : (channel, 1); chart.HighlightRun = null; again(); chart.InvalidateVisual(); };
         return new StackPanel { Orientation = Orientation.Horizontal, Children = { box, tag } };
     }
 

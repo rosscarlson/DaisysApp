@@ -587,7 +587,7 @@ internal sealed class CompareChart : LayeredChart
                 if (c is Channel.Speed or Channel.Rpm or Channel.Gear)
                     dc.DrawText(PedalColours.Text(this, TopText(c, top), 9, dim), new Point(area.Left + 3, area.Top + 1));
                 // the faded one first, the highlighted one on top
-                var order = Highlight == (c, 1) || HighlightRun == 1 ? new[] { 2, 1 } : new[] { 1, 2 };
+                var order = HighlightRun == 1 ? new[] { 2, 1 } : new[] { 1, 2 };
                 foreach (int which in order)
                 {
                     var r = which == 1 ? a : b;
@@ -713,7 +713,8 @@ internal sealed class CompareChart : LayeredChart
     /// in white, its run highlighted), faded if another is.</summary>
     private Pen Line(Channel c, int run, Brush white, bool dotted = true)
     {
-        bool runHi = HighlightRun == run, hi = Highlight == (c, run) || runHi;
+        // (since 4.17.14 a channel highlighted in both sessions: one Channels for both)
+        bool runHi = HighlightRun == run, hi = Highlight?.Channel == c || runHi;
         bool faded = (Highlight != null || HighlightRun != null) && !hi;
         var brush = runHi || c == Channel.Steering ? white : PedalColours.Frozen(ColourOf(c));
         return LinePen(brush, hi ? 2.6 : 1.5, faded ? 0.3 : 1, dotted && run == 2);
@@ -795,7 +796,7 @@ internal sealed class CompareChart : LayeredChart
             DrawSeries(dc, r, delta, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(Channel.Delta)), 1.6, Highlight != null || HighlightRun != null ? 0.35 : 1), area);
         }
         // (the highlighted one on top)
-        foreach (var c in channels.OrderBy(c => Highlight == (c, run)))
+        foreach (var c in channels.OrderBy(c => Highlight?.Channel == c))
         {
             double top = tops[c];
             double Y(double v) => area.Bottom - Math.Clamp(v / top, 0, 1) * area.Height;

@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.14**
+- **SimEffects → Analysis**: one **Channels** drop-down for both sessions (Session 2's went): a channel shown,
+  hidden or highlighted in both, and **Delta** in it (on at first; a chip in Session 2's row before). **Combine** is
+  in Session 2's row where its Channels was. The two laps' times are in a block before the scores (in Session 1's row
+  before): S1's, S2's, and the difference under them, red when S2's slower, green when it's faster.
+- **Scores**: Session 2's show too when it's the same race (another lap), so S1 and S2 highlighted each show their
+  own session's (only another race's did).
+- **Brake Point**, **Brake Release**, **Throttle** and **Shifting** two by two, the **Tips** beside them as high as
+  both rows (five across before).
+
 **4.17.13**
 - **Back and forward through every level of tabs**: each sub-tab opened is a step of its own, not only the module
   (SimEffects → Shaker → Overlays, then Video → Mini Mirror: back goes Video, Overlays, Shaker, SimEffects). Every

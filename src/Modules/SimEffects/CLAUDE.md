@@ -58,6 +58,16 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.17.14 (Compare's rows and scores):** one Channels (`Entry(.., r, b, both, ..)`: `(c,1)` and `(c,2)` hidden
+  together, synced at start; Delta a `ChannelItem` toggling `ShowDelta`; `chart.Highlight = (c, 1)` and CompareChart
+  now highlights a channel in both runs, `Highlight?.Channel == c`). `deltaChip` and `otherChannels` gone; `combineChip`
+  is Row 2's right-hand cell. `LapTimes(s1, s2)` is a block in `scores` (Auto column, 16 px gap) when both parts are
+  whole laps. `ShowScores` no longer skips a Session 2 that's the same race: the user's "the scores aren't changing
+  when I select S1 vs S2" was S2 = the same race (scores are per session; they said compare per session, not per lap).
+  The five cards: a 3-column grid, two rows, Tips RowSpan 3. `strings.py --prune` in a fresh worktree wanted to drop
+  ~55 SimEffects keys and rewrote every module's en.json line endings: only my keys were applied to HEAD's blob.
+  Test data: DaisysDev needs `%APPDATA%\DaisysApp\Analysis*.jsonl` copied into `%APPDATA%\DaisysDev` (sessions are
+  read from LocalAppData\DaisysApp\ForzaSessions); `%TEMP%\share419\scroll.ps1 -pct N` scrolls the page by UIA.
 - **4.17.11 (the user's Horizon Mexico Circuit 11/12 10:16 PM race, `2026-11-12 22.16.19.csv`):** its log ends at
   the finish line in lap index 2 (laptime 62.283, the store's lap 3 62.240): `SessionData.Load(path, recorded)` makes
   the last lap whole from `Item.LapTimes` (the store's laps, 1-based) or a length within 2%. `Item.Line` = Title +

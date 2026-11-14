@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.14 (Analysis: one Channels, Combine in S2's row, the laps' times block, S2's scores for the same race,
+  2×2 cards):** seen in DaisysDev with the Horizon Mexico Circuit 11/12 10:16 PM race against its own lap 1: S1
+  1:02.240, S2 1:04.770, +2.530 in red; S2 highlighted shows S2's scores; the four cards two by two beside the Tips.
+  Not tried: the Channels drop-down's Delta line and a channel highlighted in both (it's a popup UIA can't open), a
+  faster S2 in green.
 - **4.17.13 (back / forward through every level of tabs):** with a real mouse: SimEffects → Shaker → Overlays →
   Video → Mini Mirror, then back steps through each sub-tab. Seen in DaisysDev (UIA selects, posted mouse buttons):
   that sequence plus Audio → Delay → Levels and Settings → Shortcuts, back ×9 and forward, one step per click.

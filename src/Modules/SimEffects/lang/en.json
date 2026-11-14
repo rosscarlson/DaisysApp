@@ -474,7 +474,6 @@
   "fastest": "fastest",
   "None": "None",
   "No other race on this track yet": "No other race on this track yet",
-  "{0} vs {1} ({2:+0.000;-0.000;0.000} s)": "{0} vs {1} ({2:+0.000;-0.000;0.000} s)",
   "Not the same track?": "Not the same track?",
   "Speed": "Speed",
   "Show": "Show",
@@ -1020,5 +1019,8 @@
   "Application / release: progressive, then clean, each in one movement": "Application / release: progressive, then clean, each in one movement",
   "Impacts / Crashes": "Impacts / Crashes",
   "Lighter hits (other cars, mostly) / hits of {0:0.0} g or more (walls, mostly)": "Lighter hits (other cars, mostly) / hits of {0:0.0} g or more (walls, mostly)",
-  "No shared sessions for {0}": "No shared sessions for {0}"
+  "No shared sessions for {0}": "No shared sessions for {0}",
+  "S1: {0}": "S1: {0}",
+  "S2: {0}": "S2: {0}",
+  "Session 1's lap, Session 2's, and Session 2's less Session 1's": "Session 1's lap, Session 2's, and Session 2's less Session 1's"
 }
