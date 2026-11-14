@@ -27,6 +27,8 @@ public sealed class SimProfile
     public bool? AutoStart { get; set; }
     /// <summary>Each tool's settings in this profile, by the tool's id.</summary>
     public Dictionary<string, JsonObject> Tools { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>The game's block ticked on the Profiles tab (since 4.17.17): off, it isn't offered or started by its game.</summary>
+    public bool Enabled { get; set; } = true;
 
     public override string ToString() => Name;
 }
@@ -152,7 +154,7 @@ public static class SimProfiles
         }
         catch (Exception ex) { Logging.Log.Here.Warn("SimEffects profiles: the Shaker's profiles", ex); }
         if (settings.Profiles.Count == 1)
-            foreach (var g in Games.All) settings.Profiles.Add(new SimProfile { Name = Games.Title(g), Game = g, Port = g == Telemetry.Game.ForzaMotorsport ? 5301 : 8000, Programs = Games.Programs(g) });
+            foreach (var g in Games.All) settings.Profiles.Add(new SimProfile { Name = Games.Title(g), Game = g, Port = Games.Port(g), Programs = Games.Programs(g) });
         settings.Active = settings.Profiles[0].Name;
         Logging.Log.Here.Info($"SimEffects profiles: made from the Shaker's ({settings.Profiles.Count})");
         Save();
@@ -193,11 +195,12 @@ public static class SimProfiles
         SaveSoon();
     }
 
-    /// <summary>Uses a profile and plays it: every tool takes its settings for it, the ones on in it start.</summary>
-    public static void Use(SimProfile p, string why)
+    /// <summary>Uses a profile and plays it (or, <paramref name="play"/> false, stops): every tool takes its settings for
+    /// it, the ones on in it start.</summary>
+    public static void Use(SimProfile p, string why, bool play = true)
     {
-        if (p == Active && settings.Active == p.Name) { Play(true, why); return; }
-        settings.Playing = true;
+        if (p == Active && settings.Active == p.Name) { Play(play, why); return; }
+        settings.Playing = play;
         lock (gate)
         {
             foreach (var t in tools) Active.Tools[t.Id] = Capture(t);
@@ -245,8 +248,8 @@ public static class SimProfiles
         Save();
     }
 
-    /// <summary>Adds a profile (its tools' settings as the one in use's) and uses it.</summary>
-    public static void Add(SimProfile p)
+    /// <summary>Adds a profile (its tools' settings as the one in use's) and uses it (unless <paramref name="use"/> is false).</summary>
+    public static void Add(SimProfile p, bool use = true)
     {
         string baseName = p.Name;
         p.AutoStart ??= p.Programs.Count > 0;
@@ -257,7 +260,30 @@ public static class SimProfiles
             settings.Profiles.Add(p);
         }
         Logging.Log.Here.Info($"SimEffects: profile {p.Name} added");
-        Use(p, "added");
+        if (use) Use(p, "added");
+        else Save();
+    }
+
+    /// <summary>
+    /// A game's block ticked or not (since 4.17.17; null: Desktop, no game): ticked, its profile is on again, or made
+    /// with the game's port and processes (not used yet); unticked, it's off, and if it was in use the first one on
+    /// is used instead, stopped.
+    /// </summary>
+    public static void SetEnabled(Game? game, bool on)
+    {
+        var p = settings.Profiles.FirstOrDefault(o => o.Game == game && o.Enabled == !on) ?? settings.Profiles.FirstOrDefault(o => o.Game == game);
+        if (p == null)
+        {
+            if (!on) return;
+            p = game is { } g ? new SimProfile { Name = Games.Title(g), Game = g, Port = Games.Port(g), Programs = Games.Programs(g) } : new SimProfile { Name = T("Desktop") };
+            Add(p, use: false);
+        }
+        p.Enabled = on;
+        if (on && p.Game is { } known && p.Programs.Count == 0) p.Programs = Games.Programs(known);
+        Logging.Log.Here.Info($"SimEffects: profile {p.Name} {(on ? "on" : "off")}");
+        if (!on && p == Active && settings.Profiles.FirstOrDefault(o => o.Enabled) is { } next) Use(next, $"{p.Name} switched off", play: false);
+        else if (!on && p == Active) Play(false, $"{p.Name} switched off");
+        Edited();
     }
 
     public static void Remove(SimProfile p)

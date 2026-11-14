@@ -28,7 +28,7 @@ internal sealed class GameSwitcher : IDisposable
         if (closing) return;
         try
         {
-            var wanted = SimProfiles.All.Where(p => p.AutoStart == true).SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
+            var wanted = SimProfiles.All.Where(p => p.Enabled && p.AutoStart == true).SelectMany(p => p.Programs.Select(prog => (p, prog: Games.Bare(prog)))).ToList();
             // (which version of the profile's game is running, when it doesn't say: its cars' names)
             bool version = SimProfiles.Active is { Game: { } ag, Version: null } && CarNames.Versions(ag).Count > 0;
             // (the profile in use's game running: its programs, or its game's)

@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.17**
+- **SimEffects → Profiles** is a block per game (Forza Horizon, Forza Motorsport, iRacing, ACC, Assetto Corsa,
+  AC EVO, and Desktop for no game), 3 or 4 across as fits, in place of the Profile and Auto Start Modules cards. A
+  checkbox at the top left switches a game on (its profile made with the game's port and processes the first time) or
+  off (left out of the Profile drop-down and Auto Start; the one in use gives way to the first one on, stopped). Each
+  shows a line of what it's set to, then **Options** (Version, UDP Port, Auto Start, Processes, **Defaults**: the
+  game's own port and processes) and **Modules** (a chip per sub-module, their names on the line while folded), each
+  folding away. **Use** picks a game's profile; the one in use has the accent's edge. Units are above the blocks.
+  Edit, New and Delete went (a profile per game). A new Forza Horizon profile's port is 8001 and its processes include
+  fm4.exe and azimuth.exe, as the defaults have them.
+
 **4.17.16**
 - **SimEffects → Analysis → Shared Session Manager** (Share Session before): the sessions to share are ticked in a
   drop-down (Shift-click ticks every one between), then **Share** sends them one after the other, the title bar
