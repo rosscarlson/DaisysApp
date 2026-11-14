@@ -375,7 +375,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
     where in the video it starts (`# video,link,seconds`), so whoever imports it watches it in step.
   - Speeds are in mph where the region isn't metric, km/h elsewhere.
 - **Shared Session Manager** (Share Session 4.17.0–4.17.15; the share icon at the top right of the Analysis card, where Import was): sessions
-  shared on [Daisy's Server](../../../../README.md#settings--general) (set up in Settings → General), everyone's.
+  shared on [the server](../../../../README.md#settings--general) (set up in Settings → General), everyone's.
   - **Sessions to share** (since 4.17.16; one picked 4.17.4–4.17.15, Session 1 only 4.17.0–4.17.3): a drop-down of
     your own sessions (not imported ones), a box each (Session 1 ticked from the Analysis card, those picked from the
     Session Manager's Share); a click with **Shift** ticks (or unticks) every one between it and the last; **Clear** at

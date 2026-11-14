@@ -2,6 +2,12 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.17.22: Tips half, class in the drop-downs, no app names (not run: the user gaming)
+
+- Tips: `SplitTips` from `ShowLegend(a, b)`: column 4 2.05* comparing (the 24 px of gaps are left), 1.5* alone.
+- "[A] " in `Item.Title` (the drop-downs, labels, title row); only when `Blocks.ClassName` names one.
+- The user: no "Daisy's App/Server" anywhere in the module; generic ("Share to Server"). YouTube credit and tag gone.
+
 ## 4.17.21: Shared Session Manager (not run: the user gaming)
 
 - **Asked:** Driver by the server's display name (store only the user name, look it up at runtime, by id ideally);

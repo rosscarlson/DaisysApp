@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.22**
+- **SimEffects → Analysis → Compare**: comparing two sessions, the **Tips** take the right half of the row under
+  the chart (Brake Point, Brake Release, Throttle and Shifting the left half); one session as before.
+- Session 1's and 2's drop-downs (and the session's title) show the car's class before its name: "[A] 2009 …".
+- The module names no app or server: **Share to Server**, **Delete from Server**, "The server isn't set up"; YouTube
+  uploads no longer add "Recorded with Daisy's App" or its tag; Export Tracks suggests `Tracks-<date>.json`.
+
 **4.17.21**
 - **SimEffects → Analysis → Shared Session Manager**: **Driver** is who shared it by their display name on Daisy's
   Server (looked up when listed, so a new display name shows everywhere; sessions are shared with the user name only,

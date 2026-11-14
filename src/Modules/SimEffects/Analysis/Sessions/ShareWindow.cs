@@ -17,7 +17,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
 /// (since 4.17.0) Share Session (since 4.17.16 the Shared Session Manager), from the Analysis card's share icon (Import
-/// was there before): this PC's sessions shared on Daisy's Server, taken off it, or a file imported; each session shared
+/// was there before): this PC's sessions shared on the server, taken off it, or a file imported; each session shared
 /// by itself (a toggle at the bottom); under it every session shared on the server, everyone's, searched as you type
 /// (every column, the box at the top right) and filtered from a right-click on a header, sorted by a header. Compare
 /// downloads the one picked (once) into Imported and puts it in Session 2; a double-click does too and closes the window
@@ -44,7 +44,7 @@ internal sealed class ShareWindow
     /// <summary>The box last ticked or not: Shift and another does those between the same.</summary>
     private int? lastBox;
     private readonly TextBlock shareState = new() { Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly Button share = Tool("\ue72d", T("Share on Daisy's Server"), new Thickness(0)),
+    private readonly Button share = Tool("\ue72d", T("Share to Server"), new Thickness(0)),
         import = Tool("\ued25", T("Import from a file"), new Thickness(8, 0, 0, 0));
     private readonly Button auto = Tool("\uE895", T("Share each session automatically"), new Thickness(0, 0, 8, 0));
 
@@ -58,7 +58,7 @@ internal sealed class ShareWindow
     private readonly HeaderFilter drivers = new(T("Driver")), games = new(T("Game")), tracks = new(T("Track")), cars = new(T("Car")), classes = new(T("Class")),
         videos = new(T("Video")), sharers = new(T("Shared by"));
     private readonly Button compare = Tool("", T("Compare"), new Thickness(24, 0, 0, 0)), watch = Tool("", T("Open on YouTube"), new Thickness(8, 0, 0, 0)),
-        delete = Tool("", T("Delete from Daisy's Server"), new Thickness(8, 0, 0, 0));
+        delete = Tool("", T("Delete from Server"), new Thickness(8, 0, 0, 0));
     private Action disarmDelete = () => { };
     private readonly List<Row> rows = new();
     private ICollectionView? shown;
@@ -336,7 +336,7 @@ internal sealed class ShareWindow
     /// which and how far).</summary>
     private async Task Share()
     {
-        if (!ServerLink.Configured) { shareState.Text = T("Daisy's Server isn't set up (Settings → General)"); return; }
+        if (!ServerLink.Configured) { shareState.Text = T("The server isn't set up (Settings → General)"); return; }
         var these = boxes.Where(b => ticked.Contains(b.Item.Key)).Select(b => b.Item).OrderBy(i => i.Started).ToList();
         if (these.Count == 0) return;
         pick.IsChecked = false;
@@ -430,7 +430,7 @@ internal sealed class ShareWindow
     {
         if (!ServerLink.Configured)
         {
-            status.Text = T("Daisy's Server isn't set up (Settings → General)");
+            status.Text = T("The server isn't set up (Settings → General)");
             rows.Clear();
             Show();
             return;
@@ -446,7 +446,7 @@ internal sealed class ShareWindow
         }
         catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException)
         {
-            status.Text = F("Daisy's Server: {0}", ex.Message.TrimEnd('.'));
+            status.Text = F("Server: {0}", ex.Message.TrimEnd('.'));
         }
     }
 
@@ -540,7 +540,7 @@ internal sealed class ShareWindow
                 key = "Imported\\" + Path.GetFileName(target);
                 all.Downloaded[r.S.Id] = key;
                 all.Save();
-                Logging.Log.Here.Info($"Analysis: downloaded {r.S.Id} from Daisy's Server to {target}");
+                Logging.Log.Here.Info($"Analysis: downloaded {r.S.Id} from the server to {target}");
                 Show();
             }
             catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException or InvalidDataException or FormatException)

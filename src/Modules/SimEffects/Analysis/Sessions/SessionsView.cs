@@ -199,16 +199,18 @@ internal sealed class SessionsView
             if (unfinished.ContainsKey(g.Key) && g.Laps.Count == 0) best = 0;
             int laps = Math.Max(g.Laps.Count, race?.Laps ?? 0);
             var fastest = g.Laps.Where(l => l.Lap > 0).MinBy(l => l.Time);
+            string className = cls > 0 && Blocks.ClassName(cls, game) is { Length: > 0 } cn && cn != "?" ? cn : "";
             mine.Add(new Item
             {
                 File = file, Key = g.Key, Started = started, Track = track,
                 Game = game, TrackName = names.TrackName(track), CarName = names.CarName(game, car),
-                ClassName = cls > 0 && Blocks.ClassName(cls, game) is { Length: > 0 } cn && cn != "?" ? cn : "",
+                ClassName = className,
                 Laps = laps, Best = best, Incomplete = unfinished.ContainsKey(g.Key),
                 HasVideo = VideoThere(g.Key),
                 LapTimes = g.Laps.Where(l => l.Lap > 0).GroupBy(l => l.Lap).ToDictionary(l => l.Key, l => l.First().Time),
                 LapsTag = laps > 1 && fastest != null ? $" ({fastest.Lap}/{laps})" : "",
-                Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {When(started)}" + (best > 0 ? " · " + Blocks.LapTime(best) : "")
+                // (since 4.17.22 the car's class before it, "[A] ")
+                Title = $"{names.TrackName(track)} · {(className.Length > 0 ? $"[{className}] " : "")}{names.CarName(game, car)} · {When(started)}" + (best > 0 ? " · " + Blocks.LapTime(best) : "")
                     + (unfinished.ContainsKey(g.Key) ? " · " + T("INCOMPLETE") : ""),
             });
         }
@@ -256,7 +258,7 @@ internal sealed class SessionsView
     /// <summary>(since 4.17.0) Session 1 (the session analysed in Compare).</summary>
     internal Item? Session1 => mineItem;
 
-    /// <summary>(since 4.17.0) A session's title and description, as it goes to YouTube and Daisy's Server.</summary>
+    /// <summary>(since 4.17.0) A session's title and description, as it goes to YouTube and the server.</summary>
     internal static (string Title, string Description) Describe(Item i) =>
         (string.Join(" · ", new[] { i.TrackName, i.CarName, i.Best > 0 ? Blocks.LapTime(i.Best) : "", i.Game }.Where(t => t.Length > 0)),
          string.Join("\n", new[]
@@ -265,7 +267,7 @@ internal sealed class SessionsView
              i.Best > 0 ? F("Best: {0}", Blocks.LapTime(i.Best)) : "", i.Started.ToString("f", CultureInfo.CurrentCulture),
          }.Where(t => t.Length > 0)));
 
-    /// <summary>(since 4.17.0) A session downloaded from Daisy's Server (its key, "Imported\file"): listed, then put in
+    /// <summary>(since 4.17.0) A session downloaded from the server (its key, "Imported\file"): listed, then put in
     /// Compare's Session 2 (Session 1 when there's none; since 4.17.11 <paramref name="slot"/> 1: Session 1).</summary>
     /// <param name="alone">(since 4.17.21) Session 2 emptied once it's Session 1 (a double-click in the Shared Session
     /// Manager): its list that track's sessions, or "-- No Matches --".</param>
@@ -536,9 +538,10 @@ internal sealed class SessionsView
             card("Tips", T("Tips"), tips, false, Array.Empty<UIElement>()),
         };
         // (since 4.17.14 two by two, Brake Point and Brake Release over Throttle and Shifting, the Tips beside them as
-        // high as both rows; five across before)
+        // high as both rows; five across before; since 4.17.22 half the width when comparing: SplitTips)
         foreach (var w in new[] { 1, 0, 1, 0, 1.5 })
             five.ColumnDefinitions.Add(new ColumnDefinition { Width = w == 0 ? new GridLength(12) : new GridLength(w, GridUnitType.Star) });
+        fiveColumns = five.ColumnDefinitions;
         five.RowDefinitions.Add(new RowDefinition());
         five.RowDefinitions.Add(new RowDefinition { Height = new GridLength(12) });
         five.RowDefinitions.Add(new RowDefinition());
@@ -1009,7 +1012,7 @@ internal sealed class SessionsView
         Grid.SetRowSpan(scores, 3);
         top.Children.Add(scores);
         s.Children.Add(top);
-        // (since 4.17.0 Share Session: Daisy's Server, export and import; since 4.7.0 Import, an icon)
+        // (since 4.17.0 Share Session: the server, export and import; since 4.7.0 Import, an icon)
         var share = IconButton("", T("Shared Session Manager"));
         share.Margin = new Thickness(0, 0, 4, 0);
         share.Click += (_, _) => ShareWindow.Show(Host, this, check: mineItem is { Imported: false } m ? new[] { m.Key } : null);
@@ -1794,7 +1797,18 @@ internal sealed class SessionsView
     {
         lastA = a;
         lastB = b;
+        SplitTips(b != null);
         ShowLegend();
+    }
+
+    private ColumnDefinitionCollection? fiveColumns;
+
+    /// <summary>(since 4.17.22) Comparing two, the Tips take the right half (the four charts the left); alone, 1.5 of 3.5.</summary>
+    private void SplitTips(bool comparing)
+    {
+        if (fiveColumns == null) return;
+        double w = comparing ? 2.05 : 1.5; // (a little over 2: the gaps are on the left)
+        if (fiveColumns[4].Width.Value != w) fiveColumns[4].Width = new GridLength(w, GridUnitType.Star);
     }
 
     private void ShowLegend()
@@ -1956,7 +1970,7 @@ internal sealed class SessionsView
     // ---------------------------------------------------------------- export and import
 
     /// <summary>A session's log from <paramref name="from"/> to <paramref name="to"/> (ms) as a session file of its own,
-    /// with the driver's name and the session's (since 4.17.0 also what Daisy's Server shares): their Analysis imports it.</summary>
+    /// with the driver's name and the session's (since 4.17.0 also what the server shares): their Analysis imports it.</summary>
     internal static string ExportText(string path, DateTime started, long from, long to, string driver, string name, string? video, double? videoAt)
     {
         var output = new StringBuilder();

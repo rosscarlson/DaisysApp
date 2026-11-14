@@ -13,7 +13,7 @@ using DaisysApp.Shared.Network;
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
 /// <summary>
-/// (since 4.12.0) The Session Manager (4.13.3–4.16.2 the Analysis Manager; since 4.17.0 with each session's share on Daisy's Server), from the Session card's wrench: every session listed (the races' logs, then the
+/// (since 4.12.0) The Session Manager (4.13.3–4.16.2 the Analysis Manager; since 4.17.0 with each session's share on the server), from the Session card's wrench: every session listed (the races' logs, then the
 /// imported ones) with its game, track, car, laps, best and what it takes on disk (its log and its race video), the
 /// totals above; sorted by a column's header (newest first at first), filtered from a right-click on it (since 4.13.1;
 /// boxes in the headers before). Load analyses the session picked in the window behind, this one staying open; Show in
@@ -36,7 +36,7 @@ internal sealed class SessionManager
     private readonly WrapPanel totals = new() { Margin = new Thickness(0, 0, 0, 10), HorizontalAlignment = HorizontalAlignment.Right };
     private readonly HeaderFilter days = new(T("Date"), (a, b) => DateTime.Parse(b, CultureInfo.CurrentCulture).CompareTo(DateTime.Parse(a, CultureInfo.CurrentCulture))),
         games = new(T("Game")), tracks = new(T("Track")), cars = new(T("Car")), kinds = new(T("Kind")), videos = new(T("Video"));
-    private readonly Button share = Tool("", T("Share on Daisy's Server"), new Thickness(8, 0, 0, 0)),
+    private readonly Button share = Tool("", T("Share to Server"), new Thickness(8, 0, 0, 0)),
         upload = Tool("", T("Upload to YouTube"), new Thickness(8, 0, 0, 0)),
         dropFiles = Tool("", T("Delete Video Files (kept on YouTube)"), new Thickness(8, 0, 0, 0)), watch = Tool("", T("Open on YouTube"), new Thickness(8, 0, 0, 0));
     /// <summary>Puts Delete Video Files' Confirm? back.</summary>
@@ -86,7 +86,7 @@ internal sealed class SessionManager
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ServerText)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ServerTip)));
         }
-        /// <summary>(since 4.17.0) On Daisy's Server: Shared, Sharing n%, Waiting for YouTube, Failed, or "—".</summary>
+        /// <summary>(since 4.17.0) On the server: Shared, Sharing n%, Waiting for YouTube, Failed, or "—".</summary>
         public string ServerText => ShareQueue.State(Item) is { Length: > 0 } s ? s : "—";
         public string? ServerTip => ShareQueue.Failure(Item.Key);
         public long Total => Data + Math.Max(0, Video);
@@ -383,7 +383,7 @@ internal sealed class SessionManager
         }
         bool Sure(string what) => MessageBox.Show(window, what, T("Session Manager"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
         Item(T("Load"), load, Load);
-        Item(T("Share on Daisy's Server"), share, Share);
+        Item(T("Share to Server"), share, Share);
         Item(T("Upload to YouTube"), upload, Upload);
         Item(T("Open on YouTube"), watch, () => { if (Picked is { YouTube: { } url }) Ui.Open(url); });
         menu.Items.Add(new Separator());

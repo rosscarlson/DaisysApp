@@ -101,8 +101,8 @@ internal static class RaceUploads
                 });
                 try
                 {
-                    var up = await YouTube.Upload(link.File, title, description + (description.Length > 0 ? "\n\n" : "") + T("Recorded with Daisy's App"),
-                        RaceVideos.All.YouTubePrivacy, progress, cancel.Token, new[] { "Daisy's App", "sim racing" });
+                    var up = await YouTube.Upload(link.File, title, description,
+                        RaceVideos.All.YouTubePrivacy, progress, cancel.Token, new[] { "sim racing" });
                     link.YouTube = up.Url;
                     link.Upload = false;
                     RaceVideos.All.Save();

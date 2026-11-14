@@ -455,7 +455,7 @@ internal sealed class AnalysisView : UserControl
     {
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            FileName = $"DaisysApp-Tracks-{DateTime.Now:yyyy-MM-dd}.json", DefaultExt = ".json", Filter = T("JSON files") + " (*.json)|*.json",
+            FileName = $"Tracks-{DateTime.Now:yyyy-MM-dd}.json", DefaultExt = ".json", Filter = T("JSON files") + " (*.json)|*.json",
         };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
         var list = settings.Tracks.OrderBy(t => t.Game).ThenBy(t => settings.TrackName(t.Id)).Select(t => new

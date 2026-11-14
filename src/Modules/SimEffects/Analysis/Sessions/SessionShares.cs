@@ -10,7 +10,7 @@ using DaisysServer.Protocol;
 
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 
-/// <summary>(since 4.17.0) A session shared to Daisy's Server: the server's id for it, and what it was shared as.</summary>
+/// <summary>(since 4.17.0) A session shared to the server: the server's id for it, and what it was shared as.</summary>
 public sealed class SharedSession
 {
     public string Id { get; set; } = "";
@@ -22,7 +22,7 @@ public sealed class SharedSession
 }
 
 /// <summary>
-/// (since 4.17.0) Sharing sessions on Daisy's Server, saved in %APPDATA%\DaisysApp\AnalysisShares.json: each session
+/// (since 4.17.0) Sharing sessions on the server, saved in %APPDATA%\DaisysApp\AnalysisShares.json: each session
 /// shared (by its log's file name), each one downloaded (the server's id → its file in Imported), and whether each
 /// session is shared by itself once it's kept (<see cref="ShareQueue"/>).
 /// </summary>
@@ -48,7 +48,7 @@ public sealed class SessionShares
 }
 
 /// <summary>
-/// (since 4.17.0) The <c>sessions</c> module on Daisy's Server (its PROTOCOL.md; from: <c>Analysis</c>): one channel,
+/// (since 4.17.0) The <c>sessions</c> module on the server (its PROTOCOL.md; from: <c>Analysis</c>): one channel,
 /// opened when first asked (the app's one connection, Core's <see cref="ServerLink"/>, encrypted end to end with the
 /// token) and again after it's lost. Questions carry a <c>rid</c> that their answer repeats; anything else the server
 /// sends (a session added, changed or removed) is <see cref="Pushed"/>. A session goes up as its export file, gzipped,
@@ -252,7 +252,7 @@ internal sealed class ServerSession
 }
 
 /// <summary>
-/// (since 4.17.0) Sessions going to Daisy's Server, one at a time: shared from the Share Session window, or by
+/// (since 4.17.0) Sessions going to the server, one at a time: shared from the Share Session window, or by
 /// themselves (<see cref="SessionShares.Auto"/>) once kept. A session whose race video is going to YouTube (or waiting
 /// to) waits for it, so it's shared with the video's link. Everything here is on the UI thread.
 /// </summary>
@@ -328,7 +328,7 @@ internal static class ShareQueue
                 was.Description = description;
                 was.Video = link?.YouTube;
                 SessionShares.All.Save();
-                Logging.Log.Here.Info($"Analysis: {item.Key} on Daisy's Server changed");
+                Logging.Log.Here.Info($"Analysis: {item.Key} on the server changed");
                 Done(T("Share Complete"), title, TitleBadges.Green);
                 return null;
             }
@@ -353,7 +353,7 @@ internal static class ShareQueue
             string id = await SessionServer.UploadAsync(meta, text, progress);
             SessionShares.All.Shared[item.Key] = new SharedSession { Id = id, Title = title, Description = description, Shared = DateTime.Now, Video = link?.YouTube };
             SessionShares.All.Save();
-            Logging.Log.Here.Info($"Analysis: {item.Key} shared on Daisy's Server ({id})");
+            Logging.Log.Here.Info($"Analysis: {item.Key} shared on the server ({id})");
             Done(T("Share Complete"), title, TitleBadges.Green);
             return null;
         }
