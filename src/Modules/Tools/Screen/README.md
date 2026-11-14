@@ -18,7 +18,8 @@ As some X window managers on Linux did: **hold the spacebar and click anywhere o
 title bar; it follows the mouse until the button is let go. Off to start with.
 
 - **On / Off** beside its name switches it; the **joystick** beside that sets a shortcut (a key combination or a
-  controller / wheel / button box button) that switches it from anywhere, also listed in Settings → Shortcuts
+  controller / wheel / button box button) that switches it from anywhere (what it's bound to shows beside it, or
+  **Unbound**; the same for each tool here, since 4.17.10), also listed in Settings → Shortcuts
   (Screen · Spacebar Drag on / off). Each switch is logged in the Tools log.
 - **Typing isn't changed:** while it's on, a space is typed when the spacebar is let go rather than when it's
   pressed, unless a window was grabbed (then no space is typed). Typing on (a key pressed while the spacebar is down)
@@ -68,7 +69,7 @@ The settings are in `%APPDATA%\DaisysApp\Screen.json` (on or off, the shortcuts 
 
 | File | |
 |---|---|
-| `ScreenApplet.cs` | The sub-tab: a card each (`Card`) for Spacebar Drag, Always on top and Black screens with On / Off and a joystick, in a `UniformGrid` of up to 5 columns (`Grid`), Black screens' All screens box and picker (Core's `Hotkeys.Add` and `HotkeyWindow`), switching `SpaceDrag`, `TopMost` and `Blackout` (which lets the shortcut black the monitors); Always on top's shortcut toggles the window in front |
+| `ScreenApplet.cs` | The sub-tab: a card each (`Card`) for Spacebar Drag, Always on top and Black screens with On / Off, a joystick and what it's bound to (`KeyButton`: "Unbound" when nothing), in a `UniformGrid` of up to 5 columns (`Grid`), Black screens' All screens box and picker (Core's `Hotkeys.Add` and `HotkeyWindow`), switching `SpaceDrag`, `TopMost` and `Blackout` (which lets the shortcut black the monitors); Always on top's shortcut toggles the window in front |
 | `SpaceDrag.cs` | Low-level keyboard and mouse hooks on a thread of their own with its message loop (installed only while it's on): the spacebar's states (held back, passed on, used for a grab; a held space counts only while its repeats keep coming, so one whose release was missed can't grab), the window under the pointer (`WindowFromPoint` → its top-level window, the desktop and taskbar left out, a window we may not move found by a first posted `SetWindowPos`), and the move (`SetWindowPos` with `SWP_ASYNCWINDOWPOS`, so a hung window can't hold the hooks up; a maximized one restored with `ShowWindowAsync` at its normal size, at the same share of its width under the pointer) |
 | `TopMost.cs` | Always on top: the item put into a window's system menu from outside (`GetSystemMenu` + `InsertMenu`, above the line over Close, ticked to match `WS_EX_TOPMOST`) when it comes to the front or is right-clicked; the pick seen without a hook in the program: WinEvents for the menu showing (its `MN_GETHMENU` holding our item), then low-level hooks for a click (or Enter) with our item lit (`MF_HILITE`), or its T; `SetWindowPos` `HWND_TOPMOST` / `HWND_NOTOPMOST`. On its own thread, only while it's on; switching off deletes the item from every menu it went into. `Toggle` and `Front` serve the shortcut |
 | `Blackout.cs` | Black screens: a black borderless topmost tool window per monitor (`EnumDisplayMonitors`, placed in physical pixels with Core's `WindowTools.SetBounds`, twice for a monitor of another DPI), no pointer, a double-click ends it; every 2 s back on top, and rebuilt if the monitors changed; only over the monitors `Covers` picks (`Displays`: `EnumDisplayMonitors` + `GetMonitorInfo` for the device name), `Refit` when the pick changes |

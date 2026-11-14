@@ -521,5 +521,7 @@
   "Not a YouTube video": "Not a YouTube video",
   "YouTube error {0}": "YouTube error {0}",
   "Your own OAuth client": "Your own OAuth client",
-  "Blank: the app's": "Blank: the app's"
+  "Blank: the app's": "Blank: the app's",
+  "Back (the tab before)": "Back (the tab before)",
+  "Forward (the tab after)": "Forward (the tab after)"
 }

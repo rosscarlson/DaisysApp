@@ -26,7 +26,6 @@ public sealed class ScreenApplet : IApplet
     private readonly Blackout blackout = new();
     private readonly Hotkey hotkey, topKey, blackKey;
     private readonly ToggleButton onOff, topOnOff, blackOnOff;
-    private readonly Button key, topKeyButton, blackKeyButton;
     private readonly ScreenPicker picker;
     private readonly FrameworkElement view;
 
@@ -53,11 +52,8 @@ public sealed class ScreenApplet : IApplet
         blackout.Changed += () => log.Info(blackout.On ? "Black screens: monitors black" : "Black screens: monitors back");
 
         onOff = OnOff(T("Spacebar Drag on"), on => SetSpaceDrag(on));
-        key = KeyButton(T("On / off shortcut"), () => hotkey);
         topOnOff = OnOff(T("Always on top on"), on => SetTopMost(on));
-        topKeyButton = KeyButton(T("Always on top shortcut"), () => topKey);
         blackOnOff = OnOff(T("Black screens on"), on => SetBlackout(on));
-        blackKeyButton = KeyButton(T("Black screens shortcut"), () => blackKey);
         ShowOnOff();
 
         var all = new CheckBox { Content = T("All screens"), IsChecked = settings.BlackoutAll, Margin = new Thickness(0, 10, 0, 0),
@@ -70,9 +66,9 @@ public sealed class ScreenApplet : IApplet
         {
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             Content = Grid(
-                Card(T("Spacebar Drag"), T("Hold the spacebar and drag a window from anywhere on it"), onOff, key),
-                Card(T("Always on top"), T("Always on top in a window's title bar menu (right-click its title bar)"), topOnOff, topKeyButton),
-                Card(T("Black screens"), T("Its shortcut turns the screens black and back (a double-click on one also ends it)"), blackOnOff, blackKeyButton, all, picker)),
+                Card(T("Spacebar Drag"), T("Hold the spacebar and drag a window from anywhere on it"), onOff, KeyButton(T("On / off shortcut"), () => hotkey)),
+                Card(T("Always on top"), T("Always on top in a window's title bar menu (right-click its title bar)"), topOnOff, KeyButton(T("Always on top shortcut"), () => topKey)),
+                Card(T("Black screens"), T("Its shortcut turns the screens black and back (a double-click on one also ends it)"), blackOnOff, KeyButton(T("Black screens shortcut"), () => blackKey), all, picker)),
         };
     }
 
@@ -88,14 +84,16 @@ public sealed class ScreenApplet : IApplet
         return grid;
     }
 
-    /// <summary>A feature's card: its name (its tooltip says what it does), On / Off and its shortcut, then its settings.</summary>
-    private static Border Card(string name, string tip, ToggleButton onOff, Button key, params UIElement[] settings)
+    /// <summary>A feature's card: its name (its tooltip says what it does), On / Off, its shortcut's button and what it's
+    /// bound to, then its settings.</summary>
+    private static Border Card(string name, string tip, ToggleButton onOff, FrameworkElement key, params UIElement[] settings)
     {
         var panel = new StackPanel();
         var header = Ui.Header(name);
         header.ToolTip = tip;
         panel.Children.Add(header);
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
+        var row = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
+        DockPanel.SetDock(onOff, Dock.Left);
         row.Children.Add(onOff);
         row.Children.Add(key);
         panel.Children.Add(row);
@@ -115,11 +113,26 @@ public sealed class ScreenApplet : IApplet
         return b;
     }
 
-    private static Button KeyButton(string name, Func<Hotkey> hotkey)
+    /// <summary>The shortcut's joystick button, and beside it what it's bound to ("Unbound" when nothing is).</summary>
+    private static FrameworkElement KeyButton(string name, Func<Hotkey> hotkey)
     {
         var b = HotkeyWindow.Button(name, () => hotkey());
         b.Margin = new Thickness(6, 0, 0, 0);
-        return b;
+        var bound = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
+        void Show()
+        {
+            var text = hotkey().Text;
+            bound.Text = text ?? T("Unbound");
+            bound.ToolTip = text;
+            bound.SetResourceReference(TextBlock.ForegroundProperty, text != null ? "TextBrush" : "TextSecondaryBrush");
+        }
+        bound.Loaded += (_, _) => { Hotkeys.Changed += Show; Show(); };
+        bound.Unloaded += (_, _) => Hotkeys.Changed -= Show;
+        var row = new DockPanel();
+        DockPanel.SetDock(b, Dock.Left);
+        row.Children.Add(b);
+        row.Children.Add(bound);
+        return row;
     }
 
     public FrameworkElement View => view;

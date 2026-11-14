@@ -6,6 +6,17 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **4.17.10 (asked 2026-11-14: browser-like back / forward with the mouse's buttons, bindable through Core's
+  Hotkeys):** `Shell/TabHistory.cs` (shell, not Core): places = tab + an `AppletGroup`'s `SubTabs.Current`, noted at
+  Background priority so AppNavigation's tab-then-sub-tab is one place; max 50; `going` stops Go's own selects being
+  noted. Mouse: window `PreviewMouseDown` XButton1/2; WM_APPCOMMAND 1/2 by an HwndSource hook (WPF's
+  `NavigationCommands.BrowseBack` binding never fired for a sent WM_APPCOMMAND), skipped within 500 ms of a mouse
+  press (DefWindowProc sends one after WM_XBUTTONUP). Hotkeys `App.Back` / `App.Forward` (`AppSettings.BackKey` /
+  `ForwardKey`, unbound). Not covered: Settings' own sub-pages, Audio's own sub-tabs (not `SubTabs`). Tested in
+  DaisysDev (`%TEMP%
+avtest
+av.ps1`: UIA selects, posted WM_XBUTTON, sent WM_APPCOMMAND).
+
 - **4.0.0 (the 2026-11-03 audit, the user: "everything but 1, 3, 4", released as 4.0):** Core 0.55. What each item became
   and what's left: the status table in `docs/AUDIT-2026-11-03.md`. Watch points: `RunningPrograms.Watch` delivers on the
   watcher's UI context (made on the UI thread) or the pool, never twice at once, `Recheck` re-delivers; `lookingFor`

@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 4.17.9** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 4.17.10** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -94,6 +94,9 @@ the update tasks.
   3.1.3 turned the flower green). Amber leaves it as it is. While anything in the app records (Video → Recording,
   SimEffects → Analysis' race videos; not the virtual webcam), the flower's centre slowly turns red and a little
   larger, whatever the background's colour (since 4.10.7).
+- **Back and forward** (since 4.17.10, `Shell/TabHistory.cs`): the mouse's back and forward buttons (and a keyboard's
+  Browser Back / Forward keys) go through the tabs and sub-tabs in the order you opened them, as in a browser. Two
+  shortcuts in Settings → Shortcuts (Daisy's App · Back / Forward), unbound to start with, do the same.
 - **Only one copy runs.** Starting it again brings the running copy to the front.
 - **The tray.** Closing the window keeps the app running in the tray (if that's on); right-click the tray icon to open
   it, check for updates, use the modules' own tray items, or exit.

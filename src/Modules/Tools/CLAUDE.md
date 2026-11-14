@@ -60,3 +60,7 @@ ptest`, out/nptest.exe; `MODE=reg`), DaisysDev (--open cold/warm ~1 s, rule, mig
   undo (XAML) works (the AI box had to write its own undo for in-memory bitmaps). Mobile's `NoteText.kt` carries `i`
   too (no rendering). Harness `%TEMP%\npimg\h` (NotepadView by reflection, settings under `NpHarness`) ALL PASSED:
   insert, redraw, read back, delete + undo, hit test. Not tested: a real Ctrl+V, the double-click, two PCs, the phone.
+- **4.17.10 (asked 2026-11-14: beside each Screen shortcut button what it's bound to, or "Unbound", for every tool
+  there):** `ScreenApplet.KeyButton` returns the joystick + a TextBlock (`Hotkey.Text`, `TextSecondaryBrush` when
+  unbound, follows `Hotkeys.Changed` while loaded); `Card` row is a DockPanel. Seen in DaisysDev (Screen.json backed
+  up and restored).

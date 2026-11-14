@@ -581,5 +581,6 @@
   "New session of another kind": "New session of another kind",
   "New {0} session": "New {0} session",
   "New session": "New session",
-  "Close this session": "Close this session"
+  "Close this session": "Close this session",
+  "Unbound": "Unbound"
 }

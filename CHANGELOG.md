@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.10**
+- **Back and forward through the tabs**: the mouse's back and forward buttons (and a keyboard's Browser Back /
+  Forward keys) go back through the tabs and sub-tabs in the order they were opened, and forward again, as in a
+  browser (SimEffects → Analysis, then Video → Recording: back goes to Analysis). Opening another tab while back drops
+  the ones ahead. Two shortcuts, **Back** and **Forward**, in Settings → Shortcuts (unbound to start with).
+- **Tools → Screen**: beside each shortcut's button, what it's bound to, or **Unbound**.
+
 **4.17.9**
 - **SimEffects → Overlays**: no list. A box for each of the 8 overlays, four across and two down (Dash, Inputs,
   Performance, Tires, Track Map, Position, Timing, Leaderboard), each with a picture of it, all its settings (Inputs'

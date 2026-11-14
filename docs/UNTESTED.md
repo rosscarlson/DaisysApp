@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.10 (back / forward through the tabs; Screen's bindings shown):** the mouse's back and forward buttons with
+  a real mouse, over ordinary tabs and over Tools → Terminal (a window of its own: it should come as WM_APPCOMMAND);
+  the Back / Forward shortcuts in Settings → Shortcuts. Seen in DaisysDev with posted mouse and app-command messages
+  (SimEffects → Analysis, Video → Recording, Tools → Screen, back ×3, forward, a new tab drops the ones ahead; one
+  step per click) and Screen's "Unbound" / "Ctrl+Alt+Shift+F11" labels.
 - **4.17.9 (Overlays as 8 boxes; the Dash's speedometer and Digital look):** SimEffects → Overlays: the boxes, a
   picture each; tick one on and off (its overlay appears and goes), its eye and shortcut hide and show it (a shortcut
   of one that's off only says so), Edit places it. Dash: Tach and Speedometer each off (the last can't be), Analog and

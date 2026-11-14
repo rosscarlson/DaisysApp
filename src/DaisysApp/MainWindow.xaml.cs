@@ -134,6 +134,7 @@ public partial class MainWindow : Window
             settings.LastTab = id;
             Log.App.Debug($"Tab opened: {id}");
         };
+        _ = new TabHistory(this, tabs, applets, settings, () => settings.LastTab);
         tabs.Select(settings.LastTab);
         Step("last tab selected");
 

@@ -41,6 +41,10 @@ public sealed class AppSettings
     /// the module is off.</summary>
     public Dictionary<string, List<Shell.ModuleTools.Known>> ModuleTools { get; set; } = new();
 
+    /// <summary>Settings → Shortcuts: back and forward through the tabs opened (Shell.TabHistory); the mouse's buttons do it too.</summary>
+    public string? BackKey { get; set; }
+    public string? ForwardKey { get; set; }
+
     /// <summary>Names the user gave tabs (right-click a tab), by tab id ("settings" for the Settings tab).</summary>
     public Dictionary<string, string> TabNames { get; set; } = new();
 
