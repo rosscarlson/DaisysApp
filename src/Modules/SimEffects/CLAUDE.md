@@ -58,7 +58,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
-- **4.17.10 (the user's Horizon Mexico Circuit 11/12 10:16 PM race, `2026-11-12 22.16.19.csv`):** its log ends at
+- **4.17.11 (the user's Horizon Mexico Circuit 11/12 10:16 PM race, `2026-11-12 22.16.19.csv`):** its log ends at
   the finish line in lap index 2 (laptime 62.283, the store's lap 3 62.240): `SessionData.Load(path, recorded)` makes
   the last lap whole from `Item.LapTimes` (the store's laps, 1-based) or a length within 2%. `Item.Line` = Title +
   `LapsTag` (" (fastest/total)") is what the boxes show (`SessionBox`); exports still use `Title`. `Blank(.., Import:
@@ -68,7 +68,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   Brake/ThrottleConsistency` (`Consistency`, `PlaceIn`). The user asked "This is both brake and throttle consistency,
   correct?": it was lap times (4.17.8), so it was made so. Their message's "When clicking on S2 dropdown" was cut
   off. Worktree `D:\Temp\da-s419` (`da-share`'s link was pruned again); UIA helpers `%TEMP%\share419\` (`ui.ps1`
-  name action, `pick.ps1` match box, `shot.ps1` PrintWindow).
+  name action, `pick.ps1` match box, `shot.ps1` PrintWindow). Lesson: the other session released 4.17.9 and 4.17.10 while this was built; my commit af3192e (made on fetched 4.17.10 from files based on 4.17.9) undid 4.17.10's CHANGELOG/README/UNTESTED lines, put back in the 4.17.11 commit. Build shared docs from the very commit the new one goes on.
 - **4.17.8 (no Session box; scores, the user's Temple Cross Country 11/13 12:09 run):** `SessionsView`'s
   `headButtons` (picker, delete, place, export, manage) + Share on Compare's card, `headCard` is that card (title
   "Session", found by `Titled` and kept as `about`; `ShowTitle` from `ShowCompare`/`ShowSession`, the Item's `Best`

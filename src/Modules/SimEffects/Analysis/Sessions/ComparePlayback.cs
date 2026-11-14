@@ -253,9 +253,9 @@ internal sealed class Playback
 }
 
 /// <summary>
-/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: (since 4.17.10) to the start, rewind 2× (since
+/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: (since 4.17.11) to the start, rewind 2× (since
 /// 4.10.10 also 4×; 8× until 4.17.8), slow motion back ½×, play/pause, slow motion ½×, fast forward 2× (4×), (since
-/// 4.17.10) the next lap (greyed out with none after the cursor), and the clock.
+/// 4.17.11) the next lap (greyed out with none after the cursor), and the clock.
 /// </summary>
 internal sealed class PlaybackBar : DockPanel
 {
@@ -323,7 +323,7 @@ internal sealed class PlaybackBar : DockPanel
         ShowState();
     }
 
-    /// <summary>(since 4.17.10) A button that moves the cursor: an icon.</summary>
+    /// <summary>(since 4.17.11) A button that moves the cursor: an icon.</summary>
     private static Button Jump(string glyph, string name, Action click)
     {
         var g = new TextBlock { Text = glyph, FontSize = 16, VerticalAlignment = VerticalAlignment.Center };
@@ -334,7 +334,7 @@ internal sealed class PlaybackBar : DockPanel
         return b;
     }
 
-    /// <summary>(since 4.17.10) Where the next lap after the cursor starts (a sample; NaN: none in the run).</summary>
+    /// <summary>(since 4.17.11) Where the next lap after the cursor starts (a sample; NaN: none in the run).</summary>
     private double NextLap()
     {
         if (playback.Run is not { } r) return double.NaN;

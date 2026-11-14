@@ -114,7 +114,7 @@ internal sealed class SessionData
         return (started, driver, name, video);
     }
 
-    /// <param name="recorded">(since 4.17.10) The laps the game recorded for this race (its number, 1 the first, and time):
+    /// <param name="recorded">(since 4.17.11) The laps the game recorded for this race (its number, 1 the first, and time):
     /// the last one whole though the log stops at the line.</param>
     public static SessionData Load(string path, IReadOnlyDictionary<int, float>? recorded = null)
     {
@@ -237,7 +237,7 @@ internal sealed class SessionData
     }
 
     /// <summary>The laps, from the lap number the game sends: a run of the same number is a lap, complete when the next
-    /// one follows it and it started at the line (the time into it near 0). Since 4.17.10 the last one too when the log
+    /// one follows it and it started at the line (the time into it near 0). Since 4.17.11 the last one too when the log
     /// stops in it (a race's finish: the log ends as the line's crossed) and the game recorded it (else, someone
     /// else's, it's as long as a whole one, within 2%).</summary>
     private void FindLaps(IReadOnlyDictionary<int, float>? recorded)

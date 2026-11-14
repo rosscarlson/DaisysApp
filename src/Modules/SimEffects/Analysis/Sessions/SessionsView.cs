@@ -32,7 +32,7 @@ internal sealed class SessionsView
     /// <summary>(since 4.17.8) The Session card's title: the track and the lap's time (the race's line before, under
     /// the Session box's title; now its tooltip).</summary>
     private TextBlock about = new();
-    // (since 4.17.10 Session 1's, Session 2's or both side by side, each its tiles with its time split under them)
+    // (since 4.17.11 Session 1's, Session 2's or both side by side, each its tiles with its time split under them)
     private readonly Grid scores = new();
     // (since 4.17.8 not shown; kept to show again)
     private readonly WrapPanel numbers = new() { Margin = new Thickness(0, 8, 0, 0) };
@@ -110,16 +110,16 @@ internal sealed class SessionsView
         /// <summary>Where it starts (read once, for a race with no track).</summary>
         public (double X, double Z)? Start { get; set; }
         public bool StartRead { get; set; }
-        /// <summary>(since 4.17.10) The laps the game recorded (its number, 1 the first, and time).</summary>
+        /// <summary>(since 4.17.11) The laps the game recorded (its number, 1 the first, and time).</summary>
         public IReadOnlyDictionary<int, float>? LapTimes { get; init; }
-        /// <summary>(since 4.17.10) Its fastest lap's number and how many laps, " (2/3)"; "" for one lap.</summary>
+        /// <summary>(since 4.17.11) Its fastest lap's number and how many laps, " (2/3)"; "" for one lap.</summary>
         public string LapsTag { get; init; } = "";
-        /// <summary>(since 4.17.10) Its line in the drop-downs: the title and the laps.</summary>
+        /// <summary>(since 4.17.11) Its line in the drop-downs: the title and the laps.</summary>
         public string Line => Title + LapsTag;
         public override string ToString() => Line;
     }
 
-    /// <summary>(since 4.13.0) Session 2's line for no session: None, or no session to pick; (since 4.17.10) Import at the
+    /// <summary>(since 4.13.0) Session 2's line for no session: None, or no session to pick; (since 4.17.11) Import at the
     /// bottom of Session 1's and 2's. As an <see cref="Item"/> to the boxes' template.</summary>
     private sealed record Blank(string Title, bool Import = false)
     {
@@ -237,7 +237,7 @@ internal sealed class SessionsView
         sessions.ItemsSource = items;
         var pick = items.FirstOrDefault(i => i.Key.Equals(keep, StringComparison.OrdinalIgnoreCase)) ?? items.FirstOrDefault(i => !i.Imported);
         sessions.SelectedItem = pick;
-        // (since 4.17.10 Session 1's by name, the track first, then Import; the title row's by date)
+        // (since 4.17.11 Session 1's by name, the track first, then Import; the title row's by date)
         thisSession.ItemsSource = items.OrderBy(i => i.Imported).ThenBy(i => i.Imported ? i.Title : i.TrackName, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(i => i.CarName, StringComparer.CurrentCultureIgnoreCase).ThenByDescending(i => i.Started).Cast<object>().Append(new Blank(T("Import…"), true)).ToList();
         thisSession.SelectedItem = items.FirstOrDefault(i => Same(i, mineItem)) ?? pick;
@@ -267,7 +267,7 @@ internal sealed class SessionsView
          }.Where(t => t.Length > 0)));
 
     /// <summary>(since 4.17.0) A session downloaded from Daisy's Server (its key, "Imported\file"): listed, then put in
-    /// Compare's Session 2 (Session 1 when there's none; since 4.17.10 <paramref name="slot"/> 1: Session 1).</summary>
+    /// Compare's Session 2 (Session 1 when there's none; since 4.17.11 <paramref name="slot"/> 1: Session 1).</summary>
     internal async Task CompareDownloaded(string key, int slot = 2)
     {
         Refresh();
@@ -276,7 +276,7 @@ internal sealed class SessionsView
         else Load(item);
     }
 
-    /// <summary>(since 4.17.10) Session 1's or 2's Import: Share Session, its list searched for Session 1's track, what's
+    /// <summary>(since 4.17.11) Session 1's or 2's Import: Share Session, its list searched for Session 1's track, what's
     /// picked there (or imported from a file) going into that slot.</summary>
     private void ImportInto(int slot) =>
         ShareWindow.Show(Host, this, slot, mineItem is { Imported: false } m && m.TrackName.Length > 0 ? m.TrackName : null);
@@ -720,7 +720,7 @@ internal sealed class SessionsView
         return row;
     }
 
-    /// <summary>(since 4.17.10) The scores: Session 1's; with a Session 2 (another session) both side by side, or only
+    /// <summary>(since 4.17.11) The scores: Session 1's; with a Session 2 (another session) both side by side, or only
     /// the one highlighted (S1 or S2 clicked).</summary>
     private void ShowScores()
     {
@@ -751,7 +751,7 @@ internal sealed class SessionsView
     private static Num Counted(int count, int orange, int red) =>
         new(count.ToString(), count >= red ? PedalColours.Brake : count >= orange ? PedalColours.Warning : PedalColours.Throttle);
 
-    /// <summary>(since 4.17.10) A session's tiles (Overall and Consistency in one, Brake, Throttle, Impacts / Crashes; a
+    /// <summary>(since 4.17.11) A session's tiles (Overall and Consistency in one, Brake, Throttle, Impacts / Crashes; a
     /// tile a score until 4.17.8) with its time split under them; S1 or S2 before them when both are shown.</summary>
     private static FrameworkElement ScoreGroup(PedalAnalysis a, int slot)
     {
@@ -806,7 +806,7 @@ internal sealed class SessionsView
     }
 
     /// <summary>A tile (since 4.17.8 as high as Compare's two rows, the tiles sharing the width between them): its numbers
-    /// (since 4.17.10 one or two, "/" between them, each its colour) over its name; since 4.17.10 two such side by side
+    /// (since 4.17.11 one or two, "/" between them, each its colour) over its name; since 4.17.11 two such side by side
     /// in one (Overall and Consistency), a line between them, twice as wide.</summary>
     private static void Tile(Grid tiles, bool small, params (string Name, Num[] Nums, string Tip)[] parts)
     {
@@ -975,7 +975,7 @@ internal sealed class SessionsView
             row.Children.Add(session);
             row.Children.Add(part);
             channels.VerticalAlignment = VerticalAlignment.Center;
-            // (since 4.17.10 at the right of its cell: Session 2's has no Combine before it)
+            // (since 4.17.11 at the right of its cell: Session 2's has no Combine before it)
             channels.HorizontalAlignment = HorizontalAlignment.Right;
             channels.Margin = new Thickness(0, 0, 0, 6);
             foreach (var x in after) row.Children.Add(x);
@@ -996,7 +996,7 @@ internal sealed class SessionsView
         deltaChip.Margin = new Thickness(14, 0, 0, 0);
         Row(T("S1"), 1, thisSession, thisPart, thisChannels, compareStatus);
         Row(T("S2"), 2, otherSession, otherPart, otherChannels, deltaChip);
-        // (since 4.17.10 Import at the bottom of each: Share Session for that slot, the box back to what it had)
+        // (since 4.17.11 Import at the bottom of each: Share Session for that slot, the box back to what it had)
         bool Importing(ComboBox box, SelectionChangedEventArgs e, int slot)
         {
             if (box.SelectedItem is not Blank { Import: true }) return false;
@@ -1423,7 +1423,7 @@ internal sealed class SessionsView
         on.ContextMenu = menu;
     }
 
-    /// <summary>(since 4.17.10) A session box, the title row's and Session 1's and 2's alike: its lines (the title, the
+    /// <summary>(since 4.17.11) A session box, the title row's and Session 1's and 2's alike: its lines (the title, the
     /// laps, the video icon) whole when it's open, the one picked as its tooltip.</summary>
     private static void SessionBox(ComboBox box)
     {
@@ -1966,7 +1966,7 @@ internal sealed class SessionsView
         return output.ToString();
     }
 
-    /// <summary>Adds session files (someone else's exported laps) to the list, and compares with the first (since 4.17.10
+    /// <summary>Adds session files (someone else's exported laps) to the list, and compares with the first (since 4.17.11
     /// <paramref name="slot"/> 1: puts it in Session 1).</summary>
     internal async void Import(int slot = 2)
     {

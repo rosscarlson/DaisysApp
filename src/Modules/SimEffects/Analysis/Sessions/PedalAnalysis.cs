@@ -149,7 +149,7 @@ internal sealed class PedalAnalysis
     public double BrakeReleaseScore { get; private set; } = double.NaN;
     public double ThrottleApplyScore { get; private set; } = double.NaN;
     public double ThrottleReleaseScore { get; private set; } = double.NaN;
-    /// <summary>(since 4.17.10) How alike the brake points and the throttle applications are lap to lap (the laps' times
+    /// <summary>(since 4.17.11) How alike the brake points and the throttle applications are lap to lap (the laps' times
     /// in 4.17.8, one score).</summary>
     public double BrakeConsistency { get; private set; } = double.NaN;
     public double ThrottleConsistency { get; private set; } = double.NaN;
@@ -479,7 +479,7 @@ internal sealed class PedalAnalysis
         // (since 4.17.8 no steering score: off-road, or holding a car on the limit, takes many small corrections, and a
         // quick lap scored 0; the corrections are still counted)
 
-        // (since 4.17.10) consistency: where the brake goes on and the throttle's applied, lap to lap (each corner's
+        // (since 4.17.11) consistency: where the brake goes on and the throttle's applied, lap to lap (each corner's
         // spread); 4.17.8 how alike the laps' times were, before that how alike the brake zones were
         var laps = Data.Laps.Where(l => l.Complete).ToList();
         if (laps.Count >= 2)
@@ -497,7 +497,7 @@ internal sealed class PedalAnalysis
         if (weights > 0) OverallScore = sum / weights;
     }
 
-    /// <summary>(since 4.17.10) How alike moments (brake points…) are lap to lap: each lap's matched to the lap with the
+    /// <summary>(since 4.17.11) How alike moments (brake points…) are lap to lap: each lap's matched to the lap with the
     /// most by place (within 40 m), each group's spread (metres from its middle) averaged; <paramref name="zero"/> m
     /// scores 0. Places are the car's, else the distance into the lap.</summary>
     private double Consistency(List<Lap> laps, IEnumerable<int> moments, double zero)

@@ -21,7 +21,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// by itself (a toggle at the bottom); under it every session shared on the server, everyone's, searched as you type
 /// (every column, the box at the top right) and filtered from a right-click on a header, sorted by a header. Compare
 /// downloads the one picked (once) into Imported and puts it in Session 2; a double-click does too and closes the window.
-/// One window. Since 4.17.10 also from Session 1's and 2's Import: searched for Session 1's track (a note when none are
+/// One window. Since 4.17.11 also from Session 1's and 2's Import: searched for Session 1's track (a note when none are
 /// shared), what's compared (or imported from a file) going into that slot.
 /// </summary>
 internal sealed class ShareWindow
@@ -55,7 +55,7 @@ internal sealed class ShareWindow
     private ICollectionView? shown;
     private SessionsView.Item? item;
     private bool busy;
-    /// <summary>(since 4.17.10) Where Compare (and Import) put a session: Session 1 or 2.</summary>
+    /// <summary>(since 4.17.11) Where Compare (and Import) put a session: Session 1 or 2.</summary>
     private int slot = 2;
     private bool listed;
 
@@ -96,8 +96,8 @@ internal sealed class ShareWindow
         return b;
     }
 
-    /// <param name="slot">(since 4.17.10) Where Compare puts a session: Session 1 or 2.</param>
-    /// <param name="find">(since 4.17.10) Searched for at first (Session 1's track).</param>
+    /// <param name="slot">(since 4.17.11) Where Compare puts a session: Session 1 or 2.</param>
+    /// <param name="find">(since 4.17.11) Searched for at first (Session 1's track).</param>
     public static void Show(FrameworkElement owner, SessionsView view, int slot = 2, string? find = null)
     {
         if (open is { window.IsLoaded: true } was)
@@ -443,7 +443,7 @@ internal sealed class ShareWindow
         Enable();
     }
 
-    /// <summary>(since 4.17.10) The search finding none of the sessions shared: said.</summary>
+    /// <summary>(since 4.17.11) The search finding none of the sessions shared: said.</summary>
     private void ShowNone()
     {
         if (!listed || !ServerLink.Configured) return;

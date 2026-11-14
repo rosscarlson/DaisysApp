@@ -3,7 +3,7 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
-**4.17.10**
+**4.17.11**
 - **SimEffects → Analysis**: a race's last lap counts as a whole lap (it showed "Lap 3 (part)": the log stops as the
   line's crossed at the finish) when the game recorded it, or (someone else's) when it's as long as a whole lap.
   The race drop-downs show the fastest lap and how many, "(2/3)", for a race of more than one lap. Session 1's list
@@ -17,6 +17,13 @@ module's guide describes that module.)
   splits are side by side; S1 or S2 highlighted shows only that one's.
 - **Playback**: no 8× rewind or fast forward; **To the start** (|<) first and **Next lap** (>|) last, greyed out
   with no lap after the cursor. Session 2's Channels drop-down is at the right of its row, as Session 1's.
+
+**4.17.10**
+- **Back and forward through the tabs**: the mouse's back and forward buttons (and a keyboard's Browser Back /
+  Forward keys) go back through the tabs and sub-tabs in the order they were opened, and forward again, as in a
+  browser (SimEffects → Analysis, then Video → Recording: back goes to Analysis). Opening another tab while back drops
+  the ones ahead. Two shortcuts, **Back** and **Forward**, in Settings → Shortcuts (unbound to start with).
+- **Tools → Screen**: beside each shortcut's button, what it's bound to, or **Unbound**.
 
 **4.17.9**
 - **SimEffects → Overlays**: no list. A box for each of the 8 overlays, four across and two down (Dash, Inputs,
