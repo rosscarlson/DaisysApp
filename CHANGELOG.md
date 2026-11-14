@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.23**
+- **SimEffects → Analysis → Compare**: the chart's readout at the mouse is on its left, so what's coming isn't
+  covered (on its right only at the chart's left edge, where there's no room).
+
 **4.17.22**
 - **SimEffects → Analysis → Compare**: comparing two sessions, the **Tips** take the right half of the row under
   the chart (Brake Point, Brake Release, Throttle and Shifting the left half); one session as before.

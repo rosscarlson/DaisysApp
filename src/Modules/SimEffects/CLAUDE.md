@@ -2,6 +2,10 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.17.23: the readout on the mouse's left (not run: the user gaming)
+
+- `CompareChart.Readout`: left of the mouse unless it would go past 0; the user: never on the right (it covers what's coming).
+
 ## 4.17.22: Tips half, class in the drop-downs, no app names (not run: the user gaming)
 
 - Tips: `SplitTips` from `ShowLegend(a, b)`: column 4 2.05* comparing (the 24 px of gaps are left), 1.5* alone.

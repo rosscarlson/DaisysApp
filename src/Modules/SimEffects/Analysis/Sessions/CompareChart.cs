@@ -745,8 +745,8 @@ internal sealed class CompareChart : LayeredChart
     }
 
     /// <summary>The readout at a place on the chart (pixels across): where, the time, Delta and each channel's values.
-    /// <paramref name="trail"/> (since 4.17.16, the cursor's): always on its left, so what's coming isn't covered; not
-    /// shown till there's room.</summary>
+    /// On the left of it (since 4.17.23 the mouse's too), so what's coming isn't covered. <paramref name="trail"/> (since
+    /// 4.17.16, the cursor's): not shown till there's room.</summary>
     private void Readout(DrawingContext dc, double px, List<Lane> lanes, double w, Brush text, bool trail = false)
     {
         double x = XAt(px);
@@ -767,7 +767,8 @@ internal sealed class CompareChart : LayeredChart
         if (Has(Channel.Gear) && (Shown(Channel.Gear, 1) || Shown(Channel.Gear, 2)))
             lines.Add(T("Gear") + " " + Pair(Channel.Gear, d => d.Gear, v => Math.Round(v) switch { < 0 => "R", 0 => "N", var g => $"{g:0}" }));
         var ft = PedalColours.Text(this, string.Join("\n", lines), 11, text);
-        double bx = trail || px + 12 + ft.Width + 12 > w ? px - 12 - ft.Width - 12 : px + 12;
+        // (since 4.17.23 the mouse's too, on its right only when there's no room on its left)
+        double bx = trail || px - 12 - ft.Width - 12 >= 0 ? px - 12 - ft.Width - 12 : px + 12;
         if (trail && bx < Left) return;
         dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(bx, lanes[0].Area.Top + 4, ft.Width + 12, ft.Height + 8), 4, 4);
         dc.DrawText(ft, new Point(bx + 6, lanes[0].Area.Top + 8));

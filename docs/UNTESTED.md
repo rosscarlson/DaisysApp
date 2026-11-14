@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.23 (Analysis: the chart's readout on the mouse's left):** built, not run: the user was gaming. To try:
+  hover the Compare chart; the readout left of the line (right of it only at the far left).
 - **4.17.22 (Analysis: Tips half the row when comparing; "[A]" before the car in the session drop-downs; Share to
   Server and the other generic names):** built, not run: the user was gaming. To try: Compare two sessions (Tips the
   right half), then one (as before); Session 1's drop-down "[A] car"; the Session Manager's and Share window's tooltips.
