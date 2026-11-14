@@ -58,6 +58,14 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.17.8 (no Session box; scores, the user's Temple Cross Country 11/13 12:09 run):** `SessionsView`'s
+  `headButtons` (picker, delete, place, export, manage) + Share on Compare's card, `headCard` is that card (title
+  "Session", found by `Titled` and kept as `about`; `ShowTitle` from `ShowCompare`/`ShowSession`, the Item's `Best`
+  when the log's lap isn't whole). Compare's rows in a 3-column grid, `scores` a one-row `UniformGrid` spanning both,
+  `split` in row 3. `PedalAnalysis`: no `SteeringScore`; `ConsistencyScore` from lap times. Impacts/Crashes tiles keep
+  the contact tip's thresholds (crash = hard hit, walls mostly: the user's "impacts = walls" guess reversed, as they
+  asked). That race: 5 impacts, 2 crashes on an off-road track (jumps may count as jolts; not changed). Seen in
+  DaisysDev (`%TEMP%\share417\pickname.ps1` picks the title-row picker by name).
 - **4.17.6 (share status in the title bar; Channels stays open):** `ShareQueue` sets Core's `TitleBadges`
   ("AnalysisShare", blue `#58A6FF` while going, green/red for 10 s via `Done`/`turn`; Waiting for YouTube from
   `Consider`). Compare's Channels popup `StaysOpen = true`, closed by its button, the window's Deactivated/LocationChanged

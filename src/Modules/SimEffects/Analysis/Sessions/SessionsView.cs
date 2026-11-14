@@ -27,12 +27,16 @@ internal sealed class SessionsView
     private readonly SessionSettings settings = SessionSettings.Load();
     private readonly Func<string, string, UIElement, bool, UIElement[], Border> card;
     private readonly Action<Border[]> row;
-    private readonly ComboBox sessions = new() { MinWidth = 360, VerticalAlignment = VerticalAlignment.Center };
-    private readonly TextBlock about = new() { TextWrapping = TextWrapping.Wrap };
-    private readonly WrapPanel scores = new() { Margin = new Thickness(0, 10, 0, 0) };
-    private readonly Grid split = new() { Height = 16, Margin = new Thickness(0, 10, 0, 4) };
-    private readonly WrapPanel splitLegend = new();
+    // (since 4.17.8 200 px, in the Session card's title row; its list as wide as its races)
+    private readonly ComboBox sessions = new() { Width = 200, VerticalAlignment = VerticalAlignment.Center };
+    /// <summary>(since 4.17.8) The Session card's title: the track and the lap's time (the race's line before, under
+    /// the Session box's title; now its tooltip).</summary>
+    private TextBlock about = new();
+    private readonly UniformGrid scores = new() { Rows = 1 };
+    private readonly Grid split = new() { Height = 18 };
+    // (since 4.17.8 not shown; kept to show again)
     private readonly WrapPanel numbers = new() { Margin = new Thickness(0, 8, 0, 0) };
+    private UIElement[] headButtons = Array.Empty<UIElement>();
     // (since 4.13.0 as tall as the Tips beside them)
     private readonly OverlayChart brakeOverlay = new() { MinHeight = 165 };
     private readonly OverlayChart releaseOverlay = new() { MinHeight = 165 };
@@ -338,7 +342,7 @@ internal sealed class SessionsView
         loading?.Cancel();
         var cancel = loading = new CancellationTokenSource();
         // (in the line that's there: the page under it mustn't move)
-        about.Text = T("Analysing…");
+        about.Text = F("Session: {0}", T("Analysing…"));
         PedalAnalysis? a = null;
         string? problem = null;
         try { a = await Load(item.File); }
@@ -378,13 +382,6 @@ internal sealed class SessionsView
 
     private void Build()
     {
-        var head = new StackPanel();
-        about.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
-        head.Children.Add(about);
-        head.Children.Add(scores);
-        head.Children.Add(split);
-        head.Children.Add(splitLegend);
-        head.Children.Add(numbers);
         System.Windows.Automation.AutomationProperties.SetName(sessions, T("Session"));
         sessions.ToolTip = T("Session");
         sessions.ItemTemplate = SessionTemplate();
@@ -405,9 +402,9 @@ internal sealed class SessionsView
         // (since 4.12.0) the Session Manager (4.13.3–4.16.2 the Analysis Manager): every session, its disk use, loaded from there
         var manage = IconButton("", T("Session Manager"));
         manage.Click += (_, _) => SessionManager.Show(Host, this);
-        headCard = card("Session", T("Session"), head, false, new UIElement[] { sessions, delete, place, export, manage });
-        headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
-        Cards.Add(headCard);
+        // (since 4.17.8 no Session box: its picker and icons at the top right of Compare's card, Share last; its scores
+        // and time split between Compare's rows)
+        headButtons = new UIElement[] { sessions, delete, place, export, manage };
 
         // (since 4.6.2) Compare and the lines both runs took; since 4.7.0 the Trace too (Session 1 alone, Session 2 None)
         compareChart.Hovered += x =>
@@ -497,6 +494,7 @@ internal sealed class SessionsView
         shareTimer.Start();
         compareChart.ZoneClicked += z => Pick(z, fromChart: true);
         Cards.Add(BuildCompare());
+        headCard.IsVisibleChanged += (_, _) => { if (headCard.IsVisible) Shown(); };
 
         // the zones lined up at the brake point and at the release (since 4.6.2 a card each; a drop-down picked one
         // before), and the throttle applications, over each other; then (since 4.6.10) the gear changes; since 4.13.0 a
@@ -605,13 +603,14 @@ internal sealed class SessionsView
         tips.Children.Clear();
         split.Children.Clear();
         split.ColumnDefinitions.Clear();
-        splitLegend.Children.Clear();
         ShowOverlays();
         UseThis(current, a, wantLap);
         wantLap = null;
         if (a == null)
         {
-            about.Text = problem ?? (items.Count == 0 ? T("No races yet") : "");
+            string? note = problem ?? (items.Count == 0 ? T("No races yet") : null);
+            about.Text = note == null ? T("Session") : F("Session: {0}", note);
+            about.ToolTip = null;
             return;
         }
         int ups = a.Throttle.Count(m => m.Up);
@@ -623,28 +622,38 @@ internal sealed class SessionsView
         if (laps > 0) parts.Add(F("{0}, best {1}", P(laps, "{0} lap", "{0} laps"), Lap.LapClock(a.Data.BestLap!.Seconds)));
         parts.Add(P(a.Brakes.Count, "{0} brake zone", "{0} brake zones"));
         parts.Add(P(ups, "{0} throttle application", "{0} throttle applications"));
-        about.Text = string.Join(" · ", parts);
+        about.ToolTip = string.Join(" · ", parts);
+        ShowTitle();
 
-        Tile(T("Overall"), a.OverallScore, T("The scores below together, the brake release counting most"));
+        Tile(T("Overall"), a.OverallScore, T("The scores together, the brake release counting most"));
         Tile(T("Brake application"), a.BrakeApplyScore, T("Firm and in one movement"));
         Tile(T("Brake release"), a.BrakeReleaseScore, T("Gradual and in one movement"));
         Tile(T("Throttle application"), a.ThrottleApplyScore, T("Progressive and in one movement"));
         Tile(T("Throttle release"), a.ThrottleReleaseScore, T("Clean and in one movement"));
-        Tile(T("Steering"), a.SteeringScore, T("Fewer small corrections score higher"));
-        Tile(T("Consistency"), a.ConsistencyScore, T("How alike the brake zones are"));
+        // (since 4.17.8 no Steering; Consistency the laps' times)
+        Tile(T("Consistency"), a.ConsistencyScore, T("How alike the laps' times are (two laps or more)"));
+        // (since 4.17.8) contact: Crashes (the hard hits, walls mostly) orange at 1, red from 2; Impacts (cars, mostly)
+        // orange 1-3, red from 4, as the contact tip
+        if (a.Data.HasG || a.Data.HasSpeed)
+        {
+            int crashes = a.Incidents.Count(x => x.Crash), impacts = a.Incidents.Count - crashes;
+            Count(T("Impacts"), impacts, 1, 4, T("Lighter hits: other cars, mostly"));
+            Count(T("Crashes"), crashes, 1, 2, F("Hits of {0:0.0} g or more: walls, mostly", Incident.CrashG));
+        }
 
         void Part(double pct, Color colour, string name)
         {
             if (pct <= 0) return;
             split.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(pct, GridUnitType.Star) });
-            var r = new Border { Background = PedalColours.Frozen(colour), ToolTip = F("{0}: {1:0.0}%", name, pct) };
+            // (since 4.17.8 the name and share on the colour; a legend under it before)
+            var label = new TextBlock
+            {
+                Text = F("{0} {1:0}%", name, pct), FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White,
+                TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0, 3, 0),
+            };
+            var r = new Border { Background = PedalColours.Frozen(colour), ToolTip = F("{0}: {1:0.0}%", name, pct), Child = label };
             Grid.SetColumn(r, split.ColumnDefinitions.Count - 1);
             split.Children.Add(r);
-            var dot = new Border { Width = 10, Height = 10, Background = PedalColours.Frozen(colour), Margin = new Thickness(0, 0, 5, 0), CornerRadius = new CornerRadius(2) };
-            var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 14, 0) };
-            item.Children.Add(dot);
-            item.Children.Add(new TextBlock { Text = F("{0} {1:0}%", name, pct), FontSize = 12 });
-            splitLegend.Children.Add(item);
         }
         Part(a.FullThrottlePct, PedalColours.Throttle, T("Full throttle"));
         Part(a.PartThrottlePct, Color.FromRgb(0x2A, 0x8A, 0x4E), T("Part throttle"));
@@ -731,20 +740,49 @@ internal sealed class SessionsView
         return row;
     }
 
-    private void Tile(string name, double score, string tip)
+    private void Tile(string name, double score, string tip) =>
+        Tile(name, double.IsNaN(score) ? "–" : score.ToString("0"), double.IsNaN(score) ? null : score >= 85 ? PedalColours.Throttle : score >= 65 ? PedalColours.Warning : PedalColours.Brake, tip);
+
+    /// <summary>(since 4.17.8) A count's tile: green at none, orange from <paramref name="orange"/>, red from <paramref name="red"/>.</summary>
+    private void Count(string name, int count, int orange, int red, string tip) =>
+        Tile(name, count.ToString(), count >= red ? PedalColours.Brake : count >= orange ? PedalColours.Warning : PedalColours.Throttle, tip);
+
+    /// <summary>A score's tile (since 4.17.8 as high as Compare's two rows, the tiles sharing the width between them).</summary>
+    private void Tile(string name, string text, Color? colour, string tip)
     {
-        var b = new Border { Width = 128, Padding = new Thickness(10, 8, 10, 8), Margin = new Thickness(0, 0, 8, 8), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1), ToolTip = tip };
+        var b = new Border { Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 6, 6), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1), ToolTip = name + ": " + tip };
         b.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
         b.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
-        var s = new StackPanel();
-        var value = new TextBlock { Text = double.IsNaN(score) ? "–" : score.ToString("0"), FontSize = 26, FontWeight = FontWeights.SemiBold };
-        if (!double.IsNaN(score)) value.Foreground = PedalColours.Frozen(score >= 85 ? PedalColours.Throttle : score >= 65 ? PedalColours.Warning : PedalColours.Brake);
+        var s = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        var value = new TextBlock { Text = text, FontSize = 22, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center };
+        if (colour is { } c) value.Foreground = PedalColours.Frozen(c);
         s.Children.Add(value);
-        var label = new TextBlock { Text = name, TextWrapping = TextWrapping.Wrap, FontSize = 12 };
+        var label = new TextBlock { Text = name, FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center };
         label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         s.Children.Add(label);
         b.Child = s;
         scores.Children.Add(b);
+    }
+
+    /// <summary>(since 4.17.8) The Session card's title: the track and the time of Session 1's lap (the best lap when
+    /// it's the whole race; the race's length with no laps).</summary>
+    private void ShowTitle()
+    {
+        if (analysis is not { } a || current == null) return;
+        var lap = Same(mineItem, current) && (thisPart.SelectedItem as Part)?.Lap is { Complete: true } l ? l : a.Data.BestLap;
+        // (a race of one lap: its time from the race's line, the log's lap not whole)
+        string time = lap != null ? Lap.LapClock(lap.Seconds) : current.Best > 0 ? Lap.LapClock(current.Best) : SessionChart.Clock(a.Data.Seconds);
+        about.Text = F("Session: {0} - {1}", current.TrackName.Length > 0 ? current.TrackName : current.Title, time);
+    }
+
+    private static TextBlock? Titled(DependencyObject o, string text)
+    {
+        foreach (var c in LogicalTreeHelper.GetChildren(o))
+        {
+            if (c is TextBlock t && t.Text == text) return t;
+            if (c is DependencyObject d && Titled(d, text) is { } found) return found;
+        }
+        return null;
     }
 
     private void Number(string name, string value, string tip)
@@ -815,6 +853,22 @@ internal sealed class SessionsView
     private Border BuildCompare()
     {
         var s = new StackPanel();
+        // (since 4.17.8) the rows at the left, their channels at the right, the scores between them as high as the two
+        // rows, the time split under the scores
+        var top = new Grid();
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 200 });
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        for (int k = 0; k < 3; k++) top.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        scores.Margin = new Thickness(12, 0, 6, 0);
+        Grid.SetColumn(scores, 1);
+        Grid.SetRowSpan(scores, 2);
+        top.Children.Add(scores);
+        split.Margin = new Thickness(12, 0, 12, 6);
+        Grid.SetColumn(split, 1);
+        Grid.SetRow(split, 2);
+        top.Children.Add(split);
+        s.Children.Add(top);
         // (since 4.17.0 Share Session: Daisy's Server, export and import; since 4.7.0 Import, an icon)
         var share = IconButton("", T("Share Session"));
         share.Margin = new Thickness(0, 0, 4, 0);
@@ -825,8 +879,7 @@ internal sealed class SessionsView
         // channels at the right)
         void Row(string label, int slot, ComboBox session, ComboBox part, StackPanel channels, params UIElement[] after)
         {
-            var line = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
-            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
             // (since 4.13.0 a click on it opens a window to find a session in)
             row.Children.Add(new Border { Width = 44, VerticalAlignment = VerticalAlignment.Center, Child = PickerLink(label, slot) });
             session.Margin = part.Margin = new Thickness(0, 0, 6, 0);
@@ -836,12 +889,13 @@ internal sealed class SessionsView
             row.Children.Add(session);
             row.Children.Add(part);
             channels.VerticalAlignment = VerticalAlignment.Center;
-            channels.Margin = new Thickness(12, 0, 0, 0);
-            DockPanel.SetDock(channels, Dock.Right);
-            line.Children.Add(channels);
+            channels.Margin = new Thickness(0, 0, 0, 6);
             foreach (var x in after) row.Children.Add(x);
-            line.Children.Add(row);
-            s.Children.Add(line);
+            Grid.SetRow(row, slot - 1);
+            Grid.SetRow(channels, slot - 1);
+            Grid.SetColumn(channels, 2);
+            top.Children.Add(row);
+            top.Children.Add(channels);
         }
         System.Windows.Automation.AutomationProperties.SetName(thisSession, T("Session 1"));
         System.Windows.Automation.AutomationProperties.SetName(thisPart, T("Session 1 lap"));
@@ -849,6 +903,7 @@ internal sealed class SessionsView
         System.Windows.Automation.AutomationProperties.SetName(otherPart, T("Session 2 lap"));
         thisPart.ItemTemplate = otherPart.ItemTemplate = PartTemplate();
         compareStatus.SetResourceReference(FrameworkElement.StyleProperty, "SecondaryText");
+        compareStatus.MaxWidth = 260;
         deltaChip.VerticalAlignment = VerticalAlignment.Center;
         deltaChip.Margin = new Thickness(14, 0, 0, 0);
         Row(T("S1"), 1, thisSession, thisPart, thisChannels, compareStatus);
@@ -942,7 +997,14 @@ internal sealed class SessionsView
             under.Children.Add(slots[i]);
         }
         s.Children.Add(under);
-        return card("Compare", T("Analysis"), s, false, new UIElement[] { share });
+        // (since 4.17.8 "Session: " the track and the time, Analysis before; the Session box's picker and icons there, Share last)
+        headCard = card("Compare", T("Session"), s, false, headButtons.Append(share).ToArray());
+        if (Titled(headCard, T("Session")) is { } title)
+        {
+            title.TextTrimming = TextTrimming.CharacterEllipsis;
+            about = title;
+        }
+        return headCard;
     }
 
     private Grid under = null!;
@@ -1543,6 +1605,8 @@ internal sealed class SessionsView
             if (!SameTrack(a, b, la, lb)) status.Add(T("Not the same track?"));
         }
         compareStatus.Text = string.Join(" · ", status);
+        compareStatus.ToolTip = compareStatus.Text;
+        ShowTitle();
         compareStatus.Foreground = status.Contains(T("Not the same track?")) ? PedalColours.Frozen(PedalColours.Warning) : null;
         if (compareStatus.Foreground == null) compareStatus.ClearValue(TextBlock.ForegroundProperty);
         compareStatus.Visibility = status.Count > 0 ? Visibility.Visible : Visibility.Collapsed;

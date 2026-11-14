@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.8 (Analysis: no Session box; scores):** SimEffects → Analysis: the race picker and icons at the top right of
+  the "Session: track - time" card, the scores between the S1/S2 rows and Channels, the time split under them with
+  its words on the colours; no Steering; Consistency on races of two laps or more; Impacts and Crashes tiles. Seen in
+  DaisysDev with the user's race list (Temple Cross Country 11/13 12:09: 2:15.258 in the title, 8 tiles, 2 crashes
+  red, 5 impacts red, Consistency – for one lap). Not tried there: a race with track names (DaisysDev has none), a
+  narrow window.
 - **4.17.7 (Mini Mirror + overlays lag together, a friend's PC; logging):** he said 4.16.3 didn't help: "anytime
   mini mirror and the overlay are active together, they lag... individually, they don't" (the user's PC, 5070 Ti, is
   fine; his is a 4070 Ti). On his PC, after updating: a game running, mirrors and overlays showing for 2–3 minutes,

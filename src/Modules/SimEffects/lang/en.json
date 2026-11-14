@@ -414,7 +414,7 @@
   "{0} brake zones": "{0} brake zones",
   "{0} throttle application": "{0} throttle application",
   "{0} throttle applications": "{0} throttle applications",
-  "The scores below together, the brake release counting most": "The scores below together, the brake release counting most",
+  "The scores together, the brake release counting most": "The scores together, the brake release counting most",
   "Brake application": "Brake application",
   "Firm and in one movement": "Firm and in one movement",
   "Brake release": "Brake release",
@@ -423,9 +423,9 @@
   "Progressive and in one movement": "Progressive and in one movement",
   "Throttle release": "Throttle release",
   "Clean and in one movement": "Clean and in one movement",
-  "Fewer small corrections score higher": "Fewer small corrections score higher",
+  "How alike the laps' times are (two laps or more)": "How alike the laps' times are (two laps or more)",
   "Consistency": "Consistency",
-  "How alike the brake zones are": "How alike the brake zones are",
+  "Lighter hits: other cars, mostly": "Lighter hits: other cars, mostly",
   "{0}: {1:0.0}%": "{0}: {1:0.0}%",
   "{0} {1:0}%": "{0} {1:0}%",
   "Full throttle": "Full throttle",
@@ -1011,5 +1011,8 @@
   "Share Complete": "Share Complete",
   "Share Failed": "Share Failed",
   "Analysis: {0}": "Analysis: {0}",
-  "Shared once its video is on YouTube": "Shared once its video is on YouTube"
+  "Shared once its video is on YouTube": "Shared once its video is on YouTube",
+  "Session: {0}": "Session: {0}",
+  "Session: {0} - {1}": "Session: {0} - {1}",
+  "Hits of {0:0.0} g or more: walls, mostly": "Hits of {0:0.0} g or more: walls, mostly"
 }

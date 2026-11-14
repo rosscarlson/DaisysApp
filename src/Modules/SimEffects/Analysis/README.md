@@ -198,7 +198,7 @@ not; those older files aren't listed (they name no race), and stay in the folder
 
 ### Picking a race
 
-- **Session** (the Session card's title row): every race with a log, newest first: track, car, when, best lap (since
+- **Session** (since 4.17.8 at the top right of the Session card, 200 px wide; the Session box's title row before): every race with a log, newest first: track, car, when, best lap (since
   4.7.0 other drivers' imported ones too, after them; the same list and pick as Compare's Session 1). The export icon (since 4.7.0; Compare's **Export…** before)
   saves Session 1's lap, or the race, as a file to send to someone. The trash can (since 4.10.12) deletes
   the session picked and its race video: a second click on the red ✕ confirms.
@@ -236,13 +236,18 @@ not; those older files aren't listed (they name no race), and stay in the folder
 
 ### The cards
 
-- **Session** (Session Analysis until 4.13.1): the date, car, length, laps and best, the brake zones and throttle applications; then the
+- **Session** (Session Analysis until 4.13.1; since 4.17.8 not a box of its own: its picker and icons at the top
+  right of Compare's card, its scores and time split between Compare's rows): the date, car, length, laps and best,
+  the brake zones and throttle applications (since 4.17.8 the title's tooltip); then the
   **scores**, 0 to 100 (green 85 and over, amber 65 and over): Overall (the others together, the brake release
-  counting most), Brake application, Brake release, Throttle application, Throttle release, Steering, Consistency;
-  the **time split** (full throttle, part throttle, braking, both together, coasting); and **key numbers**: the
+  counting most), Brake application, Brake release, Throttle application, Throttle release, Consistency (Steering
+  until 4.17.7), and (since 4.17.8) the **Impacts** (orange from 1, red from 4) and **Crashes** (orange at 1, red from
+  2), green at none; the **time split** (full throttle, part throttle, braking, both together, coasting; since 4.17.8
+  its names and shares on the colours); and (hidden since 4.17.8) **key numbers**: the
   average brake peak, application time, release time and trail braking; coasting from brake to throttle; throttle
   to brake; throttle application time; throttle stabs; steering corrections a minute; impacts and crashes.
-- **Analysis on screen** ("Compare" until 4.13.1, and still Compare in this guide and the code; since 4.7.0 also the Trace, a card of its own before: with Session 2 at None the chart is the session
+- **Analysis on screen** ("Compare" until 4.13.1, and still Compare in this guide and the code; since 4.17.8 titled
+  **Session:** the track and Session 1's lap time (the best lap for the whole race), Analysis 4.13.1–4.17.7; since 4.7.0 also the Trace, a card of its own before: with Session 2 at None the chart is the session
   alone): two rows of picks (This and With before 4.7.0). **Session 1**: the race analysed (since 4.7.0 the same pick
   as the Session card's box; 4.6.5–4.6.10 a race of its own): any race, yours or another driver's (imported), then the
   whole race or one of its laps, each with its time, the fastest in bold with a green *★ fastest*. **Session 2**:
@@ -452,8 +457,10 @@ over 0.1 s at 98% or more with the throttle at 80% or more (less the first tenth
 tip of its own (the gearing too short). The costs: a second on the limiter ≈ 0.4 s, an early upshift ≈ 0.01 s a point
 under the best (0.15 s at most), an over-rev ≈ 0.05 s.
 
-**Also:** steering corrections are turns back of less than 13° on Forza's 450° wheel, within a second; consistency
-comes from how much the firm zones' peak, application time and release time vary (4 zones or more); the time split
+**Also:** steering corrections are turns back of less than 13° on Forza's 450° wheel, within a second (no score since
+4.17.8: off-road it's many, on a quick lap); consistency (since 4.17.8) is the laps' times' standard deviation over
+their average, 2.5% scoring 0, with two laps or more (a first lap from a standstill left out; 4.17.7 and before how
+much the firm zones' peak, application time and release time varied, 4 zones or more); the time split
 counts only time within 3 s of something moving.
 
 Not yet: sectors; wheelspin.

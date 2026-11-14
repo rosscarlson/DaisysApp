@@ -149,7 +149,6 @@ internal sealed class PedalAnalysis
     public double BrakeReleaseScore { get; private set; } = double.NaN;
     public double ThrottleApplyScore { get; private set; } = double.NaN;
     public double ThrottleReleaseScore { get; private set; } = double.NaN;
-    public double SteeringScore { get; private set; } = double.NaN;
     public double ConsistencyScore { get; private set; } = double.NaN;
     public double OverallScore { get; private set; } = double.NaN;
 
@@ -474,19 +473,18 @@ internal sealed class PedalAnalysis
         var downs = Throttle.Where(m => !m.Up).ToList();
         if (ups.Count > 0) ThrottleApplyScore = Weighted(ups, m => m.Score, m => m.To - m.From);
         if (downs.Count > 0) ThrottleReleaseScore = Weighted(downs, m => m.Score, m => m.From - m.To);
-        if (HasSteer && ActiveS >= 30) SteeringScore = 100 * Math.Clamp(1 - (SteerCorrectionsPerMin - 15) / 60, 0, 1);
+        // (since 4.17.8 no steering score: off-road, or holding a car on the limit, takes many small corrections, and a
+        // quick lap scored 0; the corrections are still counted)
 
-        var firm = Brakes.Where(z => z.Peak >= 0.3).ToList();
-        if (firm.Count >= 4)
+        // (since 4.17.8) consistency is how alike the laps' times are (a standing start's first lap left out), 2.5% apart
+        // on average scoring 0; until then it was how alike the brake zones were, which differ corner to corner anyway
+        var laps = Data.Laps.Where(l => l.Complete).ToList();
+        if (laps.Count > 0 && Data.HasSpeed && laps[0].Start < Data.Count && Data.Speed[laps[0].Start] < 5) laps.RemoveAt(0);
+        if (laps.Count >= 2)
         {
-            double Cv(Func<BrakeZone, double> of)
-            {
-                var x = firm.Select(of).ToList();
-                double mean = x.Average();
-                return mean <= 0 ? 0 : Math.Sqrt(x.Average(v => (v - mean) * (v - mean))) / mean;
-            }
-            double cv = (Cv(z => z.Peak) + Cv(z => Math.Max(50, z.ApplyMs)) + Cv(z => Math.Max(0.1, z.ReleaseS))) / 3;
-            ConsistencyScore = 100 * Math.Clamp(1 - cv, 0, 1);
+            double mean = laps.Average(l => l.Seconds);
+            double cv = Math.Sqrt(laps.Average(l => (l.Seconds - mean) * (l.Seconds - mean))) / mean;
+            ConsistencyScore = 100 * Math.Clamp(1 - cv / 0.025, 0, 1);
         }
 
         double sum = 0, weights = 0;
@@ -495,7 +493,6 @@ internal sealed class PedalAnalysis
         Add(BrakeReleaseScore, 1.5);
         Add(ThrottleApplyScore, 1);
         Add(ThrottleReleaseScore, 0.5);
-        Add(SteeringScore, 0.5);
         if (weights > 0) OverallScore = sum / weights;
     }
 

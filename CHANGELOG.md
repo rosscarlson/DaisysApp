@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.8**
+- **SimEffects → Analysis**: no Session box. Its race picker (200 px wide; its list as wide as its races) and icons
+  are at the top right of the card below (Share still last), now titled **Session:** the track and the lap's time
+  (the best lap for the whole race; the race's line is its tooltip). The scores sit between Session 1 and 2's rows
+  and the Channels, as high as the two rows, with the time split under them, its names and shares on the colours.
+  The key numbers under it (Brake peak…) are hidden.
+- **Scores**: no **Steering** (off-road, or holding a car on the limit, takes many small corrections: a quick lap
+  scored 0). **Consistency** is how alike the laps' times are (two laps or more, a standing start's first lap left
+  out; how alike the brake zones were before, which differ corner to corner anyway). **Impacts** (lighter hits, other
+  cars mostly) and **Crashes** (3.5 g or more, walls mostly) have tiles: Impacts orange from 1, red from 4; Crashes
+  orange at 1, red from 2.
+
 **4.17.7**
 - **Video → Mini Mirror and SimEffects → Overlays:** the logs say how fast the app really puts its windows on screen,
   for a PC where mirrors and overlays lag only while both show: the app draws all its windows on one thread, and
