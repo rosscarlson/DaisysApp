@@ -24,14 +24,6 @@ public static class Games
     /// <summary>True for the games that send UDP (so a profile for them has a port).</summary>
     public static bool UsesPort(Game g) => g is Game.ForzaHorizon or Game.ForzaMotorsport;
 
-    /// <summary>The port a game's profile starts with (Forza's Data Out; a port of its own for each Forza).</summary>
-    public static int Port(Game g) => g switch
-    {
-        Game.ForzaHorizon => 8001,
-        Game.ForzaMotorsport => 5301,
-        _ => 8000,
-    };
-
     /// <summary>The game's own reader. Use <see cref="TelemetryHub.Open"/> instead, so tools listening to the same game
     /// (the Shaker, Notify, Wheel) share one: only one program can listen on a UDP port.</summary>
     internal static ITelemetrySource Source(Game g, int port) => g switch
@@ -47,7 +39,7 @@ public static class Games
     /// <summary>The programs each game runs as (one running picks its profile, or the game, with Game Switching).</summary>
     public static List<string> Programs(Game g) => g switch
     {
-        Game.ForzaHorizon => new() { "ForzaHorizon4.exe", "ForzaHorizon5.exe", "ForzaHorizon6.exe", "fm4.exe", "azimuth.exe" },
+        Game.ForzaHorizon => new() { "ForzaHorizon4.exe", "ForzaHorizon5.exe", "ForzaHorizon6.exe" },
         Game.ForzaMotorsport => new() { "forza_steamworks_release_final.exe", "forza_gaming.desktop.x64_release_final.exe", "ForzaMotorsport7.exe" },
         Game.IRacing => new() { "iRacingSim64DX11.exe" },
         Game.AssettoCorsa => new() { "acs.exe" },

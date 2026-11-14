@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using DaisysApp.Applets.SimEffects.BassShaker;
 using DaisysApp.Shared.Hotkeys;
@@ -10,8 +11,8 @@ using DaisysApp.Controllers;
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
-/// SimEffects → Profiles (since 3.18.0): the module's profiles, a block per game (since 4.17.17: <see cref="ProfileCard"/>,
-/// its Options with Auto Start: <see cref="GameSwitcher"/>, and its Modules). The Profile drop-down at the right of the
+/// SimEffects → Profiles (since 3.18.0): the module's profiles. Left: the profile in use (<see cref="ProfileCard"/>,
+/// with its Auto Start: <see cref="GameSwitcher"/>); right: which sub-modules start with it (Auto Start Modules, a tile each). The Profile drop-down at the right of the
 /// sub-tabs (<see cref="Picker"/>) switches every tool.
 /// </summary>
 public sealed class ProfilesApplet : IApplet
@@ -56,7 +57,7 @@ public sealed class ProfilesApplet : IApplet
         {
             filling = true;
             box.ItemsSource = null;
-            box.ItemsSource = SimProfiles.All.Where(p => p.Enabled || p == SimProfiles.Active).ToList();
+            box.ItemsSource = SimProfiles.All.ToList();
             box.SelectedItem = SimProfiles.Active;
             filling = false;
         }
@@ -101,70 +102,80 @@ public sealed class ProfilesApplet : IApplet
 
 internal sealed class ProfilesView : UserControl
 {
-    /// <summary>A block's narrowest: fewer columns when the tab is narrower than this many.</summary>
-    private const double BlockWidth = 300;
-    private readonly StackPanel page = new();
-    private readonly Grid blocks = new();
-    private int columns;
+    private readonly StackPanel left = new(), right = new();
 
     public ProfilesView()
     {
-        Content = SimUi.Scroll(page);
+        Content = SimUi.Columns(left, right, 360);
         // (a tool switched on or off on its own tab shows here when this one shows again)
         IsVisibleChanged += (_, _) => { if (IsVisible) Render(); };
-        SizeChanged += (_, _) => { if (Columns() != columns) Place(); };
     }
 
-    /// <summary>(since 4.17.17) A block per game (and Desktop, no game), 3 or 4 across, as fits their number and the
-    /// width; Analysis' units above them (the same in every profile).</summary>
     public void Render()
     {
-        page.Children.Clear();
-        if (ProfileCard.UnitBoxes?.Invoke() is var (units, temperature))
+        left.Children.Clear();
+        left.Children.Add(ProfileCard.Build(SimProfiles.Active));
+        right.Children.Clear();
+        right.Children.Add(ToolsCard());
+    }
+
+    /// <summary>The profile in use's sub-modules, a tile each with its checkbox: started when the profile is (by a game or by hand) or not.</summary>
+    private static Border ToolsCard()
+    {
+        var panel = new StackPanel();
+        var p = SimProfiles.Active;
+        panel.Children.Add(Ui.Header(T("Auto Start Modules")));
+        var tiles = new UniformGrid { Columns = 3, Margin = new Thickness(-5, 4, -5, 0) };
+        foreach (var t in SimProfiles.Tools.Where(t => t.IsOn != null))
         {
-            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
-            row.Children.Add(new TextBlock { Text = T("Units"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
-            foreach (var (label, box) in new[] { (T("System"), units), (T("Temperature"), temperature) })
+            bool on = SimProfiles.IsOn(p, t);
+            var box = new CheckBox { IsChecked = on, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0), IsHitTestVisible = false, Focusable = false };
+            var name = new TextBlock { Text = t.Title, FontSize = 15, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+            var tile = new ToggleButton
             {
-                row.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
-                box.MinWidth = 110;
-                box.Margin = new Thickness(0, 0, 16, 0);
-                row.Children.Add(box);
-            }
-            page.Children.Add(row);
+                IsChecked = on, Margin = new Thickness(5), MinHeight = 64, Padding = new Thickness(14, 10, 14, 10), Cursor = System.Windows.Input.Cursors.Hand,
+                HorizontalContentAlignment = HorizontalAlignment.Left, Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { box, name } },
+                Template = TileTemplate(),
+            };
+            AutomationProperties.SetName(tile, $"{t.Title} · {p.Name}");
+            // (Checked / Unchecked, not Click: a toggle through UI Automation raises no Click)
+            tile.Checked += (_, _) => { box.IsChecked = true; SimProfiles.SetOn(p, t, true); };
+            tile.Unchecked += (_, _) => { box.IsChecked = false; SimProfiles.SetOn(p, t, false); };
+            tiles.Children.Add(tile);
         }
-        blocks.Children.Clear();
-        var active = SimProfiles.Active;
-        SimProfile? For(Game? g) => active.Game == g && active.Enabled ? active
-            : SimProfiles.All.Where(p => p.Game == g).OrderByDescending(p => p.Enabled).FirstOrDefault();
-        foreach (var g in Games.All.Cast<Game?>().Append(null))
-            blocks.Children.Add(ProfileCard.Build(g, For(g)));
-        Place();
-        page.Children.Add(blocks);
+        panel.Children.Add(tiles);
+        return Ui.Card(panel);
     }
 
-    /// <summary>3 across, or 4 where that fills the rows better (4, 7, 8 blocks), fewer when it's narrow.</summary>
-    private int Columns()
+    /// <summary>A tile: a rounded square, the accent's edge and a tint of it while it's ticked.</summary>
+    private static ControlTemplate TileTemplate()
     {
-        int n = Math.Max(1, blocks.Children.Count);
-        int wanted = n % 3 == 0 ? 3 : n % 4 == 0 || n > 6 ? 4 : 3;
-        double width = ActualWidth > 0 ? ActualWidth : wanted * BlockWidth;
-        return Math.Clamp((int)(width / BlockWidth), 1, wanted);
-    }
-
-    private void Place()
-    {
-        columns = Columns();
-        blocks.ColumnDefinitions.Clear();
-        blocks.RowDefinitions.Clear();
-        for (int c = 0; c < columns; c++) blocks.ColumnDefinitions.Add(new ColumnDefinition());
-        int i = 0;
-        foreach (UIElement b in blocks.Children)
-        {
-            if (i % columns == 0) blocks.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            Grid.SetRow(b, i / columns);
-            Grid.SetColumn(b, i % columns);
-            i++;
-        }
+        var border = new FrameworkElementFactory(typeof(Border), "Tile");
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
+        border.SetValue(Border.BorderThicknessProperty, new Thickness(1.5));
+        border.SetValue(Border.PaddingProperty, new TemplateBindingExtension(Control.PaddingProperty));
+        border.SetResourceReference(Border.BackgroundProperty, "ControlBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
+        var tint = new FrameworkElementFactory(typeof(Border), "Tint");
+        tint.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
+        tint.SetValue(UIElement.OpacityProperty, 0.0);
+        tint.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+        var content = new FrameworkElementFactory(typeof(ContentPresenter));
+        content.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        content.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Left);
+        var grid = new FrameworkElementFactory(typeof(Grid));
+        grid.AppendChild(tint);
+        grid.AppendChild(border);
+        border.AppendChild(content);
+        var template = new ControlTemplate(typeof(ToggleButton)) { VisualTree = grid };
+        var checkedTrigger = new Trigger { Property = ToggleButton.IsCheckedProperty, Value = true };
+        checkedTrigger.Setters.Add(new Setter(UIElement.OpacityProperty, 0.16, "Tint"));
+        checkedTrigger.Setters.Add(new Setter(Border.BorderBrushProperty, new DynamicResourceExtension("AccentBrush"), "Tile"));
+        checkedTrigger.Setters.Add(new Setter(Border.BackgroundProperty, Brushes.Transparent, "Tile"));
+        template.Triggers.Add(checkedTrigger);
+        var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        hover.Setters.Add(new Setter(Border.BorderBrushProperty, new DynamicResourceExtension("ControlBorderStrongBrush"), "Tile"));
+        template.Triggers.Add(hover);
+        return template;
     }
 }

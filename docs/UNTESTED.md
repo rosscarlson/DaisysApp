@@ -2,10 +2,6 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
-- **4.17.17 (SimEffects → Profiles as a block per game):** seen in DaisysDev with a copy of this PC's profiles: the
-  grid (4 across at 1500 px), Options and Modules unfolded, Assetto Corsa ticked (made, Analysis on), Forza Horizon
-  unticked while in use (Desktop in use, stopped) and ticked again (its settings back). To try: Use on a block, a
-  module chip on the profile in use, Defaults, a narrow window (fewer columns), Auto Start with a game.
 - **4.17.16 (Shared Session Manager, Session Manager's Share and right-click, To the start by laps, the cursor's
   readout on its left, one set of scores for the same race, Delta highlighted):** built, not run: the user was gaming
   on this PC, so DaisysDev wasn't opened. To try: tick several sessions (Shift-click a range) and Share, watching the

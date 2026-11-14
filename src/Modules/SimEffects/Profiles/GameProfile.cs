@@ -17,7 +17,7 @@ public static class GameProfiles
     {
         Name = Games.Title(game),
         Game = game,
-        Port = Games.Port(game),
+        Port = game == Game.ForzaMotorsport ? 5301 : 8000,
         Programs = Games.Programs(game),
     };
 }

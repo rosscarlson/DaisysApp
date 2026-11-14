@@ -1,135 +1,74 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using DaisysApp.Applets.SimEffects.BassShaker;
 using DaisysApp.Controllers;
 
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
-/// A game's block on the Profiles tab (since 4.17.17; one Profile card for the profile in use before): its checkbox
-/// (the game's profile on or off), its name and Use, a line of what it's set to, then two parts that fold: Options
-/// (Version, UDP Port, Auto Start, Processes, Defaults) and Modules (which sub-modules start with it, as chips; their
-/// names on the fold's line). The Desktop block is the profile with no game.
+/// The Profile card (the Shaker's until 3.18.0, now the whole module's, on the Profiles tab): the profile in use (Name:
+/// a drop-down of the profiles, a box while it's being named), Game (or none), Version (Forza's), UDP Port (Forza), Auto Start and
+/// (since 3.28.0) Units (Analysis', the module's own: the same in every profile) and Processes (Programs before), with
+/// Edit / Save, New and Delete at the bottom.
 /// </summary>
 internal static class ProfileCard
 {
     /// <summary>Analysis' units and temperature boxes (set by it; none while it's off).</summary>
     internal static Func<(ComboBox Units, ComboBox Temperature)>? UnitBoxes;
 
-    /// <summary>The parts unfolded ("FH:Options"…), kept while the tab is drawn again.</summary>
-    private static readonly HashSet<string> open = new();
-    private const string Folded = "", Unfolded = "";
+    /// <summary>The card shows the name in a box (Edit, or a profile just made by New) until Save.</summary>
+    private static bool naming;
 
-    /// <summary>The block of <paramref name="game"/> (null: Desktop), with its profile (null: none yet).</summary>
-    public static Border Build(Game? game, SimProfile? p)
+    public static Border Build(SimProfile p)
     {
-        string key = game?.ToString() ?? "Desktop";
-        string title = game is { } g ? Games.Title(g) : T("Desktop");
-        bool on = p is { Enabled: true };
-        bool active = on && p == SimProfiles.Active;
         var panel = new StackPanel();
+        panel.Children.Add(Ui.Header(T("Profile")));
 
-        var check = new CheckBox { IsChecked = on, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0),
-            ToolTip = game == null ? T("A profile for no game") : T("A profile for this game") };
-        AutomationProperties.SetName(check, title);
-        check.Checked += (_, _) => SimProfiles.SetEnabled(game, true);
-        check.Unchecked += (_, _) => SimProfiles.SetEnabled(game, false);
-        var name = new TextBlock { Text = title, FontSize = 15, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis, Opacity = on ? 1 : 0.6 };
-        var head = new DockPanel { MinHeight = 30 };
-        if (active)
+        var edit = new Button { Content = naming ? T("Save") : T("Edit"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 6, 0) };
+        FrameworkElement nameControl;
+        if (naming)
         {
-            var use = new TextBlock { Text = SimProfiles.Playing ? T("Playing") : T("In use"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
-            use.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
-            DockPanel.SetDock(use, Dock.Right);
-            head.Children.Add(use);
+            var name = new TextBox { Text = p.Name };
+            AutomationProperties.SetName(name, T("Profile name"));
+            void Save()
+            {
+                naming = false;
+                if (!SimProfiles.Rename(p, name.Text.Trim())) { naming = true; name.Focus(); name.SelectAll(); }
+            }
+            void Cancel() { naming = false; SimProfiles.Edited(); }
+            name.KeyDown += (_, e) => { if (e.Key == Key.Enter) Save(); else if (e.Key == Key.Escape) Cancel(); };
+            name.Loaded += (_, _) => { name.Focus(); name.SelectAll(); };
+            edit.Click += (_, _) => Save();
+            nameControl = name;
         }
-        else if (on)
+        else
         {
-            var use = new Button { Content = T("Use"), Padding = new Thickness(10, 2, 10, 2), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Use and play this profile") };
-            AutomationProperties.SetName(use, F("Use {0}", title));
-            use.Click += (_, _) => SimProfiles.Use(p!, "picked");
-            DockPanel.SetDock(use, Dock.Right);
-            head.Children.Add(use);
+            var box = new ComboBox { ItemsSource = SimProfiles.All.ToList(), DisplayMemberPath = nameof(SimProfile.Name), SelectedItem = p };
+            AutomationProperties.SetName(box, T("Profile"));
+            box.SelectionChanged += (_, _) => { if (box.SelectedItem is SimProfile o && o != p) SimProfiles.Use(o, "picked"); };
+            edit.Click += (_, _) => { naming = true; SimProfiles.Edited(); };
+            nameControl = box;
         }
-        head.Children.Add(check);
-        head.Children.Add(name);
-        panel.Children.Add(head);
+        panel.Children.Add(Field(T("Profile"), nameControl));
 
-        if (p != null && on)
+        var games = new List<KeyValuePair<Game?, string>> { new(null, T("None")) };
+        games.AddRange(Games.All.Select(g => new KeyValuePair<Game?, string>(g, Games.Title(g))));
+        var game = new ComboBox { ItemsSource = games, DisplayMemberPath = "Value", SelectedIndex = p.Game is { } pg ? Array.IndexOf(Games.All, pg) + 1 : 0,
+            ToolTip = T("The game every tool reads") };
+        AutomationProperties.SetName(game, T("Game"));
+        game.SelectionChanged += (_, _) =>
         {
-            panel.Children.Add(Ui.Note(Summary(p), 6));
-            panel.Children.Add(Fold(key + ":Options", T("Options"), null, () => Options(p)));
-            var modules = SimProfiles.Tools.Where(t => t.IsOn != null).ToList();
-            var ticked = modules.Where(t => SimProfiles.IsOn(p, t)).Select(t => t.Title).ToList();
-            panel.Children.Add(Fold(key + ":Modules", T("Modules"), ticked.Count == 0 ? T("None") : string.Join(", ", ticked), () => Modules(p, modules)));
-        }
-
-        var card = Ui.Card(panel, new Thickness(0, 0, 12, 12));
-        card.VerticalAlignment = VerticalAlignment.Top;
-        if (active)
-        {
-            card.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
-            card.BorderThickness = new Thickness(1.5);
-        }
-        return card;
-    }
-
-    /// <summary>What it's set to, in a line: Forza's version, the port, Auto Start, how many processes.</summary>
-    private static string Summary(SimProfile p)
-    {
-        var parts = new List<string>();
-        if (p.Game is { } g && CarNames.Versions(g) is { Count: > 0 } versions)
-            parts.Add(versions.FirstOrDefault(v => v.Version == p.Version).Title ?? T("Auto"));
-        if (p.Game is { } u && Games.UsesPort(u)) parts.Add(F("Port {0}", p.Port));
-        parts.Add(p.AutoStart == true ? T("Auto Start") : T("No Auto Start"));
-        parts.Add(P(p.Programs.Count, "{0} process", "{0} processes"));
-        return string.Join(" · ", parts);
-    }
-
-    /// <summary>A part that folds: a row (chevron, title, <paramref name="summary"/> at its right) and what
-    /// <paramref name="body"/> makes under it while it's open.</summary>
-    private static StackPanel Fold(string key, string title, string? summary, Func<FrameworkElement> body)
-    {
-        var s = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
-        var chevron = Ui.Icon(open.Contains(key) ? Unfolded : Folded, 10);
-        chevron.VerticalAlignment = VerticalAlignment.Center;
-        chevron.Margin = new Thickness(0, 0, 8, 0);
-        var row = new DockPanel();
-        row.Children.Add(chevron);
-        var label = new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
-        row.Children.Add(label);
-        if (summary != null)
-        {
-            var more = Ui.Secondary(summary);
-            more.VerticalAlignment = VerticalAlignment.Center;
-            more.ToolTip = summary;
-            row.Children.Add(more);
-        }
-        var button = new Button { Content = row, Template = Ui.FlatRow, Padding = new Thickness(4, 4, 4, 4), Background = System.Windows.Media.Brushes.Transparent,
-            Cursor = Cursors.Hand, HorizontalContentAlignment = HorizontalAlignment.Stretch };
-        AutomationProperties.SetName(button, title);
-        button.MouseEnter += (_, _) => button.SetResourceReference(Control.BackgroundProperty, "ControlBrush");
-        button.MouseLeave += (_, _) => button.Background = System.Windows.Media.Brushes.Transparent;
-        s.Children.Add(button);
-        var holder = new ContentControl { Margin = new Thickness(22, 4, 0, 0) };
-        if (open.Contains(key)) holder.Content = body();
-        s.Children.Add(holder);
-        button.Click += (_, _) =>
-        {
-            bool now = open.Add(key);
-            if (!now) open.Remove(key);
-            chevron.Text = now ? Unfolded : Folded;
-            holder.Content = now ? body() : null;
+            var g = game.SelectedIndex <= 0 ? (Game?)null : Games.All[game.SelectedIndex - 1];
+            if (g == p.Game) return;
+            p.Game = g;
+            if (g == Telemetry.Game.ForzaMotorsport && p.Port == 8000) p.Port = 5301;
+            SimProfiles.Edited();
         };
-        return s;
-    }
+        panel.Children.Add(Field(T("Game"), game));
 
-    /// <summary>Version (Forza's), UDP Port (Forza's), Auto Start, Processes, and Defaults (the game's port and processes).</summary>
-    private static FrameworkElement Options(SimProfile p)
-    {
-        var panel = new StackPanel();
         if (p.Game is { } versioned && CarNames.Versions(versioned) is { Count: > 0 } versions)
         {
             var items = new List<KeyValuePair<int?, string>> { new(null, T("Auto")) };
@@ -165,44 +104,90 @@ internal static class ProfileCard
         var auto = new ComboBox { ItemsSource = new[] { T("Yes"), T("No") }, SelectedIndex = p.AutoStart == true ? 0 : 1, Width = 90, HorizontalAlignment = HorizontalAlignment.Left,
             ToolTip = T("Plays while one of its programs runs") };
         AutomationProperties.SetName(auto, T("Auto Start"));
-        auto.SelectionChanged += (_, _) => { p.AutoStart = auto.SelectedIndex == 0; SimProfiles.Edited(); };
+        auto.SelectionChanged += (_, _) => { p.AutoStart = auto.SelectedIndex == 0; SimProfiles.Save(); };
         panel.Children.Add(Field(T("Auto Start"), auto));
 
-        panel.Children.Add(new TextBlock { Text = T("Processes"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4),
-            ToolTip = T("With Auto Start, one of these starting plays this profile") });
-        panel.Children.Add(Ui.ProgramList(p.Programs, SimProfiles.Edited, addName: T("Process to add")));
-
-        if (p.Game is { } g)
+        // (since 3.28.0) the units, then the processes, each its own part with room between
+        if (UnitBoxes?.Invoke() is var (units, temperature))
         {
-            var defaults = DaisysApp.Shared.ConfirmButton.Make(T("Defaults"), () =>
-            {
-                p.Port = Games.Port(g);
-                p.Programs = Games.Programs(g);
-                SimProfiles.Edited();
-            });
-            defaults.Padding = new Thickness(10, 3, 10, 3);
-            defaults.Margin = new Thickness(0, 10, 0, 0);
-            defaults.HorizontalAlignment = HorizontalAlignment.Left;
-            defaults.ToolTip = T("The game's own port and processes");
-            panel.Children.Add(defaults);
+            panel.Children.Add(Section(T("Units"), null));
+            panel.Children.Add(Field(T("System"), units));
+            panel.Children.Add(Field(T("Temperature"), temperature));
         }
-        return panel;
+        panel.Children.Add(Section(T("Processes"), T("With Auto Start, one of these starting plays this profile")));
+        foreach (var prog in p.Programs.ToList())
+        {
+            var line = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
+            var x = VolumeControl.IconButton("");
+            x.ToolTip = T("Remove");
+            AutomationProperties.SetName(x, F("Remove {0}", prog));
+            x.Click += (_, _) => { p.Programs.Remove(prog); SimProfiles.Edited(); };
+            DockPanel.SetDock(x, Dock.Right);
+            line.Children.Add(x);
+            line.Children.Add(new TextBlock { Text = prog, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+            panel.Children.Add(line);
+        }
+        var newProg = new TextBox { VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(newProg, T("Process to add"));
+        var addProg = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+        void AddProg()
+        {
+            string s = System.IO.Path.GetFileName(newProg.Text.Trim().Trim('"'));
+            if (s.Length == 0) return;
+            if (!s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) s += ".exe";
+            if (!p.Programs.Contains(s, StringComparer.OrdinalIgnoreCase)) p.Programs.Add(s);
+            SimProfiles.Edited();
+        }
+        addProg.Click += (_, _) => AddProg();
+        newProg.KeyDown += (_, e) => { if (e.Key == Key.Enter) AddProg(); };
+        var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+        DockPanel.SetDock(addProg, Dock.Right);
+        addLine.Children.Add(addProg);
+        addLine.Children.Add(newProg);
+        panel.Children.Add(addLine);
+
+        var newProfile = new Button { Content = T("New"), Padding = new Thickness(10, 3, 10, 3) };
+        newProfile.Click += (_, _) => NewProfileMenu(newProfile, p);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 20, 0, 0) };
+        buttons.Children.Add(edit);
+        buttons.Children.Add(newProfile);
+        if (SimProfiles.All.Count > 1)
+        {
+            var delete = DaisysApp.Shared.ConfirmButton.Make(T("Delete"), () => { naming = false; SimProfiles.Remove(p); });
+            delete.Padding = new Thickness(10, 3, 10, 3);
+            delete.Margin = new Thickness(6, 0, 0, 0);
+            buttons.Children.Add(delete);
+        }
+        panel.Children.Add(buttons);
+        return Ui.Card(panel);
     }
 
-    /// <summary>The sub-modules, a chip each: the ones on start when the profile does.</summary>
-    private static FrameworkElement Modules(SimProfile p, List<ToolScope> modules)
+    /// <summary>New: a game's profile, one with no game, or a copy of the one in use; then its name is asked for.</summary>
+    private static void NewProfileMenu(Button anchor, SimProfile current)
     {
-        var wrap = new WrapPanel();
-        foreach (var t in modules)
+        void Add(SimProfile p) { naming = true; SimProfiles.Add(p); }
+        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
+        foreach (var g in Games.All)
         {
-            var chip = Ui.Chip(t.Title, SimProfiles.IsOn(p, t), T("Starts with this profile"));
-            chip.Margin = new Thickness(0, 0, 6, 6);
-            AutomationProperties.SetName(chip, $"{t.Title} · {p.Name}");
-            Ui.OnToggle(chip, on => { SimProfiles.SetOn(p, t, on); SimProfiles.Edited(); });
-            wrap.Children.Add(chip);
+            var item = new MenuItem { Header = Games.Title(g) };
+            item.Click += (_, _) => Add(new SimProfile { Name = Games.Title(g), Game = g, Port = g == Telemetry.Game.ForzaMotorsport ? 5301 : 8000, Programs = Games.Programs(g) });
+            menu.Items.Add(item);
         }
-        return wrap;
+        var none = new MenuItem { Header = T("No game") };
+        none.Click += (_, _) => Add(new SimProfile { Name = T("Desktop") });
+        menu.Items.Add(none);
+        menu.Items.Add(new Separator());
+        var copy = new MenuItem { Header = F("Copy of {0}", current.Name) };
+        copy.Click += (_, _) => Add(new SimProfile { Name = current.Name, Game = current.Game, Version = current.Version, Port = current.Port, Programs = current.Programs.ToList(), AutoStart = current.AutoStart });
+        menu.Items.Add(copy);
+        menu.IsOpen = true;
     }
+
+    // ---- pieces (the Shaker's) ----
+
+    /// <summary>A part's title, with room above it.</summary>
+    private static TextBlock Section(string text, string? tip) =>
+        new() { Text = text, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 22, 0, 4), ToolTip = tip };
 
     public static Grid Field(string label, FrameworkElement control)
     {
