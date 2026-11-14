@@ -7,6 +7,10 @@ The full list of what is waiting on the user to try or report, newest first, mov
   1:02.240, S2 1:04.770, +2.530 in red; S2 highlighted shows S2's scores; the four cards two by two beside the Tips.
   Not tried: the Channels drop-down's Delta line and a channel highlighted in both (it's a popup UIA can't open), a
   faster S2 in green.
+- **4.17.15 (back / forward through AI sessions, Notepad's and Terminal's tabs):** with a real mouse, switch AI
+  sessions and step back; close a tab and step back past it. Seen in DaisysDev: Notepad's Notes 1 → server.log →
+  Tools → Screen → AI, back ×5 and forward ×2, one step each. Not tried: two AI sessions (DaisysDev has one), a
+  closed tab.
 - **4.17.13 (back / forward through every level of tabs):** with a real mouse: SimEffects → Shaker → Overlays →
   Video → Mini Mirror, then back steps through each sub-tab. Seen in DaisysDev (UIA selects, posted mouse buttons):
   that sequence plus Audio → Delay → Levels and Settings → Shortcuts, back ×9 and forward, one step per click.

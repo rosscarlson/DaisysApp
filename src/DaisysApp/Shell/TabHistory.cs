@@ -16,9 +16,9 @@ namespace DaisysApp.Shell;
 /// Back and forward through the tabs and sub-tabs as they were opened, as in a browser: the mouse's back and forward
 /// buttons over the window, and two shortcuts (Core's Hotkeys, unbound to start with) in Settings → Shortcuts. A place
 /// is every row of tabs showing, at every level: the "TabButton" chosen in each (a tab, its sub-tab, a sub-tab's own
-/// sub-tabs, Audio's, Settings' pages), so any module's tabs count without it doing anything. Tabs that can be closed
-/// (documents and sessions: Notepad, Terminal, AI, Logs) aren't places. Opening another place while back drops the
-/// ones ahead of it.
+/// sub-tabs, Audio's, Settings' pages, AI's sessions, Notepad's and Terminal's tabs), so any module's tabs count
+/// without it doing anything. A place whose tab has since been closed is skipped. Opening another place while back
+/// drops the ones ahead of it.
 /// </summary>
 internal sealed class TabHistory
 {
@@ -77,11 +77,8 @@ internal sealed class TabHistory
     private bool IsTab(RadioButton b)
     {
         tabStyle ??= window.TryFindResource("TabButton") as Style;
-        return b.Style != null && b.Style == tabStyle && !HasButton(b.Content as DependencyObject);
+        return b.Style != null && b.Style == tabStyle;
     }
-
-    private static bool HasButton(DependencyObject? o) =>
-        o is ButtonBase || (o != null && LogicalTreeHelper.GetChildren(o).OfType<DependencyObject>().Any(HasButton));
 
     /// <summary>A tab opened: noted once things settle (a tab then its sub-tab, as AppNavigation opens them, is one place).</summary>
     private void Seen()
@@ -117,15 +114,18 @@ internal sealed class TabHistory
 
     private void Go(int step, string how)
     {
+        var here = Here();
         int to = at + step;
+        // (past places whose tab was closed, and ones that would change nothing)
+        while (to >= 0 && to < places.Count && (places[to].Any(b => PresentationSource.FromVisual(b) == null) || places[to].SequenceEqual(here)))
+            to += step;
         if (to < 0 || to >= places.Count) return;
         at = to;
         going = true;
         try
         {
-            // outer first: each shows the row of the next (one that's gone, e.g. a module switched off, is skipped)
-            foreach (var b in places[to])
-                if (PresentationSource.FromVisual(b) != null) b.IsChecked = true;
+            // outer first: each shows the row of the next
+            foreach (var b in places[to]) b.IsChecked = true;
         }
         finally { going = false; }
         Log.App.Debug($"{(step < 0 ? "Back" : "Forward")} ({how}): {string.Join(" > ", places[to].Select(b => AutomationProperties.GetName(b)))}");

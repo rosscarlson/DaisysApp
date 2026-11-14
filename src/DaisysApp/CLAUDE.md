@@ -9,8 +9,8 @@ short (under ~8 KB): condense what's done.
 - **4.17.10, 4.17.13 (asked 2026-11-14: browser-like back / forward, mouse buttons + Core Hotkeys; then "not the 2nd
   level ones": the installed app was still 4.17.2):** `Shell/TabHistory.cs`. A place = every checked, visible
   RadioButton styled "TabButton" (visual-tree walk, collapsed branches skipped), outer first, so modules' `SubTabs`,
-  Audio's own tabs and Settings' pages all count; ones whose content holds a ButtonBase (closable: Notepad, Terminal,
-  AI, Logs) don't. Noted on `ToggleButton.Checked` (handledEventsToo) at Background priority (tab-then-sub-tab is one
+  Audio's own tabs, Settings' pages and (4.17.15, asked: AI's sessions) closable tabs all count; Go passes places
+  with a button no longer in the tree (closed) or equal to here. Noted on `ToggleButton.Checked` (handledEventsToo) at Background priority (tab-then-sub-tab is one
   place); max 50; Go re-checks them in order, `going` set. Mouse: `PreviewMouseDown` XButton1/2; WM_APPCOMMAND by an
   HwndSource hook (WPF's BrowseBack binding never fired), skipped within 500 ms of a press. Hotkeys `App.Back` /
   `App.Forward` (unbound). Tested in DaisysDev with `%TEMP%\navtest\nav.ps1` (UIA selects, posted WM_XBUTTON).

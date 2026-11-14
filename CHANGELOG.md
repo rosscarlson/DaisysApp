@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.15**
+- **Back and forward through the AI tab's sessions too**, and Notepad's and Terminal's tabs and Logs' (4.17.13 left
+  out tabs that can be closed). A tab that's been closed since is passed over.
+
 **4.17.14**
 - **SimEffects → Analysis**: one **Channels** drop-down for both sessions (Session 2's went): a channel shown,
   hidden or highlighted in both, and **Delta** in it (on at first; a chip in Session 2's row before). **Combine** is
