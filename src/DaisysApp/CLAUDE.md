@@ -6,16 +6,14 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
-- **4.17.10 (asked 2026-11-14: browser-like back / forward with the mouse's buttons, bindable through Core's
-  Hotkeys):** `Shell/TabHistory.cs` (shell, not Core): places = tab + an `AppletGroup`'s `SubTabs.Current`, noted at
-  Background priority so AppNavigation's tab-then-sub-tab is one place; max 50; `going` stops Go's own selects being
-  noted. Mouse: window `PreviewMouseDown` XButton1/2; WM_APPCOMMAND 1/2 by an HwndSource hook (WPF's
-  `NavigationCommands.BrowseBack` binding never fired for a sent WM_APPCOMMAND), skipped within 500 ms of a mouse
-  press (DefWindowProc sends one after WM_XBUTTONUP). Hotkeys `App.Back` / `App.Forward` (`AppSettings.BackKey` /
-  `ForwardKey`, unbound). Not covered: Settings' own sub-pages, Audio's own sub-tabs (not `SubTabs`). Tested in
-  DaisysDev (`%TEMP%
-avtest
-av.ps1`: UIA selects, posted WM_XBUTTON, sent WM_APPCOMMAND).
+- **4.17.10, 4.17.13 (asked 2026-11-14: browser-like back / forward, mouse buttons + Core Hotkeys; then "not the 2nd
+  level ones": the installed app was still 4.17.2):** `Shell/TabHistory.cs`. A place = every checked, visible
+  RadioButton styled "TabButton" (visual-tree walk, collapsed branches skipped), outer first, so modules' `SubTabs`,
+  Audio's own tabs and Settings' pages all count; ones whose content holds a ButtonBase (closable: Notepad, Terminal,
+  AI, Logs) don't. Noted on `ToggleButton.Checked` (handledEventsToo) at Background priority (tab-then-sub-tab is one
+  place); max 50; Go re-checks them in order, `going` set. Mouse: `PreviewMouseDown` XButton1/2; WM_APPCOMMAND by an
+  HwndSource hook (WPF's BrowseBack binding never fired), skipped within 500 ms of a press. Hotkeys `App.Back` /
+  `App.Forward` (unbound). Tested in DaisysDev with `%TEMP%\navtest\nav.ps1` (UIA selects, posted WM_XBUTTON).
 
 - **4.0.0 (the 2026-11-03 audit, the user: "everything but 1, 3, 4", released as 4.0):** Core 0.55. What each item became
   and what's left: the status table in `docs/AUDIT-2026-11-03.md`. Watch points: `RunningPrograms.Watch` delivers on the

@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.13**
+- **Back and forward through every level of tabs**: each sub-tab opened is a step of its own, not only the module
+  (SimEffects → Shaker → Overlays, then Video → Mini Mirror: back goes Video, Overlays, Shaker, SimEffects). Every
+  row of tabs counts, at any depth: modules' sub-tabs, Audio's (Volume, Levels, Delay) and Settings' pages. Tabs that
+  can be closed (Notepad's, Terminal's, AI's sessions, Logs) aren't steps.
+
 **4.17.12**
 - **SimEffects → Overlays**: the boxes stay after a profile plays, stops or changes (all but Dash went, and Dash's tick
   showed off: Inputs' Read From was put in its new box while still in the last one).

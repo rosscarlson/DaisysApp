@@ -1,6 +1,10 @@
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using DaisysApp.Logging;
 using DaisysApp.Settings;
@@ -11,29 +15,30 @@ namespace DaisysApp.Shell;
 /// <summary>
 /// Back and forward through the tabs and sub-tabs as they were opened, as in a browser: the mouse's back and forward
 /// buttons over the window, and two shortcuts (Core's Hotkeys, unbound to start with) in Settings → Shortcuts. A place
-/// is a tab and, on a tab of sub-tabs (an <see cref="AppletGroup"/>), its sub-tab; opening another place while back
-/// drops the ones ahead of it.
+/// is every row of tabs showing, at every level: the "TabButton" chosen in each (a tab, its sub-tab, a sub-tab's own
+/// sub-tabs, Audio's, Settings' pages), so any module's tabs count without it doing anything. Tabs that can be closed
+/// (documents and sessions: Notepad, Terminal, AI, Logs) aren't places. Opening another place while back drops the
+/// ones ahead of it.
 /// </summary>
 internal sealed class TabHistory
 {
     private const int Most = 50;
 
-    private readonly TabStrip tabs;
-    private readonly IReadOnlyList<IApplet> applets;
-    private readonly Func<string?> currentTab;
-    private readonly List<(string Tab, string? Tool)> places = new();
+    private readonly Window window;
+    private readonly List<RadioButton[]> places = new();
     private int at = -1;
     private bool going, queued;
     private DateTime mouseAt;
+    private Style? tabStyle;
 
-    public TabHistory(Window window, TabStrip tabs, IReadOnlyList<IApplet> applets, AppSettings settings, Func<string?> currentTab)
+    public TabHistory(Window window, AppSettings settings)
     {
-        this.tabs = tabs;
-        this.applets = applets;
-        this.currentTab = currentTab;
-        tabs.Selected += _ => Seen();
-        foreach (var g in applets.OfType<AppletGroup>())
-            if (g.View is SubTabs sub) sub.Selected += _ => Seen();
+        this.window = window;
+        // (any tab button checked anywhere, by a click, a module or AppNavigation)
+        window.AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler((_, e) =>
+        {
+            if (e.OriginalSource is RadioButton b && IsTab(b)) Seen();
+        }), true);
 
         window.PreviewMouseDown += (_, e) =>
         {
@@ -69,16 +74,26 @@ internal sealed class TabHistory
         return new IntPtr(1);
     }
 
-    /// <summary>A tab or sub-tab opened: noted once things settle (a tab then its sub-tab, as AppNavigation opens them, is one place).</summary>
+    private bool IsTab(RadioButton b)
+    {
+        tabStyle ??= window.TryFindResource("TabButton") as Style;
+        return b.Style != null && b.Style == tabStyle && !HasButton(b.Content as DependencyObject);
+    }
+
+    private static bool HasButton(DependencyObject? o) =>
+        o is ButtonBase || (o != null && LogicalTreeHelper.GetChildren(o).OfType<DependencyObject>().Any(HasButton));
+
+    /// <summary>A tab opened: noted once things settle (a tab then its sub-tab, as AppNavigation opens them, is one place).</summary>
     private void Seen()
     {
         if (going || queued) return;
         queued = true;
-        Application.Current.Dispatcher.BeginInvoke(() =>
+        window.Dispatcher.BeginInvoke(() =>
         {
             queued = false;
-            if (going || Here() is not { } here) return;
-            if (at >= 0 && places[at] == here) return;
+            if (going) return;
+            var here = Here();
+            if (here.Length == 0 || (at >= 0 && places[at].SequenceEqual(here))) return;
             places.RemoveRange(at + 1, places.Count - at - 1);
             places.Add(here);
             if (places.Count > Most) places.RemoveAt(0);
@@ -86,29 +101,33 @@ internal sealed class TabHistory
         }, DispatcherPriority.Background);
     }
 
-    private (string Tab, string? Tool)? Here()
+    /// <summary>The tab chosen in each row of tabs showing, outer ones first.</summary>
+    private RadioButton[] Here()
     {
-        if (currentTab() is not { } tab) return null;
-        var group = Group(tab);
-        return (tab, group?.View is SubTabs sub ? sub.Current : null);
+        var chosen = new List<RadioButton>();
+        void Walk(DependencyObject o)
+        {
+            if (o is UIElement { Visibility: not Visibility.Visible }) return;
+            if (o is RadioButton { IsChecked: true } b && IsTab(b)) chosen.Add(b);
+            for (int i = 0, n = VisualTreeHelper.GetChildrenCount(o); i < n; i++) Walk(VisualTreeHelper.GetChild(o, i));
+        }
+        Walk(window);
+        return chosen.ToArray();
     }
-
-    private AppletGroup? Group(string tab) =>
-        applets.OfType<AppletGroup>().FirstOrDefault(g => ((IApplet)g).Meta.Id.Equals(tab, StringComparison.OrdinalIgnoreCase));
 
     private void Go(int step, string how)
     {
         int to = at + step;
         if (to < 0 || to >= places.Count) return;
         at = to;
-        var (tab, tool) = places[to];
         going = true;
         try
         {
-            tabs.Select(tab);
-            if (tool != null) Group(tab)?.Select(tool);
+            // outer first: each shows the row of the next (one that's gone, e.g. a module switched off, is skipped)
+            foreach (var b in places[to])
+                if (PresentationSource.FromVisual(b) != null) b.IsChecked = true;
         }
         finally { going = false; }
-        Log.App.Debug($"{(step < 0 ? "Back" : "Forward")} ({how}): {tab}{(tool != null ? "/" + tool : "")}");
+        Log.App.Debug($"{(step < 0 ? "Back" : "Forward")} ({how}): {string.Join(" > ", places[to].Select(b => AutomationProperties.GetName(b)))}");
     }
 }

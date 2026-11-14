@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.13 (back / forward through every level of tabs):** with a real mouse: SimEffects → Shaker → Overlays →
+  Video → Mini Mirror, then back steps through each sub-tab. Seen in DaisysDev (UIA selects, posted mouse buttons):
+  that sequence plus Audio → Delay → Levels and Settings → Shortcuts, back ×9 and forward, one step per click.
 - **4.17.12 (Overlays' boxes after a profile plays):** SimEffects → Overlays, play and stop a profile: all 8 boxes
   stay, ticked as they were. Seen in a test copy (Stop, Play: 8 boxes each time).
 - **4.17.11 (Analysis: last lap whole, lap counts, Import in S1/S2, scores in four tiles, brake / throttle
