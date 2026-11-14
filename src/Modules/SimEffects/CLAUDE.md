@@ -86,7 +86,7 @@ Read only when working in this folder. Current state and lessons; history is in 
 
 ## Waiting on the user (`docs/UNTESTED.md`)
 
-4.17.17's Profiles blocks with a game; Analysis on real games (4.10.x in each, FH5 maps), sharing from the window and
+4.17.20's Profiles (the drop-down picked by mouse / ↓ Enter, its look, a game activating its profile); Analysis on real games (4.10.x in each, FH5 maps), sharing from the window and
 auto share; real hardware throughout (shakers, Arduino with SimHub's sketch, Fanatec RS LEDs, Moza, Govee ropes).
 Open questions to the user: whether Position drops Lap too; the Trace's "Both pedals" marks. Ordinal suffixes
 ("1st") are English-only.
