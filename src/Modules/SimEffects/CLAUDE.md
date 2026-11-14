@@ -78,6 +78,8 @@ Read only when working in this folder. Current state and lessons; history is in 
 - A field-held element put into a box that's rebuilt must leave its old parent first (4.17.12).
 - A card's body must never hide itself; don't name a Window method `Show()`; UIA "Delete" can hit the wrong one.
 - Edit files with Python, not `sed -i` over globs (it once mangled `AccSource.cs`'s BEL char).
+- A HID write to the Fanatec base must never block (4.17.19): with ForzaWheel's FFB on it, the base stopped taking
+  output reports and a plain `WriteFile` waited for ever on the Lights thread. Overlapped, 250 ms, `CancelIoEx`.
 - Shaker tuning: the ForzaSessions CSVs' `susp` column is the quickest real data; the meters show what's asked,
   the log's "last 30 s" lines what played.
 

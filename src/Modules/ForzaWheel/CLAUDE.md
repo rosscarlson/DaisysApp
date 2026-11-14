@@ -21,6 +21,14 @@ Read only when working in this folder. Current state, decisions and lessons; wha
   locked, custom profiles are saved encrypted, vJoy's VID/PID is in its signed driver). The user refused a virtual
   Xbox pad's bumpers (FFB risk). Waiting on a friend with Steam to try it.
 
+- **4.17.19, FFB stuck and the app frozen (2026-11-14, FH4 on GAMER11):** two hang dumps (logs folder,
+  `DaisysApp-hang-*.dmp`; cdbX64 from WinDbg's WindowsApps + dotnet-dump): UI thread in Stop → `ForceFeedback.Dispose`
+  → `SendForceFeedbackCommand(StopAll)` waiting in FAWForceFeedbackDrv64, whose worker thread and SimEffects'
+  `FanatecWheel.Send` were both in `WriteFile` to the base (input still read). Began the day SimEffects → Wheel first
+  ran with ForzaWheel. Now: driver commands via `Bounded` (Gate held, call on its own thread, 1 s / 0.5 s), a stuck
+  wheel's reader kept in `abandoned`, not disposed (Unacquire would hang too), `ffbStuck` until the next Start.
+  Untested: the stall can't be made on purpose. If it recurs with the Wheel off, it's the base or Fanatec's driver.
+
 ## How it works, decisions
 
 - The emulator (`WheelEmulator`): wheel, pedals, shifter, handbrake and button boxes as one vJoy device for Forza;

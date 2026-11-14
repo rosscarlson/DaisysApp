@@ -33,11 +33,19 @@ internal sealed class ForceFeedback : IDisposable
 
     /// <summary>What it's doing, for the tab.</summary>
     public string Device { get; }
+    /// <summary>The reader it was made on (left open, not disposed, when <see cref="Stuck"/>).</summary>
+    public GameControllers.Reader Reader { get; }
+    /// <summary>
+    /// The wheel's driver didn't answer a command in time (4.17.19): Fanatec's waits for ever once the base stops taking
+    /// reports (the forces stay as they were) until the base is switched off and on. Nothing more is sent to it.
+    /// </summary>
+    public bool Stuck { get; private set; }
     public DateTime? LastPacket { get; private set; }
 
-    private ForceFeedback(IDirectInputDevice8 dev, string name, FfbSettings settings, Func<double> steering, int axis)
+    private ForceFeedback(GameControllers.Reader reader, string name, FfbSettings settings, Func<double> steering, int axis)
     {
-        this.dev = dev;
+        Reader = reader;
+        dev = reader.Device;
         this.settings = settings;
         this.steering = steering;
         Device = name;
@@ -65,7 +73,7 @@ internal sealed class ForceFeedback : IDisposable
                 Logging.Log.Here.Warn($"ForzaWheel: {name} has no force-feedback axis");
                 return null;
             }
-            var ffb = new ForceFeedback(dev, name, settings, steering, actuator.Value);
+            var ffb = new ForceFeedback(reader, name, settings, steering, actuator.Value);
             Logging.Log.Here.Info($"ForzaWheel: force feedback on {name}");
             return ffb;
         }
@@ -94,6 +102,7 @@ internal sealed class ForceFeedback : IDisposable
         if (stopped || !settings.Enabled) return;
         lock (gate)
         {
+            if (stopped) return;
             try { Handle(packet); }
             catch (Exception ex) { Logging.Log.Here.Debug(() => "ForzaWheel force feedback: " + ex.Message); }
         }
@@ -165,7 +174,32 @@ internal sealed class ForceFeedback : IDisposable
             VJoy.FfbControl.Continue => ForceFeedbackCommand.Continue,
             _ => ForceFeedbackCommand.None,
         };
-        if (cmd != ForceFeedbackCommand.None) dev.SendForceFeedbackCommand(cmd);
+        if (cmd != ForceFeedbackCommand.None && !Bounded(() => dev.SendForceFeedbackCommand(cmd), 500)) Wedged();
+    }
+
+    /// <summary>
+    /// A call into the wheel's driver, under the DirectInput lock (so nothing else calls it at the same time), on a
+    /// thread of its own, waited for at most <paramref name="ms"/>: false if it didn't return (the lock is let go, and
+    /// the call is left to finish whenever the driver does).
+    /// </summary>
+    private static bool Bounded(Action call, int ms)
+    {
+        if (!Monitor.TryEnter(GameControllers.Gate, ms)) return false;
+        try
+        {
+            var done = new Thread(() => { try { call(); } catch { } }) { IsBackground = true, Name = "ForzaWheel FFB call" };
+            done.Start();
+            return done.Join(ms);
+        }
+        finally { Monitor.Exit(GameControllers.Gate); }
+    }
+
+    private void Wedged()
+    {
+        if (Stuck) return;
+        Stuck = true;
+        stopped = true;
+        Logging.Log.Here.Warn($"ForzaWheel: {Device}'s force-feedback driver isn't answering (the base stopped taking forces): switch the base off and on");
     }
 
     // ---------------------------------------------------------------- the effects, as EmuWheel sends them
@@ -307,15 +341,17 @@ internal sealed class ForceFeedback : IDisposable
 
     private static bool Same<TStruct>(TStruct a, TStruct b) where TStruct : struct => a.Equals(b);
 
+    /// <summary>The forces stopped and let go of; never waits more than a second or so for the driver (on the UI thread).</summary>
     public void Dispose()
     {
         stopped = true;
-        lock (gate)
-        {
-            try { dev.SendForceFeedbackCommand(ForceFeedbackCommand.StopAll); } catch { }
-            foreach (var e in new[] { constant, sine, spring, damper })
-                try { e.Dispose(); } catch { }
-        }
-        Logging.Log.Here.Info($"ForzaWheel: force feedback off ({Device})");
+        if (!Stuck && !Bounded(() =>
+            {
+                dev.SendForceFeedbackCommand(ForceFeedbackCommand.StopAll);
+                foreach (var e in new[] { constant, sine, spring, damper })
+                    try { e.Dispose(); } catch { }
+            }, 1000))
+            Wedged();
+        if (!Stuck) Logging.Log.Here.Info($"ForzaWheel: force feedback off ({Device})");
     }
 }

@@ -31,6 +31,8 @@ internal sealed class WheelEmulator : IDisposable
     // force feedback: on the wheel Steering is bound to, while feeding (EmuWheel's, ported: ForceFeedback)
     private ForceFeedback? ffb;
     private bool ffbTried;
+    /// <summary>The wheel whose force-feedback driver stopped answering: read without forces until the next Start.</summary>
+    private Guid? ffbStuck;
     /// <summary>Where the steering axis is (0–1, NaN unknown), for force feedback's weaker-near-centre option.</summary>
     private double rawSteer = double.NaN;
 
@@ -134,6 +136,7 @@ internal sealed class WheelEmulator : IDisposable
         VJoy.Reset(id);
         feeding = true;
         ffbTried = false;
+        ffbStuck = null;
         try { VJoy.OnForceFeedback((packet, _) => { if (feeding) ffb?.OnPacket(packet); }); }
         catch (Exception ex) { Logging.Log.Here.Warn("ForzaWheel: vJoy's force feedback couldn't be listened to: " + ex.Message); }
         Reopen(); // the steering wheel again, exclusively, for force feedback
@@ -173,13 +176,29 @@ internal sealed class WheelEmulator : IDisposable
     {
         lock (gate)
         {
-            ffb?.Dispose();
-            ffb = null;
+            DropFfb();
             foreach (var r in readers.Values) r.Dispose();
             readers.Clear();
             nextOpen = 0;
         }
         wake.Set();
+    }
+
+    /// <summary>Readers of a wheel whose driver stopped answering: kept (letting go would wait on the driver too) until the app closes.</summary>
+    private static readonly List<GameControllers.Reader> abandoned = new();
+
+    /// <summary>Force feedback stopped; if the wheel's driver didn't answer, its reader is set aside, not disposed.</summary>
+    private void DropFfb()
+    {
+        var f = ffb;
+        ffb = null;
+        if (f == null) return;
+        f.Dispose();
+        if (!f.Stuck) return;
+        foreach (var (device, r) in readers.ToList())
+            if (r == f.Reader) { readers.Remove(device); ffbStuck = device; }
+        lock (abandoned) abandoned.Add(f.Reader);
+        Problem = F("{0} stopped taking force feedback: switch the wheel base off and on.", f.Device);
     }
 
     private void EnsureThread()
@@ -231,7 +250,7 @@ internal sealed class WheelEmulator : IDisposable
                     var instance = Resolve(device, product, name);
                     if (instance is not { } inst || window == IntPtr.Zero) continue;
                     // the steering wheel, while feeding with force feedback on: exclusively, with its forces made
-                    bool forForce = feeding && settings.Ffb.Enabled && device == wheel;
+                    bool forForce = feeding && settings.Ffb.Enabled && device == wheel && device != ffbStuck;
                     var r = forForce ? GameControllers.Open(inst, window, forceFeedback: true) : null;
                     if (r != null)
                     {
@@ -254,7 +273,7 @@ internal sealed class WheelEmulator : IDisposable
             {
                 if (reader.Read(states[device])) continue;
                 Logging.Log.Here.Warn($"ForzaWheel lost {config.Devices.FirstOrDefault(d => d.Device == device).Name}");
-                if (device == config.For("Steering")?.Inputs.FirstOrDefault()?.Device) { ffb?.Dispose(); ffb = null; }
+                if (ffb?.Reader == reader) { DropFfb(); if (!readers.ContainsKey(device)) { nextOpen = 0; continue; } }
                 reader.Dispose();
                 readers.Remove(device);
                 nextOpen = 0;
@@ -416,7 +435,7 @@ internal sealed class WheelEmulator : IDisposable
     {
         Stop();
         quit = true;
-        lock (gate) { ffb?.Dispose(); ffb = null; }
+        lock (gate) DropFfb();
         wake.Set();
         thread?.Join(500);
         lock (gate)

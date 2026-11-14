@@ -128,6 +128,11 @@ the condition offsets and coefficients) are read as 16 bits, as EmuWheel's vJoy 
 (0.59–0.60) a small push one way became full force the other, and the wheel was thrown about. A force outside the
 game's range (±10000) is dropped, never sent to the wheel.
 
+**If the forces stick** (since 4.17.19): a Fanatec base can stop taking force feedback, its driver then waiting for
+ever (the last force stays: the wheel pulls one way while steering still works). ForzaWheel gives up on the driver
+after a second rather than freezing the app, says to **switch the wheel base off and on**, and reads the wheel without
+forces until the next Start.
+
 The **Force Feedback** block: **Pass force feedback to the wheel**; **Strength** (100% = as EmuWheel); **Reverse** (if
 the wheel pulls away from the centre: or use Forza's Invert Force Feedback, not both); **Test FFB** (since 3.36.13;
 while the emulator runs): a pull left, a pull right, then a shake, sent to the vJoy device as a game sends them (it's

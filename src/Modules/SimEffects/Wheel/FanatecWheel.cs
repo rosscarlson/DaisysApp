@@ -8,6 +8,9 @@ namespace DaisysApp.Applets.SimEffects.Wheel;
 /// A Fanatec wheelbase, through Windows' HID calls (as the Linux driver hid-fanatecff talks to it): the rim's rev
 /// LEDs are an output report of the base, <c>01 F8 09 08 hi lo 00 00</c> (a bit per LED), and the rim's 3-digit
 /// display <c>01 F8 09 01 02 a b c</c> (7-segment bits). Which rim is on comes in the base's input report (byte 30).
+/// Each write waits at most <see cref="WriteTimeout"/> and the LEDs are sent at most every <see cref="LedEvery"/> ms
+/// (4.17.19): the base can stop taking reports while Fanatec's force-feedback driver writes to it too, and a write
+/// waiting for ever held up every light and the wheel's forces.
 /// </summary>
 internal sealed class FanatecWheel : IWheelLights
 {
@@ -39,6 +42,11 @@ internal sealed class FanatecWheel : IWheelLights
     private const byte ReportId = 1;
 
     private int lastBits = -1;
+    private long lastLedSend;
+    private const int LedEvery = 50, WriteTimeout = 250;
+
+    /// <summary>A write didn't finish in time: the base stopped taking reports (switch it off and on).</summary>
+    public bool Stalled { get; private set; }
 
     /// <summary>The base and rim found.</summary>
     public string Name { get; private set; }
@@ -62,7 +70,8 @@ internal sealed class FanatecWheel : IWheelLights
     {
         foreach (var path in HidPaths())
         {
-            var h = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero);
+            // (overlapped, so a write can be given up on)
+            var h = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero);
             if (h.IsInvalid) { h.Dispose(); continue; }
             var keep = false;
             try
@@ -112,6 +121,10 @@ internal sealed class FanatecWheel : IWheelLights
         for (int i = 0; i < Math.Min(leds.Length, Leds); i++)
             if (leds[i] != default) bits |= 1 << (Leds - 1 - i);
         if (bits == lastBits && !force) return true;
+        // (a change within LedEvery of the last is sent by a later frame)
+        long now = Environment.TickCount64;
+        if (!force && now - lastLedSend < LedEvery) return true;
+        lastLedSend = now;
         lastBits = bits;
         return SetLeds((ushort)bits);
     }
@@ -136,9 +149,42 @@ internal sealed class FanatecWheel : IWheelLights
         var report = new byte[outputLength];
         report[0] = ReportId;
         body.AsSpan(0, Math.Min(body.Length, outputLength - 1)).CopyTo(report.AsSpan(1));
+        if (Stalled) return false;
         if (HidD_SetOutputReport(handle, report, report.Length)) return true;
-        if (WriteFile(handle, report, report.Length, out _, IntPtr.Zero)) return true;
-        return false;
+        return Write(report);
+    }
+
+    /// <summary>The report written, waiting at most <see cref="WriteTimeout"/>; false if it failed or was given up on.</summary>
+    private bool Write(byte[] report)
+    {
+        // (the buffer and OVERLAPPED unmanaged: one the driver never finishes keeps them)
+        var buffer = Marshal.AllocHGlobal(report.Length);
+        var overlapped = Marshal.AllocHGlobal(32);
+        var done = new ManualResetEvent(false);
+        bool free = true;
+        try
+        {
+            Marshal.Copy(report, 0, buffer, report.Length);
+            for (int i = 0; i < 32; i += 8) Marshal.WriteInt64(overlapped, i, 0);
+            Marshal.WriteIntPtr(overlapped, 24, done.SafeWaitHandle.DangerousGetHandle());
+            if (WriteFile(handle, buffer, report.Length, IntPtr.Zero, overlapped)) return true;
+            if (Marshal.GetLastWin32Error() != 997 /* ERROR_IO_PENDING */) return false;
+            if (done.WaitOne(WriteTimeout)) return GetOverlappedResult(handle, overlapped, out _, false);
+            Stalled = true;
+            Logging.Log.Here.Warn($"Fanatec: {Name} didn't take a report within {WriteTimeout} ms: stopped sending to it");
+            CancelIoEx(handle, overlapped);
+            if (!done.WaitOne(500)) free = false;
+            return false;
+        }
+        finally
+        {
+            if (free)
+            {
+                done.Dispose();
+                Marshal.FreeHGlobal(buffer);
+                Marshal.FreeHGlobal(overlapped);
+            }
+        }
     }
 
     /// <summary>The rim on the base, from its input report (null when it can't be read within half a second).</summary>
@@ -238,5 +284,9 @@ internal sealed class FanatecWheel : IWheelLights
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint creation, uint flags, IntPtr template);
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool WriteFile(SafeFileHandle h, byte[] data, int count, out int written, IntPtr overlapped);
+    private static extern bool WriteFile(SafeFileHandle h, IntPtr data, int count, IntPtr written, IntPtr overlapped);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetOverlappedResult(SafeFileHandle h, IntPtr overlapped, out int transferred, bool wait);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CancelIoEx(SafeFileHandle h, IntPtr overlapped);
 }

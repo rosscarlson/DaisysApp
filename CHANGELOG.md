@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.19**
+- **Gaming → ForzaWheel**: the app no longer freezes when the wheel base stops taking force feedback (on the rig, a
+  Fanatec base in Forza Horizon 4: the forces stuck where they were, hard right once, while steering still worked,
+  and Stop then hung the window). Commands to the wheel's driver are given up on after a second; the base's driver
+  can't be cleared from the app, so ForzaWheel says to switch the base off and on, and reads the wheel without forces
+  until the next Start.
+- **SimEffects → Wheel** (Fanatec): the rev LEDs and display are sent at most 20 times a second, and a report the
+  base doesn't take within a quarter of a second stops the sending ("switch it off and on"; looked for again every
+  30 s) instead of holding up every light. Both hangs had the Wheel's write and Fanatec's force-feedback driver
+  stuck on the base together, starting the day the Wheel was first switched on with ForzaWheel running.
+
 **4.17.18**
 - **SimEffects** has one bubble in the title bar while a profile's tools run: the profile's short name, then each
   running, a line between them (e.g. **FH: Shaker | Overlay | Wheel**; click it for Profiles). The Shaker, Overlays,

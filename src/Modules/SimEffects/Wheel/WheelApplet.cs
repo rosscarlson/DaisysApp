@@ -160,7 +160,8 @@ public sealed class WheelApplet : IApplet
             if (found == null) { Found = why; return; }
             lock (gate)
             {
-                if (closing || !settings.On || settings.Brand != brand) { found.Off(); found.Dispose(); return; }
+                // (a second look that found it too: closed again)
+                if (closing || !settings.On || settings.Brand != brand || wheel != null) { if (wheel == null) found.Off(); found.Dispose(); return; }
                 wheel = found;
                 finder.Change(Timeout.Infinite, Timeout.Infinite);
                 force = true;
@@ -190,12 +191,13 @@ public sealed class WheelApplet : IApplet
             if (ok && wheel.HasDisplay && settings.Display && display != lastDisplay) { ok = wheel.SetDisplay(display); lastDisplay = display; }
             if (!ok)
             {
-                Logging.Log.Here.Warn("Wheel: the wheel stopped taking reports (unplugged?)");
-                Found = T("Lost the wheel");
+                bool stalled = wheel is FanatecWheel { Stalled: true };
+                Logging.Log.Here.Warn(stalled ? "Wheel: the wheel stopped taking reports (switch the base off and on)" : "Wheel: the wheel stopped taking reports (unplugged?)");
+                Found = stalled ? T("The wheel stopped taking reports: switch it off and on") : T("Lost the wheel");
                 wheel.Dispose();
                 wheel = null;
-                // (the one it had: looked for again every few seconds until it's back)
-                finder.Change(3000, 3000);
+                // (the one it had: looked for again every few seconds until it's back; one that stalled, every 30 s)
+                finder.Change(stalled ? 30000 : 3000, stalled ? 30000 : 3000);
             }
         }
     }

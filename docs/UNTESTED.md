@@ -2,6 +2,13 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.19 (ForzaWheel doesn't freeze when the Fanatec base stops taking forces; SimEffects → Wheel's Fanatec writes
+  capped and timed out):** built, not run (the user was gaming; the stall can't be made on purpose). From two hang
+  dumps: the UI thread in ForzaWheel Stop → `ForceFeedback.Dispose` → `SendForceFeedbackCommand(StopAll)` waiting in
+  FAWForceFeedbackDrv64, whose own thread and SimEffects' `FanatecWheel.Send` were both in `WriteFile` to the base.
+  To try: play FH4 with ForzaWheel and the Wheel on as on 2026-11-14. If FFB sticks again: Stop must answer, the
+  ForzaWheel log say the driver isn't answering, and the SimEffects log whether the Wheel's write timed out; then
+  switch the base off and on. If it still happens, try a session with the Wheel off to tell the two apart.
 - **4.17.18 (SimEffects' one title bar bubble and profiles' Short Name; Analysis' scores in one tile, Delta always
   in Channels):** built, not run: the user was gaming on this PC. To try: play a profile with the Shaker, Overlays and
   Wheel on: one bubble "FH: Shaker | Overlay | Wheel", clicking it opens Profiles; change a game's Short Name in its

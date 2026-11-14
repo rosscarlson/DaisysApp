@@ -187,5 +187,6 @@
   "vJoy is switched off: tick Enable vJoy in Configure vJoy.": "vJoy is switched off: tick Enable vJoy in Configure vJoy.",
   "vJoy device {0} doesn't exist: use Set up vJoy device.": "vJoy device {0} doesn't exist: use Set up vJoy device.",
   "vJoy device {0} is in use by another program (EmuWheel, a feeder or Joystick Gremlin?): close it first.": "vJoy device {0} is in use by another program (EmuWheel, a feeder or Joystick Gremlin?): close it first.",
-  "vJoy device {0} couldn't be taken over.": "vJoy device {0} couldn't be taken over."
+  "vJoy device {0} couldn't be taken over.": "vJoy device {0} couldn't be taken over.",
+  "{0} stopped taking force feedback: switch the wheel base off and on.": "{0} stopped taking force feedback: switch the wheel base off and on."
 }

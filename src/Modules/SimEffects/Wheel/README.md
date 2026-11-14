@@ -28,6 +28,11 @@ Fanatec wheels themselves). Switch the game's own wheel LEDs off, or set the Fan
 A Moza base's port is one program's at a time: while Moza Pit House has it, it says so (close Pit House, then
 Refresh); while the Wheel has it, Pit House can't reach the base.
 
+**A Fanatec base that stops taking reports** (since 4.17.19): the LEDs are sent at most 20 times a second, and a
+report the base doesn't take within a quarter of a second stops the sending ("switch it off and on"; looked for again
+every 30 s). On the rig the base stopped taking them, and ForzaWheel's force feedback with them, twice in one evening
+in Forza Horizon 4 with both on.
+
 ## How it talks to the wheel
 
 **Fanatec**, as the Linux driver [hid-fanatecff](https://github.com/gotzl/hid-fanatecff) does: the LEDs are an output
