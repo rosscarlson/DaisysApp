@@ -20,7 +20,9 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// was there before): this PC's sessions shared on Daisy's Server, taken off it, or a file imported; each session shared
 /// by itself (a toggle at the bottom); under it every session shared on the server, everyone's, searched as you type
 /// (every column, the box at the top right) and filtered from a right-click on a header, sorted by a header. Compare
-/// downloads the one picked (once) into Imported and puts it in Session 2; a double-click does too and closes the window.
+/// downloads the one picked (once) into Imported and puts it in Session 2; a double-click does too and closes the window
+/// (since 4.17.21 into Session 1, Session 2 emptied). Since 4.17.21 the Driver column is who shared it, by their display
+/// name on the server.
 /// One window. Since 4.17.11 also from Session 1's and 2's Import: searched for Session 1's track (a note when none are
 /// shared), what's compared (or imported from a file) going into that slot. Since 4.17.16 the sessions to share ticked
 /// in a drop-down (Shift ticks those between), shared one after the other as their track (no title or description to
@@ -70,7 +72,8 @@ internal sealed class ShareWindow
         public required ServerSession S { get; init; }
         public DateTime Date => S.Started;
         public string DateText => S.Started == DateTime.MinValue ? "" : SessionsView.When(S.Started);
-        public string Driver => S.Driver;
+        /// <summary>(since 4.17.21) Their display name on the server (what the share was sent with before).</summary>
+        public string Driver => S.Name;
         public string Game => S.Game;
         public string Track => S.Track;
         public string Car => S.Car;
@@ -379,11 +382,11 @@ internal sealed class ShareWindow
         grid.SelectionChanged += (_, _) => { disarmDelete(); Enable(); };
         grid.MouseDoubleClick += (_, e) =>
         {
-            if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow) Compare(close: true);
+            if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow) Compare(open: true);
         };
         grid.PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Enter && Picked != null) { Compare(close: true); e.Handled = true; }
+            if (e.Key == Key.Enter && Picked != null) { Compare(open: true); e.Handled = true; }
         };
     }
 
@@ -508,8 +511,9 @@ internal sealed class ShareWindow
     }
 
     /// <summary>The session picked put in Compare: one of this PC's straight from its log, else downloaded (once) into
-    /// Imported. <paramref name="close"/> (a double-click, Enter): the window closes once it's there.</summary>
-    private async void Compare(bool close = false)
+    /// Imported. <paramref name="open"/> (a double-click, Enter): since 4.17.21 it's Session 1, Session 2 emptied (its
+    /// list that track's sessions), and the window closes once it's there.</summary>
+    private async void Compare(bool open = false)
     {
         if (Picked is not { } r || busy) return;
         var all = SessionShares.All;
@@ -526,7 +530,9 @@ internal sealed class ShareWindow
                 string text = await SessionServer.DownloadAsync(r.S.Id, progress);
                 if (!text.Split('\n').Take(12).Any(l => l.StartsWith("ms,steering", StringComparison.Ordinal))) throw new IOException(T("not a session"));
                 Directory.CreateDirectory(SessionLog.ImportedFolder);
-                string name = string.Join("_", $"{(r.S.Driver.Length > 0 ? r.S.Driver : r.S.User)} - {r.S.Title}".Split(Path.GetInvalidFileNameChars()));
+                // (since 4.17.21 the driver in this copy is their display name, as Session 1 and 2 show it)
+                text = string.Join('\n', text.Split('\n').Select(l => l.StartsWith("# driver,", StringComparison.Ordinal) ? "# driver," + r.S.Name : l));
+                string name = string.Join("_", $"{r.S.Name} - {r.S.Title}".Split(Path.GetInvalidFileNameChars()));
                 if (name.Length > 120) name = name[..120];
                 string target = Path.Combine(SessionLog.ImportedFolder, name + ".csv");
                 for (int k = 2; File.Exists(target); k++) target = Path.Combine(SessionLog.ImportedFolder, $"{name} ({k}).csv");
@@ -548,7 +554,7 @@ internal sealed class ShareWindow
                 Enable();
             }
         }
-        await view.CompareDownloaded(key, slot);
-        if (close) window.Close();
+        await view.CompareDownloaded(key, open ? 1 : slot, alone: open);
+        if (open) window.Close();
     }
 }

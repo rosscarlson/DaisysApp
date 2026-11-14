@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using DaisysApp.Shared;
 
 namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 

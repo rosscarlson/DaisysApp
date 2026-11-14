@@ -2,7 +2,18 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 4.17.20, Profiles: Activate (released 2026-11-14)
+## 4.17.21: Shared Session Manager (not run: the user gaming)
+
+- **Asked:** Driver by the server's display name (store only the user name, look it up at runtime, by id ideally);
+  a double-click into Session 1, Session 2 emptied (its list the matches, or says none); a search box at Clear's
+  right in every column filter with more than 5 choices, in Core.
+- **Done:** `HeaderFilter` moved to Core (`Shared/HeaderFilter.cs`, public; `NoWidth` keeps the box from widening
+  it). `ServerSession.DisplayName`/`Name`; a share sends the server user name as `# driver`, no meta `driver`; the
+  downloaded copy's `# driver` rewritten to the display name. `CompareDownloaded(key, 1, alone)` → `emptyOther`,
+  consumed in `FillOtherSessions` once that's Session 1. **Server 0.2.4** (DaisysServer repo, committed locally,
+  not pushed or released): `ServerUser.DisplayName`, `SessionStore` adds `displayName` by `userId` when sending.
+
+## Latest released: 4.17.20, Profiles: Activate (2026-11-14)
 
 - **Asked:** no checkbox on the blocks: Use becomes Activate / Active (the blue edge); a game's processes make its
   profile active too; Processes scroll after 3; clicking in the box shows the running programs (typing narrows),

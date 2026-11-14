@@ -158,6 +158,9 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
 - **Confirm?**: `ConfirmButton.Make(T("Delete"), Delete)` (in `DaisysApp.Shared`) for anything that can't be undone,
   or `ConfirmButton.Arm(button, Delete)` for a button you already have; `skip` makes the first click do it when
   there's nothing to lose, and what `Arm` returns puts it back (another item picked). Never a question window.
+- **Column filters** (since 4.17.21, SimEffects' before): `HeaderFilter` (in `DaisysApp.Shared`): a column's
+  `Header()`, `HeaderFilter.Attach(grid, values)`; a right-click on it drops down its values to tick, Clear, and a
+  search box past 5 values. Never a filter popup of your own.
 - **View pieces**: `Ui.Card`, `Ui.Header`, `Ui.Note`, `Ui.IconButton`, `Ui.Table`, `Ui.Dialog`… and `Sizes.Bytes` (Core's `Shared/Ui` and `Shared/Sizes`, in reach in every module), never a module's own copy; what's truly a module's goes in a class of its own, as `SimUi`.
 - **Timers, saving, files, the web** (Core, since 4.0.0; never a module's own copy): `Ui.Every(view, ms, tick)` for a
   timer that runs only while the view shows; `new Debounce(ms, action).Poke()` for "once it's quiet" (a search box);

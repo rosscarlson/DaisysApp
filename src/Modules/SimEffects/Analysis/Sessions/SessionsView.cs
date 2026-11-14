@@ -267,13 +267,22 @@ internal sealed class SessionsView
 
     /// <summary>(since 4.17.0) A session downloaded from Daisy's Server (its key, "Imported\file"): listed, then put in
     /// Compare's Session 2 (Session 1 when there's none; since 4.17.11 <paramref name="slot"/> 1: Session 1).</summary>
-    internal async Task CompareDownloaded(string key, int slot = 2)
+    /// <param name="alone">(since 4.17.21) Session 2 emptied once it's Session 1 (a double-click in the Shared Session
+    /// Manager): its list that track's sessions, or "-- No Matches --".</param>
+    internal async Task CompareDownloaded(string key, int slot = 2, bool alone = false)
     {
         Refresh();
         if (items.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is not { } item) return;
         if (mine != null && slot == 2) await PickOther(item);
-        else Load(item);
+        else
+        {
+            if (alone) emptyOther = item;
+            Load(item);
+        }
     }
+
+    /// <summary>(since 4.17.21) Once this is Session 1, Session 2 is emptied, not kept.</summary>
+    private Item? emptyOther;
 
     /// <summary>(since 4.17.11) Session 1's or 2's Import: Share Session, its list searched for Session 1's track, what's
     /// picked there (or imported from a file) going into that slot.</summary>
@@ -1626,6 +1635,8 @@ internal sealed class SessionsView
     private void FillOtherSessions()
     {
         string? keep = (otherSession.SelectedItem as Item)?.Key;
+        bool empty = emptyOther != null && Same(emptyOther, mineItem);
+        if (empty) { keep = null; emptyOther = null; }
         filling = true;
         otherSession.Items.Clear();
         var matches = items.Where(i => Same(i, mineItem) ? Math.Max(i.Laps, mine?.Data.Laps.Count ?? 0) >= 2 : OnTrackOfThis(i)).ToList();
@@ -1635,6 +1646,7 @@ internal sealed class SessionsView
         otherSession.SelectedItem = otherSession.Items.OfType<Item>().FirstOrDefault(i => i.Key == keep) ?? otherSession.Items[0];
         filling = false;
         OthersListed?.Invoke();
+        if (empty) _ = PickOther();
     }
 
     /// <summary>On This one's track: a race with the same track, or (one with no track, such as someone

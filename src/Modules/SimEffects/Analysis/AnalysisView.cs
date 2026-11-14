@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using DaisysApp.Applets.SimEffects.BassShaker;
 using DaisysApp.Shared.Hotkeys;
+using DaisysApp.Shared;
 using DaisysApp.Shared.Widgets;
 using DaisysApp.Controllers;
 

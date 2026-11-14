@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.21 (Shared Session Manager: Driver by display name, a double-click into Session 1 with Session 2
+  emptied; the column filters' search box):** built, not run: the user was gaming on this PC. Daisy's Server 0.2.4
+  (built, not released) sends `displayName`. To try: with the server updated, the Driver column shows display names
+  (change one on the server's Users, Refresh); a double-click: Session 1 that session, Session 2 None or "-- No
+  Matches --"; right-click Track: the box at Clear's right narrows, the drop-down no wider.
 - **4.17.20 (SimEffects → Profiles: Activate / Active in place of the checkbox and Use; Processes scroll after 3,
   the running ones drop down under the box; Defaults gone):** seen in DaisysDev: every block with Activate, Desktop
   Active; Activate on Assetto Corsa (Active, playing, the edge moved); FH's 5 processes scrolling 3 tall; the box's

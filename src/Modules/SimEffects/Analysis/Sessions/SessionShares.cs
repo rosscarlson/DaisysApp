@@ -214,6 +214,11 @@ internal sealed class ServerSession
     public string Driver { get; init; } = "";
     /// <summary>Who shared it (the server's user) and from which PC.</summary>
     public string User { get; init; } = "";
+    /// <summary>(since 4.17.21) Their display name now, from the server's users (a server before 0.2.4: none).</summary>
+    public string DisplayName { get; init; } = "";
+    /// <summary>(since 4.17.21) The driver as shown: their display name, else their user name (else what an older share
+    /// was sent with).</summary>
+    public string Name => DisplayName.Length > 0 ? DisplayName : User.Length > 0 ? User : Driver;
     public string Client { get; init; } = "";
     public string Game { get; init; } = "";
     public string Track { get; init; } = "";
@@ -231,7 +236,7 @@ internal sealed class ServerSession
     public static ServerSession From(JsonObject m) => new()
     {
         Id = ServerClient.Str(m, "id"), Title = ServerClient.Str(m, "title"), Description = ServerClient.Str(m, "description"),
-        Driver = ServerClient.Str(m, "driver"), User = ServerClient.Str(m, "user"), Client = ServerClient.Str(m, "client"),
+        Driver = ServerClient.Str(m, "driver"), User = ServerClient.Str(m, "user"), DisplayName = ServerClient.Str(m, "displayName"), Client = ServerClient.Str(m, "client"),
         Game = ServerClient.Str(m, "game"), Track = ServerClient.Str(m, "track"), Car = ServerClient.Str(m, "car"), Class = ServerClient.Str(m, "class"),
         Laps = (int?)Num(m, "laps") ?? 0, Best = (float)(Num(m, "best") ?? 0),
         Started = Time(m, "started"), SharedAt = Time(m, "shared"), Size = (long)(Num(m, "size") ?? 0),
@@ -327,10 +332,13 @@ internal static class ShareQueue
                 Done(T("Share Complete"), title, TitleBadges.Green);
                 return null;
             }
+            // (since 4.17.21 the server's user name, not Analysis' Driver: the server names them by their display name
+            // when listed, as it is then; no driver in what it keeps)
+            if (ServerLink.Settings.User is { Length: > 0 } user) driver = user;
             string text = await Task.Run(() => SessionsView.ExportText(item.File.FullName, started, 0, long.MaxValue, driver, title, link?.YouTube, videoAt));
             var meta = new JsonObject
             {
-                ["title"] = title, ["description"] = description, ["driver"] = driver, ["game"] = item.Game, ["track"] = item.TrackName, ["car"] = item.CarName,
+                ["title"] = title, ["description"] = description, ["game"] = item.Game, ["track"] = item.TrackName, ["car"] = item.CarName,
                 ["class"] = item.ClassName, ["laps"] = item.Laps, ["best"] = Math.Round(item.Best, 3), ["started"] = ServerSession.Ms(started),
                 ["video"] = link?.YouTube, ["videoAt"] = videoAt,
             };

@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.21**
+- **SimEffects → Analysis → Shared Session Manager**: **Driver** is who shared it by their display name on Daisy's
+  Server (looked up when listed, so a new display name shows everywhere; sessions are shared with the user name only,
+  Analysis' Driver name no longer sent). Needs Daisy's Server 0.2.4; with an older one it's the user name.
+- A double-click (or Enter) on a shared session puts it in **Session 1** and empties **Session 2**, whose list is
+  then that track's sessions, or "-- No Matches --" (it went into Session 2, Session 1 left as it was).
+- **Every table's column filter** (right-click a header): with more than 5 choices, a small search box at the right of
+  Clear narrows the list as you type. (The filter is now Core's, for every module's tables.)
+
 **4.17.20**
 - **SimEffects → Profiles**: no checkbox on the blocks any more; every game always has its profile. **Activate** at
   the top right of a block uses and plays it; the one in use says **Active** and has the blue edge. A game's own

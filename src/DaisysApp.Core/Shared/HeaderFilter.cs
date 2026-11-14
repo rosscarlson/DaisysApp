@@ -4,23 +4,27 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Media;
 
-namespace DaisysApp.Applets.SimEffects.Analysis;
+namespace DaisysApp.Shared;
 
 /// <summary>
-/// (since 4.13.0) A table column's filter, set with a right-click on its header: a drop-down of the column's values, a
-/// checkbox each, one or several picked (none: all). A funnel in the header while one's picked. The column's Header is
+/// A table column's filter, set with a right-click on its header: a drop-down of the column's values, a checkbox each,
+/// one or several picked (none: all), Clear, and (since 4.17.21) with more than 5 values a small box at Clear's right
+/// that narrows the list as you type. A funnel in the header while one's picked. The column's Header is
 /// <see cref="Header"/>; a table says what its columns can be filtered by with <see cref="Attach"/>. Listed A to Z, or
-/// in <paramref name="order"/>.
+/// in <paramref name="order"/>. (SimEffects' since 4.13.0; in Core since 4.17.21, for every table.)
 /// </summary>
-internal sealed class HeaderFilter(string name, Comparison<string>? order = null)
+public sealed class HeaderFilter(string name, Comparison<string>? order = null)
 {
     private readonly HashSet<string> picked = new();
     private TextBlock? funnel;
 
+    /// <summary>The values a drop-down has before it gets its search box.</summary>
+    public const int SearchFrom = 5;
+
     /// <summary>What's picked changed.</summary>
     public event Action? Changed;
 
-    /// <summary>(since 4.13.2) What a value's line says, when it isn't just the value.</summary>
+    /// <summary>What a value's line says, when it isn't just the value.</summary>
     public Func<string, string>? Label { get; set; }
 
     public bool On => picked.Count > 0;
@@ -31,7 +35,7 @@ internal sealed class HeaderFilter(string name, Comparison<string>? order = null
     {
         funnel = new TextBlock
         {
-            Text = "", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 10, Margin = new Thickness(5, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center,
+            Text = "", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 10, Margin = new Thickness(5, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center,
             Visibility = On ? Visibility.Visible : Visibility.Collapsed,
         };
         funnel.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
@@ -66,7 +70,7 @@ internal sealed class HeaderFilter(string name, Comparison<string>? order = null
 
     private void Open(FrameworkElement anchor, IEnumerable<string> values)
     {
-        var boxes = new List<CheckBox>();
+        var boxes = new List<(CheckBox Box, string Line)>();
         var list = new StackPanel();
         // (what's picked stays listed, whatever the other columns' filters leave)
         foreach (var value in values.Concat(picked).Distinct().OrderBy(v => v, order != null ? Comparer<string>.Create(order) : StringComparer.CurrentCultureIgnoreCase))
@@ -81,24 +85,54 @@ internal sealed class HeaderFilter(string name, Comparison<string>? order = null
                 if (on) picked.Add(v); else picked.Remove(v);
                 Show();
             });
-            boxes.Add(box);
+            boxes.Add((box, line));
             list.Children.Add(box);
         }
-        var clear = new Button { Content = T("Clear"), Padding = new Thickness(10, 2, 10, 2), Margin = new Thickness(0, 0, 0, 6), HorizontalAlignment = HorizontalAlignment.Left };
+        var clear = new Button { Content = T("Clear"), Padding = new Thickness(10, 2, 10, 2), HorizontalAlignment = HorizontalAlignment.Left };
         clear.Click += (_, _) =>
         {
             picked.Clear();
-            foreach (var b in boxes) b.IsChecked = false;
+            foreach (var (b, _) in boxes) b.IsChecked = false;
             Show();
         };
+        var top = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+        DockPanel.SetDock(clear, Dock.Left);
+        top.Children.Add(clear);
+        TextBox? search = null;
+        if (boxes.Count > SearchFrom)
+        {
+            // (in what's left at Clear's right: the drop-down no wider for it)
+            search = new TextBox { Margin = new Thickness(6, 0, 0, 0), VerticalContentAlignment = VerticalAlignment.Center, ToolTip = T("Search") };
+            System.Windows.Automation.AutomationProperties.SetName(search, T("Search"));
+            search.TextChanged += (_, _) =>
+            {
+                string find = search.Text.Trim();
+                foreach (var (b, line) in boxes)
+                    b.Visibility = find.Length == 0 || line.Contains(find, StringComparison.CurrentCultureIgnoreCase) ? Visibility.Visible : Visibility.Collapsed;
+            };
+            top.Children.Add(new NoWidth { Child = search });
+        }
         var panel = new DockPanel();
-        DockPanel.SetDock(clear, Dock.Top);
-        panel.Children.Add(clear);
+        DockPanel.SetDock(top, Dock.Top);
+        panel.Children.Add(top);
         panel.Children.Add(new ScrollViewer { Content = list, MaxHeight = 340, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         var frame = new Border { Child = panel, Padding = new Thickness(10, 8, 6, 8), BorderThickness = new Thickness(1), MinWidth = 150 };
         frame.SetResourceReference(Border.BackgroundProperty, "PopupBrush");
         frame.SetResourceReference(Border.BorderBrushProperty, "ControlBorderBrush");
         frame.SetResourceReference(TextElement.ForegroundProperty, "TextBrush");
-        new Popup { PlacementTarget = anchor, Placement = PlacementMode.Bottom, StaysOpen = false, Child = frame, IsOpen = true };
+        var popup = new Popup { PlacementTarget = anchor, Placement = PlacementMode.Bottom, StaysOpen = false, Child = frame };
+        if (search != null) popup.Opened += (_, _) => search.Focus();
+        popup.IsOpen = true;
+    }
+
+    /// <summary>Takes the width it's given but asks for none, so what's in it never widens the drop-down.</summary>
+    private sealed class NoWidth : Decorator
+    {
+        protected override Size MeasureOverride(Size constraint)
+        {
+            if (Child == null) return default;
+            Child.Measure(constraint);
+            return new Size(0, Child.DesiredSize.Height);
+        }
     }
 }
