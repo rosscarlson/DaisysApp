@@ -17,8 +17,8 @@ appear). The light and the PC must be on the same network. Close SimHub's or Gov
 - **ON / OFF** (top left) starts or stops it. Off, each light goes back as it was (see *Putting a light back*). What
   it's doing shows next to it (*1 lights · 30 pictures a second*). The controller button beside it (since 3.10.1)
   sets an **on / off shortcut**: a key combination or a controller / wheel / button box button, working anywhere
-  (Core's `Hotkeys`, also in Settings → Shortcuts). While it's on, a green **AmbiLight** bubble shows in the title
-  bar (Core's `TitleBadges`; always, since 3.17.2). The tray menu has **AmbiLight on** (since
+  (Core's `Hotkeys`, also in Settings → Shortcuts). While it's on, **AmbiLight** shows in SimEffects' one title bar
+  bubble (since 4.17.18, `SimBadges`: [Profiles](../Profiles/README.md); 3.17.2–4.17.17 its own). The tray menu has **AmbiLight on** (since
   3.17.0).
 - **Profiles** (since 3.18.0): on / off and the Picture card's settings are kept per [SimEffects
   profile](../Profiles/README.md): AmbiLight can be on for the desktop and off in a game, or the other way round.

@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.18**
+- **SimEffects** has one bubble in the title bar while a profile's tools run: the profile's short name, then each
+  running, a line between them (e.g. **FH: Shaker | Overlay | Wheel**; click it for Profiles). The Shaker, Overlays,
+  AmbiLight and Arduino had a bubble each before; the Wheel's is new. **Profiles**: each game's **Short Name** (FH,
+  FM, IR, ACC, AC, ACE, and Desktop) in its Options, to change, and first in its line.
+- **SimEffects → Analysis**: the scores are one tile again, a line between each (Overall, Consistency, Brake,
+  Throttle, Impacts / Crashes). **Delta** is always at the bottom of Channels, greyed out without a Session 2 to
+  compare with.
+
 **4.17.17**
 - **SimEffects → Profiles** is a block per game (Forza Horizon, Forza Motorsport, iRacing, ACC, Assetto Corsa,
   AC EVO, and Desktop for no game), 3 or 4 across as fits, in place of the Profile and Auto Start Modules cards. A

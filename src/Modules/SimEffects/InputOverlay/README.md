@@ -28,8 +28,8 @@ Inputs unticked there if the Input Overlay was off).
   a controller / button box button, also in Settings → Shortcuts). It stays on or off across restarts; the tray menu
   has **Overlays on** too. What it's reading shows next: *Forza Horizon: driving*, *Reading Fanatec CSL DD*…
   (nothing while the game isn't sending: the Play button's colour says whether it's running)
-- **Title bar**: while it's on (always, since 3.17.2), a green bubble in the title bar names the profile in use, e.g. **Overlay: Forza
-  Horizon** (click it to come here).
+- **Title bar**: while it's on, **Overlay** in SimEffects' one bubble (since 4.17.18: [Profiles](../Profiles/README.md));
+  3.17.2–4.17.17 its own, naming the profile in use, e.g. **Overlay: Forza Horizon** (click it to come here).
 - **Profiles** (since 3.18.0): the game is the [SimEffects profile](../Profiles/README.md)'s, and on / off, Read From
   and what it draws (history, background, traces, speeds, Record) are kept per profile; its place and the axes are the
   same in all.

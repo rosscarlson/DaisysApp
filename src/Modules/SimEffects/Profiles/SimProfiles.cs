@@ -14,6 +14,9 @@ namespace DaisysApp.Applets.SimEffects.Profiles;
 public sealed class SimProfile
 {
     public string Name { get; set; } = "";
+    /// <summary>(since 4.17.18) Its short name ("FH", "IR"…) for the title bar's SimEffects bubble; set from the game
+    /// at first (<see cref="SimProfiles.DefaultShort"/>), editable on the Profile card. Empty: the default.</summary>
+    public string? ShortName { get; set; }
     /// <summary>The game whose telemetry every tool reads (<see cref="SimData"/>); null: none.</summary>
     public Game? Game { get; set; }
     public int Port { get; set; } = 8000;
@@ -27,7 +30,7 @@ public sealed class SimProfile
     public bool? AutoStart { get; set; }
     /// <summary>Each tool's settings in this profile, by the tool's id.</summary>
     public Dictionary<string, JsonObject> Tools { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-    /// <summary>The game's block ticked on the Profiles tab (since 4.17.17): off, it isn't offered or started by its game.</summary>
+    /// <summary>The game's block ticked on the Profiles tab (since 4.17.18): off, it isn't offered or started by its game.</summary>
     public bool Enabled { get; set; } = true;
 
     public override string ToString() => Name;
@@ -110,7 +113,11 @@ public static class SimProfiles
         settings = JsonStore.Load<SimProfilesSettings>(FileName);
         if (fresh && !File.Exists(JsonStore.PathFor("BassShaker")) && FromDefaults()) { }
         else if (fresh || settings.Profiles.Count == 0) FromShaker();
-        foreach (var p in settings.Profiles) p.AutoStart ??= settings.GameSwitching && p.Programs.Count > 0;
+        foreach (var p in settings.Profiles)
+        {
+            p.AutoStart ??= settings.GameSwitching && p.Programs.Count > 0;
+            p.ShortName ??= DefaultShort(p);
+        }
         SimData.Follow(Active);
     }
 
@@ -253,6 +260,7 @@ public static class SimProfiles
     {
         string baseName = p.Name;
         p.AutoStart ??= p.Programs.Count > 0;
+        p.ShortName ??= DefaultShort(p);
         lock (gate)
         {
             for (int i = 2; settings.Profiles.Any(o => o.Name.Equals(p.Name, StringComparison.CurrentCultureIgnoreCase)); i++) p.Name = $"{baseName} {i}";
@@ -265,7 +273,7 @@ public static class SimProfiles
     }
 
     /// <summary>
-    /// A game's block ticked or not (since 4.17.17; null: Desktop, no game): ticked, its profile is on again, or made
+    /// A game's block ticked or not (since 4.17.18; null: Desktop, no game): ticked, its profile is on again, or made
     /// with the game's port and processes (not used yet); unticked, it's off, and if it was in use the first one on
     /// is used instead, stopped.
     /// </summary>
@@ -310,6 +318,22 @@ public static class SimProfiles
         Edited();
         return true;
     }
+
+    /// <summary>(since 4.17.18) A profile's short name at first: its game's ("FH", "FM", "IR", "ACC", "AC", "ACE"); with
+    /// none, its name (up to 8 letters).</summary>
+    public static string DefaultShort(SimProfile p) => p.Game switch
+    {
+        Game.ForzaHorizon => "FH",
+        Game.ForzaMotorsport => "FM",
+        Game.IRacing => "IR",
+        Game.Acc => "ACC",
+        Game.AssettoCorsa => "AC",
+        Game.AcEvo => "ACE",
+        _ => p.Name.Length > 8 ? p.Name[..8] : p.Name,
+    };
+
+    /// <summary>(since 4.17.18) The short name shown: its own, else <see cref="DefaultShort"/>.</summary>
+    public static string ShortOf(SimProfile p) => string.IsNullOrWhiteSpace(p.ShortName) ? DefaultShort(p) : p.ShortName.Trim();
 
     /// <summary>A profile's game, port or programs changed: saved, and the telemetry follows.</summary>
     public static void Edited()

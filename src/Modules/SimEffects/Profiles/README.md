@@ -20,6 +20,9 @@ in use decides two things:
   running: stopped, white, or green with the game running; playing, blue with the game running, or red without it) and its
   shortcut button (a key or a controller button, in Settings → Shortcuts too): stopped, every sub-module goes dark at
   once, its own ON kept (shown greyed on its tab) for when it plays again. A profile picked by hand or by a game plays.
+- **Title bar** (since 4.17.18): one green bubble while any of the Shaker, Overlays, Wheel, AmbiLight or Arduino runs:
+  the profile's **Short Name**, then each running, a line between them, e.g. **FH: Shaker | Overlay | Wheel**
+  (clicking it opens Profiles). Before, the Shaker, Overlays, AmbiLight and Arduino had a bubble each; the Wheel none.
 - **The blocks** (since 4.17.17; a Profile card and Auto Start Modules before): a block per game SimEffects reads
   (Forza Horizon, Forza Motorsport, iRacing, Assetto Corsa Competizione, Assetto Corsa, AC EVO) and **Desktop** (no
   game: no telemetry), 3 across, or 4 where that fills the rows better (fewer while the tab is narrow). **Units**
@@ -30,7 +33,9 @@ in use decides two things:
     stopped.
   - **Use** (top right; the one in use says **In use** or **Playing** and has the accent's edge) uses and plays it.
   - A line of what it's set to: the Forza version, the port, Auto Start, how many processes.
-  - **Options** (folds; folded at first): **Version** (Forza's: Forza Horizon 6, 5 or 4, Forza Motorsport (2023) or 7,
+  - **Options** (folds; folded at first): **Short Name** (since 4.17.18; up to 8 letters, the title bar bubble's
+    and first in the block's line: FH, FM, IR, ACC, AC, ACE from the game at first, Desktop's its name; emptied, the
+    game's again), **Version** (Forza's: Forza Horizon 6, 5 or 4, Forza Motorsport (2023) or 7,
     or **Auto**, the one running (the newest until one has); it names the cars, and Analysis keeps each game's tracks
     and laps apart), **UDP Port** (Forza: set the game's Data Out to IP 127.0.0.1 and this port), **Auto Start**,
     **Processes** (Core's program list: type one, or Add a running program…) and **Defaults** (Confirm? first: the
@@ -73,10 +78,11 @@ that had 3.17's **Switch On With Game** ticked is on in every game's profile. Ga
 
 | File | What it is |
 |---|---|
-| `SimProfiles.cs` | `SimProfile` (name, `Enabled` (its block ticked, since 4.17.17), game or none, `Version` (Forza's; null: the one running), port, programs, `AutoStart`, `Tools`: each tool's settings by its id), `SimProfilesSettings` (`SimProfiles.json`: the profiles, the one in use, Playing and its shortcut; GameSwitching only to set each profile's AutoStart the first time), `ToolScope` (a tool's part: its settings object, the properties kept per profile, on / off, `Loaded`), and `SimProfiles`: `Register` (the profile in use's settings put into the tool as it's made), `Saved` (a tool's settings' Save keeps them in the profile in use; any thread), `Use` (every tool's settings kept, the new profile's put in, each tool's `Loaded`; it plays, or `play: false`), `SetEnabled` (a game's block ticked or not), `Playing` / `Play` (each tool runs while its settings' `On` = Enabled and playing; `Loaded` again on a change), `Add`, `Remove`, `Rename` (`Renamed`: the Shaker's effects go with it), `Edited`, `Changed`; a new install's from `SimDefaults`, else first made from the Shaker's profiles |
+| `SimProfiles.cs` | `SimProfile` (name, `ShortName` (since 4.17.18; `DefaultShort` at Load / Add, `ShortOf`), `Enabled` (its block ticked, since 4.17.17), game or none, `Version` (Forza's; null: the one running), port, programs, `AutoStart`, `Tools`: each tool's settings by its id), `SimProfilesSettings` (`SimProfiles.json`: the profiles, the one in use, Playing and its shortcut; GameSwitching only to set each profile's AutoStart the first time), `ToolScope` (a tool's part: its settings object, the properties kept per profile, on / off, `Loaded`), and `SimProfiles`: `Register` (the profile in use's settings put into the tool as it's made), `Saved` (a tool's settings' Save keeps them in the profile in use; any thread), `Use` (every tool's settings kept, the new profile's put in, each tool's `Loaded`; it plays, or `play: false`), `SetEnabled` (a game's block ticked or not), `Playing` / `Play` (each tool runs while its settings' `On` = Enabled and playing; `Loaded` again on a change), `Add`, `Remove`, `Rename` (`Renamed`: the Shaker's effects go with it), `Edited`, `Changed`; a new install's from `SimDefaults`, else first made from the Shaker's profiles |
 | `SimDefaults.cs`, `Defaults.json` | What a new install starts with (embedded): the profiles, the one in use, and the Shaker's effects by game (`EffectsFor`, which `BassShaker/DefaultProfiles` uses first) |
 | `SimData.cs` | The module's telemetry: `Game` (the profile in use's, and its port), the Forza being read (`CarNames.Edition`: the profile's Version, or `Running`'s), `Open()` (a source for one tool that follows the profile: another game is read from the next read on), `Status` (each tool's status line about the game: nothing while it isn't sending, since 3.24.3), `GameRunning` (the Play button's colour) |
 | `GameSwitcher.cs` | Auto Start: the programs running every 3 s (`RunningPrograms`; also which Forza runs, for a profile on Auto); a program of a profile with `AutoStart` starting uses (and plays) it, its ending stops it if it's still in use and playing; whether the profile in use's game runs (its programs, or its game's: `SimData.GameRunning`) |
+| `SimBadges.cs` | (since 4.17.18) The title bar's one SimEffects bubble: each tool's part (`Set` by its id, from any thread), in a set order after the profile's short name; again on `SimProfiles.Changed` |
 | `ProfileCard.cs` | A game's block (since 4.17.17; the Profile card before, the Shaker's until 3.18.0): the checkbox, Use, the summary line, and the two parts that fold (`Fold`, kept open in `open` while the tab redraws): `Options` and `Modules` (Core's `Ui.Chip`s) |
 | `ProfilesApplet.cs` | The tab (`ProfilesView`: Units, then the blocks in a grid, 3 or 4 across: `Columns`, `Place`) and `Picker()`, the Profile drop-down, Play / Stop and its shortcut (`SimEffects.Play`) the tab puts at the right of its sub-tabs (Core's `AppletGroup.HeaderRight`, since Core 0.42) |
 | `GameProfile.cs` | `GameProfile`: the Shaker's effects profile's name, game, port and programs, and `GameProfiles.For` (a game's) |

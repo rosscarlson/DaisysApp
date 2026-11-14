@@ -16,8 +16,8 @@ and shift lights). A board runs either of two sketches, and the app finds out wh
 
 **ON / OFF** (top left, since 3.17.0; on to start with, as before): off, every board is let go (its COM port free for
 SimHub, say). The controller icon beside it sets an on / off shortcut (Core's `Hotkeys`, also in Settings →
-Shortcuts); while it's on with a board switched on, a green **Arduino** bubble shows in the title bar (always, since
-3.17.2); the tray menu has **Arduino on**. It's on or off per [SimEffects profile](../Profiles/README.md) (since
+Shortcuts); while it's on with a board switched on, **Arduino** shows in SimEffects' one title bar bubble (since 4.17.18:
+[Profiles](../Profiles/README.md); 3.17.2–4.17.17 its own); the tray menu has **Arduino on**. It's on or off per [SimEffects profile](../Profiles/README.md) (since
 3.18.0): the Profiles tab's Auto Start Modules grid sets it for each.
 
 ## Setting one up

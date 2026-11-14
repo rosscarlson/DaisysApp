@@ -124,9 +124,9 @@ public sealed class AmbiLightApplet : IApplet
         view.ShowOnOff();
     }
 
-    /// <summary>The title bar's AmbiLight bubble: while it's on.</summary>
+    /// <summary>AmbiLight's part of the title bar's SimEffects bubble (since 4.17.18; its own before): while it's on.</summary>
     internal void ShowBadge() =>
-        TitleBadges.Set("AmbiLight", settings.On ? "AmbiLight" : null, T("AmbiLight is on"));
+        SimBadges.Set("AmbiLight", settings.On ? "AmbiLight" : null, T("AmbiLight is on"));
 
     /// <summary>Lights whose address changed (found again by their MAC).</summary>
     private async Task FindMovedAsync()
@@ -534,7 +534,7 @@ public sealed class AmbiLightApplet : IApplet
     {
         closing = true;
         hotkey.Dispose();
-        TitleBadges.Set("AmbiLight", null);
+        SimBadges.Set("AmbiLight", null);
         view.Stop();
         if (!thread.IsAlive || !thread.Join(2000)) StopAll();
         sampler.Dispose();

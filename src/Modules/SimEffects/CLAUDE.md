@@ -23,6 +23,15 @@ Read only when working in this folder. Current state and lessons; history is in 
 - UIA shot script: `%TEMP%\prof4117\shot.ps1 -path SimEffects,Profiles,<names…>` (selects/invokes/toggles by Name,
   PrintWindow PNG). The Write/Edit tools turn `"\uE70D"` into the literal glyph: harmless.
 
+## 4.17.18: one title bar bubble, Short Name, scores one tile, Delta always listed (not run: the user gaming)
+
+- `Profiles/SimBadges` gathers the Shaker's, Overlays', Wheel's (new), AmbiLight's and Arduino's parts (`SimBadges.Set(toolId,
+  text, tip)` instead of `TitleBadges.Set`; Analysis' upload/share bubbles stay apart). `SimProfile.ShortName`
+  (`DefaultShort` at Load/Add) in a block's Options. Scores: `ScoreGroup` one `Tile` of all parts. Delta: `Entry`
+  lists it whenever `both`, disabled while `!CompareChart.HasDelta` (it showed only with a Session 2 by distance).
+- **Lesson:** a release worktree in `D:\Temp` may be another session's (4.17.17's was `da-prof`): recreating it reset
+  its index, and its next commit (5218ac3) put 4.17.17 back to 4.17.16 (restored in 022f9d6). Use a new name each time.
+
 ## How the module fits together
 
 - `AppletGroup` tab: Profiles, Shaker (⚠ `BassShaker/`), Arduino, Notify (needs Arduino), Wheel (⚠ id "Fanatec":

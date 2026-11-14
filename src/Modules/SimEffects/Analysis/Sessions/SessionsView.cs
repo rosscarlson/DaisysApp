@@ -789,24 +789,29 @@ internal sealed class SessionsView
     private static Num Counted(int count, int orange, int red) =>
         new(count.ToString(), count >= red ? PedalColours.Brake : count >= orange ? PedalColours.Warning : PedalColours.Throttle);
 
-    /// <summary>(since 4.17.11) A session's tiles (Overall and Consistency in one, Brake, Throttle, Impacts / Crashes; a
-    /// tile a score until 4.17.8) with its time split under them; S1 or S2 before them when both are shown.</summary>
+    /// <summary>(since 4.17.11) A session's scores (Overall, Consistency, Brake, Throttle, Impacts / Crashes; since
+    /// 4.17.18 in one tile, a line between each: Overall and Consistency in one, the others a tile each 4.17.11–4.17.17;
+    /// a tile a score until 4.17.8) with its time split under them; S1 or S2 before them when both are shown.</summary>
     private static FrameworkElement ScoreGroup(PedalAnalysis a, int slot)
     {
         var tiles = new Grid();
         bool both = slot > 0;
-        Tile(tiles, both, (T("Overall"), new[] { Score(a.OverallScore) }, T("The scores together, the brake release counting most")),
-            (T("Consistency"), new[] { Score(a.BrakeConsistency), Score(a.ThrottleConsistency) }, T("Brake / throttle: how alike the brake points and throttle applications are lap to lap (two laps or more)")));
-        Tile(tiles, both, (T("Brake"), new[] { Score(a.BrakeApplyScore), Score(a.BrakeReleaseScore) }, T("Application / release: firm, then gradual, each in one movement")));
-        Tile(tiles, both, (T("Throttle"), new[] { Score(a.ThrottleApplyScore), Score(a.ThrottleReleaseScore) }, T("Application / release: progressive, then clean, each in one movement")));
+        var parts = new List<(string, Num[], string)>
+        {
+            (T("Overall"), new[] { Score(a.OverallScore) }, T("The scores together, the brake release counting most")),
+            (T("Consistency"), new[] { Score(a.BrakeConsistency), Score(a.ThrottleConsistency) }, T("Brake / throttle: how alike the brake points and throttle applications are lap to lap (two laps or more)")),
+            (T("Brake"), new[] { Score(a.BrakeApplyScore), Score(a.BrakeReleaseScore) }, T("Application / release: firm, then gradual, each in one movement")),
+            (T("Throttle"), new[] { Score(a.ThrottleApplyScore), Score(a.ThrottleReleaseScore) }, T("Application / release: progressive, then clean, each in one movement")),
+        };
         // (since 4.17.8) contact: Impacts (lighter hits, cars mostly) orange 1-3, red from 4; Crashes (the hard hits,
         // walls mostly) orange at 1, red from 2, as the contact tip
         if (a.Data.HasG || a.Data.HasSpeed)
         {
             int crashes = a.Incidents.Count(x => x.Crash), impacts = a.Incidents.Count - crashes;
-            Tile(tiles, both, (T("Impacts / Crashes"), new[] { Counted(impacts, 1, 4), Counted(crashes, 1, 2) },
+            parts.Add((T("Impacts / Crashes"), new[] { Counted(impacts, 1, 4), Counted(crashes, 1, 2) },
                 F("Lighter hits (other cars, mostly) / hits of {0:0.0} g or more (walls, mostly)", Incident.CrashG)));
         }
+        Tile(tiles, both, parts.ToArray());
 
         var split = new Grid { Height = 18, Margin = new Thickness(0, 0, 6, 6) };
         void Part(double pct, Color colour, string name)
@@ -844,8 +849,8 @@ internal sealed class SessionsView
     }
 
     /// <summary>A tile (since 4.17.8 as high as Compare's two rows, the tiles sharing the width between them): its numbers
-    /// (since 4.17.11 one or two, "/" between them, each its colour) over its name; since 4.17.11 two such side by side
-    /// in one (Overall and Consistency), a line between them, twice as wide.</summary>
+    /// (since 4.17.11 one or two, "/" between them, each its colour) over its name; since 4.17.11 several such side by
+    /// side in one, a line between them (since 4.17.18 all the scores).</summary>
     private static void Tile(Grid tiles, bool small, params (string Name, Num[] Nums, string Tip)[] parts)
     {
         var b = new Border
@@ -1771,8 +1776,8 @@ internal sealed class SessionsView
 
     /// <summary>The channels (since 4.6.2; since 4.7.0 on the Session rows, without the runs' names): a chip per channel
     /// in its colour, Session 2's dotted as its lines: its box shows or hides that line, its name highlights it (the
-    /// others faded). Session 2's, and Delta, only while there's one to compare with. Since 4.17.14 one drop-down for
-    /// both sessions' lines, Delta in it (a chip in Session 2's row before).</summary>
+    /// others faded). Session 2's only while there's one to compare with. Since 4.17.14 one drop-down for both sessions'
+    /// lines, Delta in it (a chip in Session 2's row before; since 4.17.18 always, greyed out with nothing to compare).</summary>
     private void ShowLegend(Run? a, Run? b)
     {
         lastA = a;
@@ -1792,8 +1797,9 @@ internal sealed class SessionsView
             settings.VideoHidden = videoChart.Hidden.Where(h => h.Channel is not (Channel.Clutch or Channel.Rpm or Channel.Gear)).Select(h => h.Channel.ToString()).ToList();
             settings.Save();
         }, ShowLegend);
-        // (since 4.15.4 S2 highlighted with no Session 2: not)
+        // (since 4.15.4 S2 highlighted with no Session 2: not; since 4.17.18 Delta with none either)
         if (compareChart.HighlightRun == 2 && lastB == null) compareChart.HighlightRun = null;
+        if (compareChart.Highlight?.Channel == Channel.Delta && !compareChart.HasDelta) compareChart.Highlight = null;
         ShowPickerLinks();
         ShowScores();
     }
@@ -1811,7 +1817,8 @@ internal sealed class SessionsView
         toggles.Children.Clear();
         toggles.Visibility = r != null ? Visibility.Visible : Visibility.Collapsed;
         if (r == null) return;
-        if (both && b != null && chart.ByDistance) channels = channels.Append(Channel.Delta).ToArray();
+        // (since 4.17.18 always, greyed out without a Session 2 by distance; listed only with one 4.17.14–4.17.17)
+        if (both) channels = channels.Append(Channel.Delta).ToArray();
         toggles.Children.Add(MoreChannels(toggles, chart, r, b, both, channels, save, again));
         if (open && toggles.Tag is Popup popup)
             toggles.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => popup.IsOpen = true);
@@ -1872,7 +1879,12 @@ internal sealed class SessionsView
         {
             var item = ChannelItem(toggles, chart, both, c, () => { save(); Dots(); }, again);
             item.Margin = new Thickness(0, 0, 0, 4);
-            if (c != Channel.Delta && !Logged(c)) item.IsEnabled = false;
+            if (c == Channel.Delta ? !chart.HasDelta : !Logged(c)) item.IsEnabled = false;
+            if (c == Channel.Delta && !chart.HasDelta)
+            {
+                item.ToolTip = T("With a Session 2");
+                ToolTipService.SetShowOnDisabled(item, true);
+            }
             list.Children.Add(item);
         }
         button.MouseLeftButtonUp += (_, _) => popup.IsOpen = !popup.IsOpen;

@@ -11,8 +11,9 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   Ctrl, Alt or Shift, or a controller / button box button; it listens as soon as it opens). While it's on, what it's doing shows next:
   *Forza Horizon: driving*, *not driving* (a menu, pause or replay: everything stops), or a problem (the port taken by
   another program). It stays on or off across restarts. The tray menu has **Bass Shaker on** too.
-- **Title bar bubble**: while it's on, a green bubble in the title bar always names the profile in use,
-  e.g. **Shaker: Forza Horizon** (since 3.16.3; click it to come here; since 3.17.1 there's no checkbox to leave it out).
+- **Title bar bubble**: while it's on, **Shaker** in SimEffects' one bubble (since 4.17.18, e.g. **FH: Shaker |
+  Overlay**: [Profiles](../Profiles/README.md)); 3.16.3–4.17.17 its own, naming the profile in use, e.g. **Shaker:
+  Forza Horizon** (click it to come here; since 3.17.1 there's no checkbox to leave it out).
 - **Master** (top right): the volume of everything.
 - **Devices** (left): **Add Device** asks for the playback device, the **transducer** on it, its **position** and its
   **channels**.

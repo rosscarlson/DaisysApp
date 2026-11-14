@@ -55,9 +55,10 @@ public sealed class ArduinoApplet : IApplet
         view.ShowOnOff();
     }
 
-    /// <summary>The title bar's Arduino bubble: while it's on with a board switched on.</summary>
+    /// <summary>Arduino's part of the title bar's SimEffects bubble (since 4.17.18; its own before): while it's on with a
+    /// board switched on.</summary>
     internal void ShowBadge() =>
-        TitleBadges.Set("Arduino", hub.Settings.On && hub.Settings.Boards.Any(b => b.Enabled) ? "Arduino" : null, T("Arduino is on"));
+        SimBadges.Set("Arduino", hub.Settings.On && hub.Settings.Boards.Any(b => b.Enabled) ? "Arduino" : null, T("Arduino is on"));
 
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;
@@ -77,7 +78,7 @@ public sealed class ArduinoApplet : IApplet
     public void Dispose()
     {
         hotkey.Dispose();
-        TitleBadges.Set("Arduino", null);
+        SimBadges.Set("Arduino", null);
         hub.Changed -= view.Render;
         hub.Changed -= ShowBadge;
         view.Stop();

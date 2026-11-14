@@ -152,8 +152,10 @@ public sealed class InputOverlayApplet : IApplet
         view.Render();
     }
 
+    /// <summary>(since 4.17.18) The overlays' part of the title bar's SimEffects bubble (their own, with the profile's
+    /// name, before).</summary>
     internal void ShowBadge() =>
-        TitleBadges.Set("InputOverlay", settings.On ? F("Overlay: {0}", SimProfiles.Active.Name) : null, T("The overlays are on"));
+        SimBadges.Set("InputOverlay", settings.On ? T("Overlay") : null, T("The overlays are on"));
 
     // ---------------------------------------------------------------- on and shown
 
@@ -406,7 +408,7 @@ public sealed class InputOverlayApplet : IApplet
             analysis.Wanted = null;
         }
         foreach (var id in OverlayKinds.All(true)) Close(id);
-        TitleBadges.Set("InputOverlay", null);
+        SimBadges.Set("InputOverlay", null);
         view.Stop();
         reader.Dispose();
         settings.Save();

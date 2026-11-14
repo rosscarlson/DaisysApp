@@ -9,7 +9,7 @@ namespace DaisysApp.Applets.SimEffects.Profiles;
 /// <summary>
 /// A game's block on the Profiles tab (since 4.17.17; one Profile card for the profile in use before): its checkbox
 /// (the game's profile on or off), its name and Use, a line of what it's set to, then two parts that fold: Options
-/// (Version, UDP Port, Auto Start, Processes, Defaults) and Modules (which sub-modules start with it, as chips; their
+/// ((since 4.17.18) Short Name, Version, UDP Port, Auto Start, Processes, Defaults) and Modules (which sub-modules start with it, as chips; their
 /// names on the fold's line). The Desktop block is the profile with no game.
 /// </summary>
 internal static class ProfileCard
@@ -76,10 +76,11 @@ internal static class ProfileCard
         return card;
     }
 
-    /// <summary>What it's set to, in a line: Forza's version, the port, Auto Start, how many processes.</summary>
+    /// <summary>What it's set to, in a line: (since 4.17.18) its short name, Forza's version, the port, Auto Start, how
+    /// many processes.</summary>
     private static string Summary(SimProfile p)
     {
-        var parts = new List<string>();
+        var parts = new List<string> { SimProfiles.ShortOf(p) };
         if (p.Game is { } g && CarNames.Versions(g) is { Count: > 0 } versions)
             parts.Add(versions.FirstOrDefault(v => v.Version == p.Version).Title ?? T("Auto"));
         if (p.Game is { } u && Games.UsesPort(u)) parts.Add(F("Port {0}", p.Port));
@@ -126,10 +127,25 @@ internal static class ProfileCard
         return s;
     }
 
-    /// <summary>Version (Forza's), UDP Port (Forza's), Auto Start, Processes, and Defaults (the game's port and processes).</summary>
+    /// <summary>(Since 4.17.18) Short Name, Version (Forza's), UDP Port (Forza's), Auto Start, Processes, and Defaults (the
+    /// game's port and processes).</summary>
     private static FrameworkElement Options(SimProfile p)
     {
         var panel = new StackPanel();
+        // (since 4.17.18) the name in the title bar's SimEffects bubble; emptied, the game's again
+        var shortName = new TextBox { Text = SimProfiles.ShortOf(p), Width = 90, MaxLength = 8, HorizontalAlignment = HorizontalAlignment.Left,
+            ToolTip = T("In the title bar") };
+        AutomationProperties.SetName(shortName, T("Short Name"));
+        void SetShort()
+        {
+            string s = shortName.Text.Trim();
+            if (s.Length == 0) s = SimProfiles.DefaultShort(p);
+            if (s != p.ShortName) { p.ShortName = s; SimProfiles.Edited(); }
+            else shortName.Text = s;
+        }
+        shortName.LostFocus += (_, _) => SetShort();
+        shortName.KeyDown += (_, e) => { if (e.Key == Key.Enter) SetShort(); };
+        panel.Children.Add(Field(T("Short Name"), shortName));
         if (p.Game is { } versioned && CarNames.Versions(versioned) is { Count: > 0 } versions)
         {
             var items = new List<KeyValuePair<int?, string>> { new(null, T("Auto")) };

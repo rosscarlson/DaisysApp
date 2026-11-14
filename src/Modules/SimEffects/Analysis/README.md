@@ -242,8 +242,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
 - **Session** (Session Analysis until 4.13.1; since 4.17.8 not a box of its own: its picker and icons at the top
   right of Compare's card, its scores and time split between Compare's rows): the date, car, length, laps and best,
   the brake zones and throttle applications (since 4.17.8 the title's tooltip); then the
-  **scores**, 0 to 100 (green 85 and over, amber 65 and over), since 4.17.11 in four tiles (a tile each before):
-  **Overall** (the others together, the brake release counting most) and **Consistency** (brake / throttle) in one,
+  **scores**, 0 to 100 (green 85 and over, amber 65 and over), since 4.17.18 in one tile, a line between each (4.17.11–
+  4.17.16 four tiles, Overall and Consistency sharing one; a tile each before):
+  **Overall** (the others together, the brake release counting most), **Consistency** (brake / throttle),
   **Brake** (application / release), **Throttle** (application / release) and **Impacts / Crashes** (since 4.17.8;
   impacts orange from 1, red from 4, crashes orange at 1, red from 2, green at none); Steering until 4.17.7. With a
   Session 2 (another race; 4.17.14–4.17.15 the same race too, another lap, the same scores twice: they're the whole race's)
@@ -302,8 +303,8 @@ not; those older files aren't listed (they name no race), and stay in the folder
     while there's a Session 2), its
     name (or a click on the line, until 4.10.3) highlights it, bold, the others faded; again, back to all. Kept. Since
     4.17.14 one drop-down for both sessions (Session 2's row had its own): a channel shown, hidden and highlighted in
-    both, its line solid in the list, Delta last while there's a Session 2 along the distance (highlighted too since
-    4.17.16). The
+    both, its line solid in the list, Delta last (highlighted too since 4.17.16; since 4.17.18 always listed, greyed
+    out without a Session 2 along the distance; listed only with one before). The
     wheel zooms, dragging moves along, a double-click shows it all; the readout gives both runs' values at the mouse.
     Since 4.10.3 a click puts the **cursor** there (a white line; off the chart the readout, the video and the Track
     Map's dot are at it; since 4.17.16 the readout at the cursor is always on its left, so what's coming isn't

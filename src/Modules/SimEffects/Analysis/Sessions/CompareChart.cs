@@ -148,6 +148,9 @@ internal sealed class CompareChart : LayeredChart
     public int? HighlightRun { get; set; }
     /// <summary>Whether the Delta lane shows.</summary>
     public bool ShowDelta { get; set; } = true;
+
+    /// <summary>(since 4.17.18) There's a Delta to draw: two runs by distance.</summary>
+    public bool HasDelta => delta != null;
     /// <summary>(since 4.13.0) One timeline per run, every channel on it, instead of a lane per channel.</summary>
     public bool Combined { get; set; }
     /// <summary>(since 4.13.3) The marks above it not shown (the filter by them); shared by Compare's and the Video's.</summary>

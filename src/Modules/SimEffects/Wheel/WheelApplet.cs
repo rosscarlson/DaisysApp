@@ -134,6 +134,8 @@ public sealed class WheelApplet : IApplet
 
     private void Apply()
     {
+        // (since 4.17.18) its part of the title bar's SimEffects bubble
+        Profiles.SimBadges.Set("Fanatec", settings.On ? T("Wheel") : null, T("The wheel is on"));
         runner.Want(Who, settings.On);
         finder.Change(settings.On ? 0 : Timeout.Infinite, Timeout.Infinite);
         if (!settings.On) Found = "";
@@ -221,6 +223,7 @@ public sealed class WheelApplet : IApplet
         runner.Want(Who, false);
         view.Stop();
         Off();
+        Profiles.SimBadges.Set("Fanatec", null);
         settings.Save();
     }
 }

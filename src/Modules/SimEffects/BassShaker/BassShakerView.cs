@@ -249,9 +249,10 @@ internal sealed class BassShakerView : UserControl
         RenderEffects();
     }
 
-    /// <summary>The title bar's Shaker bubble: always while it's on, with the profile in use.</summary>
+    /// <summary>The Shaker's part of the title bar's SimEffects bubble (since 4.17.18; its own bubble, with the profile's
+    /// name, before): while it's on.</summary>
     public void ShowBadge() =>
-        TitleBadges.Set("BassShaker", settings.On && Active is { } p ? F("Shaker: {0}", p.Name) : null, T("The Shaker is on"));
+        SimBadges.Set("BassShaker", settings.On && Active != null ? T("Shaker") : null, T("The Shaker is on"));
 
     private void ShowStatus()
     {

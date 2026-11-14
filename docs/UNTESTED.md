@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.18 (SimEffects' one title bar bubble and profiles' Short Name; Analysis' scores in one tile, Delta always
+  in Channels):** built, not run: the user was gaming on this PC. To try: play a profile with the Shaker, Overlays and
+  Wheel on: one bubble "FH: Shaker | Overlay | Wheel", clicking it opens Profiles; change a game's Short Name in its
+  Options and see the bubble follow; the scores' one tile; Delta greyed out with no Session 2, usable with one.
 - **4.17.17 (SimEffects → Profiles as a block per game):** seen in DaisysDev with a copy of this PC's profiles: the
   grid (4 across at 1500 px), Options and Modules unfolded, Assetto Corsa ticked (made, Analysis on), Forza Horizon
   unticked while in use (Desktop in use, stopped) and ticked again (its settings back). To try: Use on a block, a

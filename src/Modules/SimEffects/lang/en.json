@@ -593,7 +593,6 @@
   "Master": "Master",
   "Shaker on": "Shaker on",
   "Shaker meters": "Shaker meters",
-  "Shaker: {0}": "Shaker: {0}",
   "The Shaker is on": "The Shaker is on",
   "Devices": "Devices",
   "No devices yet": "No devices yet",
@@ -1032,5 +1031,10 @@
   "{0} processes": "{0} processes",
   "Defaults": "Defaults",
   "The game's own port and processes": "The game's own port and processes",
-  "Starts with this profile": "Starts with this profile"
+  "Starts with this profile": "Starts with this profile",
+  "Overlay": "Overlay",
+  "The wheel is on": "The wheel is on",
+  "Short Name": "Short Name",
+  "In the title bar": "In the title bar",
+  "With a Session 2": "With a Session 2"
 }
