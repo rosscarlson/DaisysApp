@@ -30,8 +30,6 @@ public sealed class SimProfile
     public bool? AutoStart { get; set; }
     /// <summary>Each tool's settings in this profile, by the tool's id.</summary>
     public Dictionary<string, JsonObject> Tools { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-    /// <summary>The game's block ticked on the Profiles tab (since 4.17.18): off, it isn't offered or started by its game.</summary>
-    public bool Enabled { get; set; } = true;
 
     public override string ToString() => Name;
 }
@@ -117,6 +115,17 @@ public static class SimProfiles
         {
             p.AutoStart ??= settings.GameSwitching && p.Programs.Count > 0;
             p.ShortName ??= DefaultShort(p);
+        }
+        // (since 4.17.20) every game has its profile, with the game's port and processes, so its game starting plays it
+        foreach (var g in Games.All.Cast<Game?>().Append(null))
+        {
+            if (settings.Profiles.Any(p => p.Game == g)) continue;
+            var made = New(g);
+            made.AutoStart = made.Programs.Count > 0;
+            made.ShortName = DefaultShort(made);
+            for (int i = 2; settings.Profiles.Any(o => o.Name.Equals(made.Name, StringComparison.CurrentCultureIgnoreCase)); i++) made.Name = $"{New(g).Name} {i}";
+            settings.Profiles.Add(made);
+            Logging.Log.Here.Info($"SimEffects: profile {made.Name} made");
         }
         SimData.Follow(Active);
     }
@@ -272,27 +281,10 @@ public static class SimProfiles
         else Save();
     }
 
-    /// <summary>
-    /// A game's block ticked or not (since 4.17.18; null: Desktop, no game): ticked, its profile is on again, or made
-    /// with the game's port and processes (not used yet); unticked, it's off, and if it was in use the first one on
-    /// is used instead, stopped.
-    /// </summary>
-    public static void SetEnabled(Game? game, bool on)
-    {
-        var p = settings.Profiles.FirstOrDefault(o => o.Game == game && o.Enabled == !on) ?? settings.Profiles.FirstOrDefault(o => o.Game == game);
-        if (p == null)
-        {
-            if (!on) return;
-            p = game is { } g ? new SimProfile { Name = Games.Title(g), Game = g, Port = Games.Port(g), Programs = Games.Programs(g) } : new SimProfile { Name = T("Desktop") };
-            Add(p, use: false);
-        }
-        p.Enabled = on;
-        if (on && p.Game is { } known && p.Programs.Count == 0) p.Programs = Games.Programs(known);
-        Logging.Log.Here.Info($"SimEffects: profile {p.Name} {(on ? "on" : "off")}");
-        if (!on && p == Active && settings.Profiles.FirstOrDefault(o => o.Enabled) is { } next) Use(next, $"{p.Name} switched off", play: false);
-        else if (!on && p == Active) Play(false, $"{p.Name} switched off");
-        Edited();
-    }
+    /// <summary>A new profile for <paramref name="game"/> (null: Desktop): the game's name, port and processes.</summary>
+    private static SimProfile New(Game? game) => game is { } g
+        ? new SimProfile { Name = Games.Title(g), Game = g, Port = Games.Port(g), Programs = Games.Programs(g) }
+        : new SimProfile { Name = T("Desktop") };
 
     public static void Remove(SimProfile p)
     {

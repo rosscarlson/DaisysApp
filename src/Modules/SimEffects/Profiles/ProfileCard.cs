@@ -7,10 +7,10 @@ using DaisysApp.Controllers;
 namespace DaisysApp.Applets.SimEffects.Profiles;
 
 /// <summary>
-/// A game's block on the Profiles tab (since 4.17.17; one Profile card for the profile in use before): its checkbox
-/// (the game's profile on or off), its name and Use, a line of what it's set to, then two parts that fold: Options
-/// ((since 4.17.18) Short Name, Version, UDP Port, Auto Start, Processes, Defaults) and Modules (which sub-modules start with it, as chips; their
-/// names on the fold's line). The Desktop block is the profile with no game.
+/// A game's block on the Profiles tab (since 4.17.17; one Profile card for the profile in use before): its name and
+/// Activate (Active on the one in use; since 4.17.20, a checkbox and Use before), a line of what it's set to, then two
+/// parts that fold: Options ((since 4.17.18) Short Name, Version, UDP Port, Auto Start, Processes) and Modules (which
+/// sub-modules start with it, as chips; their names on the fold's line). The Desktop block is the profile with no game.
 /// </summary>
 internal static class ProfileCard
 {
@@ -21,50 +21,40 @@ internal static class ProfileCard
     private static readonly HashSet<string> open = new();
     private const string Folded = "", Unfolded = "";
 
-    /// <summary>The block of <paramref name="game"/> (null: Desktop), with its profile (null: none yet).</summary>
-    public static Border Build(Game? game, SimProfile? p)
+    /// <summary>The block of <paramref name="game"/> (null: Desktop) and its profile.</summary>
+    public static Border Build(Game? game, SimProfile p)
     {
         string key = game?.ToString() ?? "Desktop";
         string title = game is { } g ? Games.Title(g) : T("Desktop");
-        bool on = p is { Enabled: true };
-        bool active = on && p == SimProfiles.Active;
+        bool active = p == SimProfiles.Active;
         var panel = new StackPanel();
 
-        var check = new CheckBox { IsChecked = on, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0),
-            ToolTip = game == null ? T("A profile for no game") : T("A profile for this game") };
-        AutomationProperties.SetName(check, title);
-        check.Checked += (_, _) => SimProfiles.SetEnabled(game, true);
-        check.Unchecked += (_, _) => SimProfiles.SetEnabled(game, false);
         var name = new TextBlock { Text = title, FontSize = 15, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis, Opacity = on ? 1 : 0.6 };
+            TextTrimming = TextTrimming.CharacterEllipsis };
         var head = new DockPanel { MinHeight = 30 };
+        // (since 4.17.20) Activate uses and plays it; the one in use says Active (its game starting, with Auto Start, does too)
+        var use = new Button { Content = active ? T("Active") : T("Activate"), Padding = new Thickness(10, 2, 10, 2), VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = active ? (SimProfiles.Playing ? T("Playing") : T("Stopped")) : T("Use and play this profile") };
+        AutomationProperties.SetName(use, active ? F("{0} active", title) : F("Activate {0}", title));
         if (active)
         {
-            var use = new TextBlock { Text = SimProfiles.Playing ? T("Playing") : T("In use"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
-            use.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
-            DockPanel.SetDock(use, Dock.Right);
-            head.Children.Add(use);
+            use.SetResourceReference(Control.BackgroundProperty, "AccentBrush");
+            use.SetResourceReference(Control.ForegroundProperty, "AccentForegroundBrush");
+            use.BorderThickness = new Thickness(0);
+            use.FontWeight = FontWeights.SemiBold;
+            use.Click += (_, _) => { if (!SimProfiles.Playing) SimProfiles.Play(true, "Active"); };
         }
-        else if (on)
-        {
-            var use = new Button { Content = T("Use"), Padding = new Thickness(10, 2, 10, 2), VerticalAlignment = VerticalAlignment.Center, ToolTip = T("Use and play this profile") };
-            AutomationProperties.SetName(use, F("Use {0}", title));
-            use.Click += (_, _) => SimProfiles.Use(p!, "picked");
-            DockPanel.SetDock(use, Dock.Right);
-            head.Children.Add(use);
-        }
-        head.Children.Add(check);
+        else use.Click += (_, _) => SimProfiles.Use(p, "activated");
+        DockPanel.SetDock(use, Dock.Right);
+        head.Children.Add(use);
         head.Children.Add(name);
         panel.Children.Add(head);
 
-        if (p != null && on)
-        {
-            panel.Children.Add(Ui.Note(Summary(p), 6));
-            panel.Children.Add(Fold(key + ":Options", T("Options"), null, () => Options(p)));
-            var modules = SimProfiles.Tools.Where(t => t.IsOn != null).ToList();
-            var ticked = modules.Where(t => SimProfiles.IsOn(p, t)).Select(t => t.Title).ToList();
-            panel.Children.Add(Fold(key + ":Modules", T("Modules"), ticked.Count == 0 ? T("None") : string.Join(", ", ticked), () => Modules(p, modules)));
-        }
+        panel.Children.Add(Ui.Note(Summary(p), 6));
+        panel.Children.Add(Fold(key + ":Options", T("Options"), null, () => Options(p)));
+        var modules = SimProfiles.Tools.Where(t => t.IsOn != null).ToList();
+        var ticked = modules.Where(t => SimProfiles.IsOn(p, t)).Select(t => t.Title).ToList();
+        panel.Children.Add(Fold(key + ":Modules", T("Modules"), ticked.Count == 0 ? T("None") : string.Join(", ", ticked), () => Modules(p, modules)));
 
         var card = Ui.Card(panel, new Thickness(0, 0, 12, 12));
         card.VerticalAlignment = VerticalAlignment.Top;
@@ -127,8 +117,8 @@ internal static class ProfileCard
         return s;
     }
 
-    /// <summary>(Since 4.17.18) Short Name, Version (Forza's), UDP Port (Forza's), Auto Start, Processes, and Defaults (the
-    /// game's port and processes).</summary>
+    /// <summary>(Since 4.17.18) Short Name, Version (Forza's), UDP Port (Forza's), Auto Start, Processes (since 4.17.20:
+    /// more than 3 scroll, the running ones drop down under the box; Defaults went).</summary>
     private static FrameworkElement Options(SimProfile p)
     {
         var panel = new StackPanel();
@@ -186,22 +176,7 @@ internal static class ProfileCard
 
         panel.Children.Add(new TextBlock { Text = T("Processes"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4),
             ToolTip = T("With Auto Start, one of these starting plays this profile") });
-        panel.Children.Add(Ui.ProgramList(p.Programs, SimProfiles.Edited, addName: T("Process to add")));
-
-        if (p.Game is { } g)
-        {
-            var defaults = DaisysApp.Shared.ConfirmButton.Make(T("Defaults"), () =>
-            {
-                p.Port = Games.Port(g);
-                p.Programs = Games.Programs(g);
-                SimProfiles.Edited();
-            });
-            defaults.Padding = new Thickness(10, 3, 10, 3);
-            defaults.Margin = new Thickness(0, 10, 0, 0);
-            defaults.HorizontalAlignment = HorizontalAlignment.Left;
-            defaults.ToolTip = T("The game's own port and processes");
-            panel.Children.Add(defaults);
-        }
+        panel.Children.Add(Ui.ProgramList(p.Programs, SimProfiles.Edited, addName: T("Process to add"), rows: 3, runningInBox: true));
         return panel;
     }
 

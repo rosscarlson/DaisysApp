@@ -2,6 +2,12 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.20 (SimEffects → Profiles: Activate / Active in place of the checkbox and Use; Processes scroll after 3,
+  the running ones drop down under the box; Defaults gone):** seen in DaisysDev: every block with Activate, Desktop
+  Active; Activate on Assetto Corsa (Active, playing, the edge moved); FH's 5 processes scrolling 3 tall; the box's
+  list of running programs, narrowed by typing ("dis": Discord.exe), and typed names added. To try: picking one from
+  the drop-down with the mouse and with ↓ and Enter, how the drop-down looks (Windows draws it apart from the
+  window), a game starting a profile that had been unticked in 4.17.17-19.
 - **4.17.19 (ForzaWheel doesn't freeze when the Fanatec base stops taking forces; SimEffects → Wheel's Fanatec writes
   capped and timed out):** built, not run (the user was gaming; the stall can't be made on purpose). From two hang
   dumps: the UI thread in ForzaWheel Stop → `ForceFeedback.Dispose` → `SendForceFeedbackCommand(StopAll)` waiting in

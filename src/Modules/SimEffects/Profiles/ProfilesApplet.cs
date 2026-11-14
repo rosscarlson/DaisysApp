@@ -56,7 +56,7 @@ public sealed class ProfilesApplet : IApplet
         {
             filling = true;
             box.ItemsSource = null;
-            box.ItemsSource = SimProfiles.All.Where(p => p.Enabled || p == SimProfiles.Active).ToList();
+            box.ItemsSource = SimProfiles.All.ToList();
             box.SelectedItem = SimProfiles.Active;
             filling = false;
         }
@@ -135,10 +135,9 @@ internal sealed class ProfilesView : UserControl
         }
         blocks.Children.Clear();
         var active = SimProfiles.Active;
-        SimProfile? For(Game? g) => active.Game == g && active.Enabled ? active
-            : SimProfiles.All.Where(p => p.Game == g).OrderByDescending(p => p.Enabled).FirstOrDefault();
         foreach (var g in Games.All.Cast<Game?>().Append(null))
-            blocks.Children.Add(ProfileCard.Build(g, For(g)));
+            if ((active.Game == g ? active : SimProfiles.All.FirstOrDefault(p => p.Game == g)) is { } p)
+                blocks.Children.Add(ProfileCard.Build(g, p));
         Place();
         page.Children.Add(blocks);
     }

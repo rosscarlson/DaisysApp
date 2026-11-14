@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.20**
+- **SimEffects → Profiles**: no checkbox on the blocks any more; every game always has its profile. **Activate** at
+  the top right of a block uses and plays it; the one in use says **Active** and has the blue edge. A game's own
+  processes starting (with its Auto Start on) makes its profile active as before, now for every game.
+- Processes: more than 3 scroll in a list 3 tall; clicking in the box drops down the running programs (typing
+  narrows them, a click or ↓ and Enter adds one) in place of **Add a running program…**. **Defaults** went.
+
 **4.17.19**
 - **Gaming → ForzaWheel**: the app no longer freezes when the wheel base stops taking force feedback (on the rig, a
   Fanatec base in Forza Horizon 4: the forces stuck where they were, hard right once, while steering still worked,

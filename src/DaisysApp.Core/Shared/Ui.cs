@@ -350,10 +350,18 @@ public static class Ui
     /// with ✕ to take it off, a box to type one (or several, by commas) with Add, and Add a running program…, which
     /// lists the programs with a window. <paramref name="changed"/> is called after the list changed (to save it).
     /// <paramref name="removeTip"/>: the ✕'s tooltip, "{0}" the program; <paramref name="none"/>: shown when it's empty.
-    /// (Since Core 0.55: four modules each had their own copy.)
+    /// (Since Core 0.55: four modules each had their own copy.) <paramref name="rows"/> (since 4.17.20): more lines than
+    /// that scroll; <paramref name="runningInBox"/>: the running programs drop down under the box while it has the focus
+    /// (typing narrows them), in place of Add a running program….
     /// </summary>
-    public static StackPanel ProgramList(List<string> list, Action changed, string? removeTip = null, string? none = null, string? addName = null)
+    public static StackPanel ProgramList(List<string> list, Action changed, string? removeTip, string? none, string? addName) =>
+        ProgramList(list, changed, removeTip, none, addName, 0);
+
+    /// <inheritdoc cref="ProgramList(List{string}, Action, string?, string?, string?)"/>
+    public static StackPanel ProgramList(List<string> list, Action changed, string? removeTip = null, string? none = null, string? addName = null,
+        int rows = 0, bool runningInBox = false)
     {
+        const double LineHeight = 30;
         var s = new StackPanel();
         var lines = new StackPanel();
         void Fill()
@@ -363,6 +371,7 @@ public static class Ui
             {
                 string name = program;
                 var line = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+                if (rows > 0) line.Height = LineHeight - 4;
                 var take = new Button { Content = "\uE711", Padding = new Thickness(6, 2, 6, 2), ToolTip = string.Format(removeTip ?? T("Take {0} off the list"), name) };
                 take.SetResourceReference(Control.FontFamilyProperty, "IconFont");
                 AutomationProperties.SetName(take, F("Remove {0}", name));
@@ -380,14 +389,17 @@ public static class Ui
             if (list.Count == 0 && none != null) lines.Children.Add(Secondary(none, wrap: true));
         }
         Fill();
-        s.Children.Add(lines);
+        if (rows > 0) s.Children.Add(new ScrollViewer { Content = lines, MaxHeight = rows * LineHeight, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        else s.Children.Add(lines);
 
         var addLine = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
         var typed = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(typed, addName ?? T("Game to add"));
         var add = new Button { Content = T("Add"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+        RunningDropDown? running = runningInBox ? new RunningDropDown(typed, list, n => { if (AddPrograms(list, [n])) { changed(); Fill(); } }) : null;
         void AddTyped()
         {
+            if (running?.Picked() is { } picked) { typed.Text = picked; }
             if (AddPrograms(list, typed.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))) { changed(); Fill(); }
             typed.Text = "";
         }
@@ -397,10 +409,78 @@ public static class Ui
         addLine.Children.Add(add);
         addLine.Children.Add(typed);
         s.Children.Add(addLine);
+        if (running != null) return s;
         var pick = new Button { Content = T("Add a running program…"), Margin = new Thickness(0, 6, 0, 0), Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left };
         pick.Click += (_, _) => ProgramMenu(pick, list, n => { if (AddPrograms(list, [n])) { changed(); Fill(); } });
         s.Children.Add(pick);
         return s;
+    }
+
+    /// <summary>(Since 4.17.20) The programs with a window, under a box while it has the focus: the ones whose name has
+    /// what's typed, without those in the list; a click (or ↓/↑ and Enter) picks one, Escape closes it.</summary>
+    private sealed class RunningDropDown
+    {
+        private readonly TextBox box;
+        private readonly List<string> list;
+        private readonly ListBox items = new() { Focusable = false, MaxHeight = 240, BorderThickness = new Thickness(1) };
+        private readonly Popup popup;
+        private SortedSet<string> names = new();
+
+        public RunningDropDown(TextBox box, List<string> list, Action<string> picked)
+        {
+            this.box = box;
+            this.list = list;
+            items.SetResourceReference(Control.BackgroundProperty, "PopupBrush");
+            items.SetResourceReference(Control.ForegroundProperty, "TextBrush");
+            items.SetResourceReference(Control.BorderBrushProperty, "ControlBorderBrush");
+            var itemStyle = new Style(typeof(ListBoxItem));
+            itemStyle.Setters.Add(new Setter(UIElement.FocusableProperty, false));
+            items.ItemContainerStyle = itemStyle;
+            AutomationProperties.SetName(items, T("Running programs"));
+            popup = new Popup { Child = items, PlacementTarget = box, Placement = PlacementMode.Bottom, StaysOpen = true, AllowsTransparency = false };
+            box.SizeChanged += (_, _) => items.MinWidth = box.ActualWidth;
+            items.PreviewMouseLeftButtonUp += (_, e) =>
+            {
+                if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(items, d) is ListBoxItem { Content: string n })
+                {
+                    popup.IsOpen = false;
+                    box.Text = "";
+                    picked(n);
+                    e.Handled = true;
+                }
+            };
+            box.GotKeyboardFocus += (_, _) => { names = RunningPrograms.Windowed(); Show(); };
+            box.LostKeyboardFocus += (_, _) => popup.IsOpen = false;
+            box.Unloaded += (_, _) => popup.IsOpen = false;
+            box.TextChanged += (_, _) => { if (box.IsKeyboardFocused) Show(); };
+            box.PreviewKeyDown += (_, e) =>
+            {
+                if (!popup.IsOpen || items.Items.Count == 0) return;
+                if (e.Key == System.Windows.Input.Key.Down) items.SelectedIndex = Math.Min(items.Items.Count - 1, items.SelectedIndex + 1);
+                else if (e.Key == System.Windows.Input.Key.Up) items.SelectedIndex = Math.Max(-1, items.SelectedIndex - 1);
+                else if (e.Key == System.Windows.Input.Key.Escape) popup.IsOpen = false;
+                else return;
+                if (items.SelectedItem != null) items.ScrollIntoView(items.SelectedItem);
+                e.Handled = true;
+            };
+        }
+
+        /// <summary>The one picked with the arrows, if the list is open (then it closes).</summary>
+        public string? Picked()
+        {
+            var n = popup.IsOpen ? items.SelectedItem as string : null;
+            popup.IsOpen = false;
+            return n;
+        }
+
+        private void Show()
+        {
+            string typed = box.Text.Trim();
+            var shown = names.Where(n => !list.Contains(n, StringComparer.OrdinalIgnoreCase) && (typed.Length == 0 || n.Contains(typed, StringComparison.OrdinalIgnoreCase))).ToList();
+            items.ItemsSource = shown;
+            items.SelectedIndex = -1;
+            popup.IsOpen = shown.Count > 0;
+        }
     }
 
     /// <summary>Adds programs to a list ("game" → "game.exe", a path → its file name), skipping ones it has; true if any were new.</summary>

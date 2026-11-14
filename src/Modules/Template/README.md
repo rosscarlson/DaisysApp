@@ -167,7 +167,7 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   1 ms timer).
 - **Watching for a game**: `RunningPrograms.Watch(changed)` (told only when a program starts or ends), `GameSwitch`
   for "on when the game starts, off only if the game switched it on", `Ui.ProgramList(list, save)` for the list to
-  edit; devices coming and going: `DeviceChanges.OnSettled(...)`.
+  edit (`rows: 3` scrolls after 3, `runningInBox: true` drops the running programs down under its box); devices coming and going: `DeviceChanges.OnSettled(...)`.
 - **Video settings** (since 4.16.0): `VideoProfiles.All` / `Find(name)` (`DaisysApp.Shared.Video`), the app's one
   list of video profiles (codec, height, bit rates, quality, keyframes, audio rate), edited in Video → Recording's
   settings; `Changed` when it's saved. Plex → Scanner transcodes with them.

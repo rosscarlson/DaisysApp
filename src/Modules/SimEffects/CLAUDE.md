@@ -2,24 +2,25 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
-## Latest: 4.17.17, Profiles as a block per game (released 2026-11-14)
+## Latest: 4.17.20, Profiles: Activate (released 2026-11-14)
 
-- **Asked:** replace the Profile and Auto Start Modules cards with a block per supported game, 3 or 4 across; a
-  checkbox at the top left switches the game on; its options in a part that folds; its modules picked compactly;
-  each game's own defaults (port, programs); publish.
-- **Done** (`Profiles/ProfileCard.cs` rewritten, `ProfilesApplet.cs` `ProfilesView`, `SimProfiles.cs`,
-  `GameSwitcher.cs`, `GameProfile.cs`, `Telemetry/Telemetry.cs`, `lang/en.json`, both READMEs): `ProfileCard.Build(game,
-  profile)` per `Games.All` + Desktop (null game). A game's block = its first profile (the active one if it's that
-  game's). `SimProfile.Enabled` (default true; off: not in `Picker`, skipped by `GameSwitcher`).
-  `SimProfiles.SetEnabled(game, on)`: makes one with `Add(p, use: false)`; unticking the active one = `Use(first on,
-  play: false)`. Options and Modules fold (`Fold`, state in static `open`); Modules are `Ui.Chip`s. Units moved above
-  the grid. Columns: 3, or 4 for 4/7/8 blocks, fewer under 300 px each. Cards `VerticalAlignment.Top` (an unfolded
-  block mustn't stretch its row).
-- **Decisions:** one profile per game, so Edit/New/Delete/rename went (old extra profiles stay in the drop-down);
-  Desktop kept as a block so its tools (Arduino, Notify) don't vanish; defaults in one place, `Games.Port`/`Programs`
-  (FH 8001 + fm4.exe/azimuth.exe, as `Defaults.json`; existing profiles untouched, **Defaults** puts them back).
-- **Tested** in DaisysDev with a copy of the real `SimProfiles.json`: grid, folds, ticking AC, unticking FH in use
-  and ticking it again. Not tried: Use, a chip on the active profile, Defaults, narrow window, Auto Start (UNTESTED).
+- **Asked:** no checkbox on the blocks: Use becomes Activate / Active (the blue edge); a game's processes make its
+  profile active too; Processes scroll after 3; clicking in the box shows the running programs (typing narrows),
+  in place of Add a running program…; Defaults gone; publish.
+- **Done:** `SimProfile.Enabled` and `SetEnabled` removed (old files' `Enabled` ignored); `SimProfiles.Load` makes
+  any game's or Desktop's profile that's missing (`New(game)`, Auto Start Yes with programs). `ProfileCard.Build(game,
+  p)`: p never null; Active is an accent Button (plays if stopped). Core `Ui.ProgramList(..., rows, runningInBox)`
+  (opt-in; `RunningDropDown`: a Popup ListBox, not focusable, picked on mouse-up; ↓/↑ Enter, Esc).
+- **Tested** in DaisysDev via UIA (`%TEMP%\p4120\drop.ps1`: focus the box, list the "Running programs" popup, type,
+  Add). PrintWindow doesn't show the popup.
+
+## 4.17.17, Profiles as a block per game
+
+- `ProfileCard.Build(game, profile)` per `Games.All` + Desktop (null game); a game's block = its first profile (the
+  active one if it's that game's). Options and Modules fold (`Fold`, state in static `open`); Modules are `Ui.Chip`s.
+  Columns: 3, or 4 for 4/7/8 blocks, fewer under 300 px each. Cards `VerticalAlignment.Top` (an unfolded block
+  mustn't stretch its row). One profile per game (Edit/New/Delete/rename went; old extra profiles stay in the
+  drop-down); Desktop kept so its tools (Arduino, Notify) don't vanish; defaults in `Games.Port`/`Programs`.
 - UIA shot script: `%TEMP%\prof4117\shot.ps1 -path SimEffects,Profiles,<names…>` (selects/invokes/toggles by Name,
   PrintWindow PNG). The Write/Edit tools turn `"\uE70D"` into the literal glyph: harmless.
 
