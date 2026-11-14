@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.12**
+- **SimEffects → Overlays**: the boxes stay after a profile plays, stops or changes (all but Dash went, and Dash's tick
+  showed off: Inputs' Read From was put in its new box while still in the last one).
+
 **4.17.11**
 - **SimEffects → Analysis**: a race's last lap counts as a whole lap (it showed "Lap 3 (part)": the log stops as the
   line's crossed at the finish) when the game recorded it, or (someone else's) when it's as long as a whole lap.

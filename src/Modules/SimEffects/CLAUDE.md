@@ -77,6 +77,9 @@ Read only when working in this folder. Current state and lessons; history is in 
   the contact tip's thresholds (crash = hard hit, walls mostly: the user's "impacts = walls" guess reversed, as they
   asked). That race: 5 impacts, 2 crashes on an off-road track (jumps may count as jolts; not changed). Seen in
   DaisysDev (`%TEMP%\share417\pickname.ps1` picks the title-row picker by name).
+- **4.17.12 (Overlays' boxes after a profile plays):** `Render` (every profile change) threw in `InputsOptions`:
+  the `source` panel is a field, still in the last Inputs box; now taken out first. Lesson: a field-held element put
+  in a box that's rebuilt must leave its old parent.
 - **4.17.9 (Overlays as 8 boxes; Dash speedometer and Digital):** `Overlays` (the old "made" list) = switched on
   (`IsOn`/`Enable`); `IsTicked` = shown (eye, shortcut; a shortcut of one off only notifies). Boxes' pictures
   (`OverlayPreviews`) are static, made-up readings; the reader runs for the tab only if Inputs or Dash is on.

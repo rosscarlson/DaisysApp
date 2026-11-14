@@ -250,7 +250,8 @@ internal sealed class InputOverlayView : UserControl
         unit.HorizontalAlignment = HorizontalAlignment.Left;
         s.Children.Add(SimUi.Field(T("Units"), unit, 100));
 
-        // where the inputs come from
+        // where the inputs come from (out of the last box drawn: a panel has one parent)
+        (source.Parent as Panel)?.Children.Remove(source);
         s.Children.Add(source);
         RenderSource();
         return s;

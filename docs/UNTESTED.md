@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.12 (Overlays' boxes after a profile plays):** SimEffects → Overlays, play and stop a profile: all 8 boxes
+  stay, ticked as they were. Seen in a test copy (Stop, Play: 8 boxes each time).
 - **4.17.11 (Analysis: last lap whole, lap counts, Import in S1/S2, scores in four tiles, brake / throttle
   consistency, S1 and S2 scores side by side, |< and >|):** seen in DaisysDev with the user's race list: the Horizon
   Mexico Circuit race 11/12 10:16 PM has Lap 3 1:02.240 (no "part"), "(3/3)" in the lists, Consistency 64 / 58;
