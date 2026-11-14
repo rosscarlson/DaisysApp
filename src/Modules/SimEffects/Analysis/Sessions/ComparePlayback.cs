@@ -253,14 +253,14 @@ internal sealed class Playback
 }
 
 /// <summary>
-/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: rewind 2× (since 4.10.10 also 4× and 8×), slow
-/// motion back ½×, play/pause, slow motion ½×, fast forward 2× (4×, 8×), and the clock.
+/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: (since 4.17.10) to the start, rewind 2× (since
+/// 4.10.10 also 4×; 8× until 4.17.8), slow motion back ½×, play/pause, slow motion ½×, fast forward 2× (4×), (since
+/// 4.17.10) the next lap (greyed out with none after the cursor), and the clock.
 /// </summary>
 internal sealed class PlaybackBar : DockPanel
 {
     private static readonly (double Rate, string Glyph, string Speed, bool Mirror, string Name)[] Rates =
     {
-        (-8, "", "8×", false, "Rewind (8×)"),
         (-4, "", "4×", false, "Rewind (4×)"),
         (-2, "", "2×", false, "Rewind (2×)"),
         (-0.5, "", "½×", true, "Slow motion back (½×)"),
@@ -268,12 +268,12 @@ internal sealed class PlaybackBar : DockPanel
         (0.5, "", "½×", false, "Slow motion (½×)"),
         (2, "", "2×", false, "Fast forward (2×)"),
         (4, "", "4×", false, "Fast forward (4×)"),
-        (8, "", "8×", false, "Fast forward (8×)"),
     };
 
     private readonly Playback playback;
     private readonly Dictionary<double, (Button Button, TextBlock Glyph)> buttons = new();
     private Button loop = null!;
+    private readonly Button next;
     private readonly TextBlock clock = new() { VerticalAlignment = VerticalAlignment.Center, MinWidth = 120, Margin = new Thickness(10, 0, 0, 0) };
 
     public PlaybackBar(Playback playback)
@@ -281,6 +281,7 @@ internal sealed class PlaybackBar : DockPanel
         this.playback = playback;
         Margin = new Thickness(52, 6, 8, 0);
         var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        row.Children.Add(Jump("", T("To the start"), () => { if (playback.Run is { } r) playback.Seek(r.From); }));
         foreach (var (r, glyph, speed, mirror, name) in Rates)
         {
             // (since 4.10.15) the section set from a chart's menu, played round; greyed out until both its ends are set
@@ -307,6 +308,9 @@ internal sealed class PlaybackBar : DockPanel
             buttons[r] = (b, g);
             row.Children.Add(b);
         }
+        next = Jump("", T("Next lap"), () => { if (NextLap() is var n && !double.IsNaN(n)) playback.Seek(n); });
+        ToolTipService.SetShowOnDisabled(next, true);
+        row.Children.Add(next);
         clock.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         SetDock(clock, Dock.Right);
         Children.Add(clock);
@@ -317,6 +321,28 @@ internal sealed class PlaybackBar : DockPanel
         playback.Changed += ShowState;
         playback.Moved += (_, _, _) => ShowClock();
         ShowState();
+    }
+
+    /// <summary>(since 4.17.10) A button that moves the cursor: an icon.</summary>
+    private static Button Jump(string glyph, string name, Action click)
+    {
+        var g = new TextBlock { Text = glyph, FontSize = 16, VerticalAlignment = VerticalAlignment.Center };
+        g.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
+        var b = new Button { Content = g, Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(2, 0, 2, 0), MinWidth = 44, ToolTip = name };
+        System.Windows.Automation.AutomationProperties.SetName(b, name);
+        b.Click += (_, _) => click();
+        return b;
+    }
+
+    /// <summary>(since 4.17.10) Where the next lap after the cursor starts (a sample; NaN: none in the run).</summary>
+    private double NextLap()
+    {
+        if (playback.Run is not { } r) return double.NaN;
+        double at = double.IsNaN(playback.Position) ? r.From : playback.Position;
+        double found = double.NaN;
+        foreach (var lap in r.Data.Laps)
+            if (lap.Start > at + 1 && lap.Start > r.From && lap.Start < r.To && !(lap.Start >= found)) found = lap.Start;
+        return found;
     }
 
     private void ShowState()
@@ -344,6 +370,7 @@ internal sealed class PlaybackBar : DockPanel
 
     private void ShowClock()
     {
+        next.IsEnabled = !double.IsNaN(NextLap());
         var run = playback.Run;
         if (run == null) { clock.Text = ""; return; }
         double at = double.IsNaN(playback.Position) ? 0 : run.TimeAt(playback.Position);

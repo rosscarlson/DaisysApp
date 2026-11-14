@@ -102,7 +102,7 @@ internal sealed class ThrottleMove
 /// zones (how fast and firm the application is, a spike and back off, how steady the hold, how gradual and clean the
 /// release, trail braking into the turn, overlap with the throttle, coasting after), throttle applications and
 /// releases (progressive or stabbed, hesitations), steering corrections, the time split (full throttle, part throttle,
-/// braking, coasting, both), consistency between zones, and tips from all that. Scores are 0–100.
+/// braking, coasting, both), consistency lap to lap, and tips from all that. Scores are 0–100.
 /// </summary>
 internal sealed class PedalAnalysis
 {
@@ -149,7 +149,10 @@ internal sealed class PedalAnalysis
     public double BrakeReleaseScore { get; private set; } = double.NaN;
     public double ThrottleApplyScore { get; private set; } = double.NaN;
     public double ThrottleReleaseScore { get; private set; } = double.NaN;
-    public double ConsistencyScore { get; private set; } = double.NaN;
+    /// <summary>(since 4.17.10) How alike the brake points and the throttle applications are lap to lap (the laps' times
+    /// in 4.17.8, one score).</summary>
+    public double BrakeConsistency { get; private set; } = double.NaN;
+    public double ThrottleConsistency { get; private set; } = double.NaN;
     public double OverallScore { get; private set; } = double.NaN;
 
     public double SteerCorrectionsPerMin { get; private set; }
@@ -476,15 +479,13 @@ internal sealed class PedalAnalysis
         // (since 4.17.8 no steering score: off-road, or holding a car on the limit, takes many small corrections, and a
         // quick lap scored 0; the corrections are still counted)
 
-        // (since 4.17.8) consistency is how alike the laps' times are (a standing start's first lap left out), 2.5% apart
-        // on average scoring 0; until then it was how alike the brake zones were, which differ corner to corner anyway
+        // (since 4.17.10) consistency: where the brake goes on and the throttle's applied, lap to lap (each corner's
+        // spread); 4.17.8 how alike the laps' times were, before that how alike the brake zones were
         var laps = Data.Laps.Where(l => l.Complete).ToList();
-        if (laps.Count > 0 && Data.HasSpeed && laps[0].Start < Data.Count && Data.Speed[laps[0].Start] < 5) laps.RemoveAt(0);
         if (laps.Count >= 2)
         {
-            double mean = laps.Average(l => l.Seconds);
-            double cv = Math.Sqrt(laps.Average(l => (l.Seconds - mean) * (l.Seconds - mean))) / mean;
-            ConsistencyScore = 100 * Math.Clamp(1 - cv / 0.025, 0, 1);
+            BrakeConsistency = Consistency(laps, big.Select(z => z.Start), 20);
+            ThrottleConsistency = Consistency(laps, ups.Where(m => m.To - m.From >= 0.5).Select(m => m.Start), 25);
         }
 
         double sum = 0, weights = 0;
@@ -494,6 +495,35 @@ internal sealed class PedalAnalysis
         Add(ThrottleApplyScore, 1);
         Add(ThrottleReleaseScore, 0.5);
         if (weights > 0) OverallScore = sum / weights;
+    }
+
+    /// <summary>(since 4.17.10) How alike moments (brake points…) are lap to lap: each lap's matched to the lap with the
+    /// most by place (within 40 m), each group's spread (metres from its middle) averaged; <paramref name="zero"/> m
+    /// scores 0. Places are the car's, else the distance into the lap.</summary>
+    private double Consistency(List<Lap> laps, IEnumerable<int> moments, double zero)
+    {
+        var at = moments.ToList();
+        var perLap = laps.Select(l => at.Where(k => k >= l.Start && k <= l.End).Select(k => PlaceIn(l, k)).OfType<(double X, double Z)>().ToList())
+            .Where(p => p.Count > 0).ToList();
+        if (perLap.Count < 2) return double.NaN;
+        static double Apart((double X, double Z) a, (double X, double Z) b) => Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Z - b.Z) * (a.Z - b.Z));
+        var spreads = new List<double>();
+        foreach (var r in perLap.MaxBy(p => p.Count)!)
+        {
+            var group = perLap.Select(p => p.MinBy(q => Apart(q, r))).Where(q => Apart(q, r) <= 40).ToList();
+            if (group.Count < 2) continue;
+            (double X, double Z) middle = (group.Average(q => q.X), group.Average(q => q.Z));
+            spreads.Add(Math.Sqrt(group.Average(q => Apart(q, middle) * Apart(q, middle))));
+        }
+        return spreads.Count == 0 ? double.NaN : 100 * Math.Clamp(1 - spreads.Average() / zero, 0, 1);
+    }
+
+    private (double X, double Z)? PlaceIn(Lap lap, int k)
+    {
+        var d = Data;
+        if (k < d.X.Length && !double.IsNaN(d.X[k]) && !double.IsNaN(d.Z[k]) && (d.X[k] != 0 || d.Z[k] != 0)) return (d.X[k], d.Z[k]);
+        if (k < d.Distance.Length && !double.IsNaN(d.Distance[k]) && !double.IsNaN(d.Distance[lap.Start])) return (d.Distance[k] - d.Distance[lap.Start], 0);
+        return null;
     }
 
     private static double Weighted<TItem>(List<TItem> items, Func<TItem, double> score, Func<TItem, double> weight)

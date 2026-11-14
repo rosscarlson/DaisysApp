@@ -32,8 +32,8 @@ internal sealed class SessionsView
     /// <summary>(since 4.17.8) The Session card's title: the track and the lap's time (the race's line before, under
     /// the Session box's title; now its tooltip).</summary>
     private TextBlock about = new();
-    private readonly UniformGrid scores = new() { Rows = 1 };
-    private readonly Grid split = new() { Height = 18 };
+    // (since 4.17.10 Session 1's, Session 2's or both side by side, each its tiles with its time split under them)
+    private readonly Grid scores = new();
     // (since 4.17.8 not shown; kept to show again)
     private readonly WrapPanel numbers = new() { Margin = new Thickness(0, 8, 0, 0) };
     private UIElement[] headButtons = Array.Empty<UIElement>();
@@ -110,13 +110,21 @@ internal sealed class SessionsView
         /// <summary>Where it starts (read once, for a race with no track).</summary>
         public (double X, double Z)? Start { get; set; }
         public bool StartRead { get; set; }
-        public override string ToString() => Title;
+        /// <summary>(since 4.17.10) The laps the game recorded (its number, 1 the first, and time).</summary>
+        public IReadOnlyDictionary<int, float>? LapTimes { get; init; }
+        /// <summary>(since 4.17.10) Its fastest lap's number and how many laps, " (2/3)"; "" for one lap.</summary>
+        public string LapsTag { get; init; } = "";
+        /// <summary>(since 4.17.10) Its line in the drop-downs: the title and the laps.</summary>
+        public string Line => Title + LapsTag;
+        public override string ToString() => Line;
     }
 
-    /// <summary>(since 4.13.0) Session 2's line for no session: None, or no session to pick. As an <see cref="Item"/> to the boxes' template.</summary>
-    private sealed record Blank(string Title)
+    /// <summary>(since 4.13.0) Session 2's line for no session: None, or no session to pick; (since 4.17.10) Import at the
+    /// bottom of Session 1's and 2's. As an <see cref="Item"/> to the boxes' template.</summary>
+    private sealed record Blank(string Title, bool Import = false)
     {
         public bool HasVideo => false;
+        public string Line => Title;
         public override string ToString() => Title;
     }
 
@@ -190,13 +198,17 @@ internal sealed class SessionsView
             var best = g.Laps.Count > 0 ? g.Laps.Min(l => l.Time) : race?.Time ?? 0;
             // (an incomplete race's time is how long it ran, not a result)
             if (unfinished.ContainsKey(g.Key) && g.Laps.Count == 0) best = 0;
+            int laps = Math.Max(g.Laps.Count, race?.Laps ?? 0);
+            var fastest = g.Laps.Where(l => l.Lap > 0).MinBy(l => l.Time);
             mine.Add(new Item
             {
                 File = file, Key = g.Key, Started = started, Track = track,
                 Game = game, TrackName = names.TrackName(track), CarName = names.CarName(game, car),
                 ClassName = cls > 0 && Blocks.ClassName(cls, game) is { Length: > 0 } cn && cn != "?" ? cn : "",
-                Laps = Math.Max(g.Laps.Count, race?.Laps ?? 0), Best = best, Incomplete = unfinished.ContainsKey(g.Key),
+                Laps = laps, Best = best, Incomplete = unfinished.ContainsKey(g.Key),
                 HasVideo = VideoThere(g.Key),
+                LapTimes = g.Laps.Where(l => l.Lap > 0).GroupBy(l => l.Lap).ToDictionary(l => l.Key, l => l.First().Time),
+                LapsTag = laps > 1 && fastest != null ? $" ({fastest.Lap}/{laps})" : "",
                 Title = $"{names.TrackName(track)} · {names.CarName(game, car)} · {When(started)}" + (best > 0 ? " · " + Blocks.LapTime(best) : "")
                     + (unfinished.ContainsKey(g.Key) ? " · " + T("INCOMPLETE") : ""),
             });
@@ -225,7 +237,9 @@ internal sealed class SessionsView
         sessions.ItemsSource = items;
         var pick = items.FirstOrDefault(i => i.Key.Equals(keep, StringComparison.OrdinalIgnoreCase)) ?? items.FirstOrDefault(i => !i.Imported);
         sessions.SelectedItem = pick;
-        thisSession.ItemsSource = items;
+        // (since 4.17.10 Session 1's by name, the track first, then Import; the title row's by date)
+        thisSession.ItemsSource = items.OrderBy(i => i.Imported).ThenBy(i => i.Imported ? i.Title : i.TrackName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(i => i.CarName, StringComparer.CurrentCultureIgnoreCase).ThenByDescending(i => i.Started).Cast<object>().Append(new Blank(T("Import…"), true)).ToList();
         thisSession.SelectedItem = items.FirstOrDefault(i => Same(i, mineItem)) ?? pick;
         if (thisSession.SelectedItem is Item kept && Same(kept, mineItem)) mineItem = kept;
         filling = false;
@@ -253,14 +267,19 @@ internal sealed class SessionsView
          }.Where(t => t.Length > 0)));
 
     /// <summary>(since 4.17.0) A session downloaded from Daisy's Server (its key, "Imported\file"): listed, then put in
-    /// Compare's Session 2 (Session 1 when there's none).</summary>
-    internal async Task CompareDownloaded(string key)
+    /// Compare's Session 2 (Session 1 when there's none; since 4.17.10 <paramref name="slot"/> 1: Session 1).</summary>
+    internal async Task CompareDownloaded(string key, int slot = 2)
     {
         Refresh();
         if (items.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is not { } item) return;
-        if (mine != null) await PickOther(item);
+        if (mine != null && slot == 2) await PickOther(item);
         else Load(item);
     }
+
+    /// <summary>(since 4.17.10) Session 1's or 2's Import: Share Session, its list searched for Session 1's track, what's
+    /// picked there (or imported from a file) going into that slot.</summary>
+    private void ImportInto(int slot) =>
+        ShareWindow.Show(Host, this, slot, mineItem is { Imported: false } m && m.TrackName.Length > 0 ? m.TrackName : null);
 
     /// <summary>(since 4.12.0) The sessions listed: the races' logs, newest first, then the imported ones.</summary>
     public IReadOnlyList<Item> Items => items;
@@ -345,7 +364,7 @@ internal sealed class SessionsView
         about.Text = F("Session: {0}", T("Analysing…"));
         PedalAnalysis? a = null;
         string? problem = null;
-        try { a = await Load(item.File); }
+        try { a = await Analyse(item); }
         catch (Exception ex) { problem = ex.Message; }
         if (cancel.IsCancellationRequested) return;
         opening = null;
@@ -355,13 +374,14 @@ internal sealed class SessionsView
     }
 
     /// <summary>A session analysed, kept while its file is unchanged (the compare picks it again).</summary>
-    private async Task<PedalAnalysis> Load(FileInfo file)
+    private async Task<PedalAnalysis> Analyse(Item item)
     {
+        var file = item.File;
         file.Refresh();
         string key = file.FullName;
         bool leftFoot = applet.Settings.LeftFootBraking;
         if (loaded.TryGetValue(key, out var a) && a.Size == file.Length && a.LeftFoot == leftFoot) return a;
-        a = await Task.Run(() => new PedalAnalysis(SessionData.Load(file.FullName), leftFoot) { Size = file.Length });
+        a = await Task.Run(() => new PedalAnalysis(SessionData.Load(file.FullName, item.LapTimes), leftFoot) { Size = file.Length });
         if (loaded.Count > 6) loaded.Clear();
         loaded[key] = a;
         return a;
@@ -383,8 +403,7 @@ internal sealed class SessionsView
     private void Build()
     {
         System.Windows.Automation.AutomationProperties.SetName(sessions, T("Session"));
-        sessions.ToolTip = T("Session");
-        sessions.ItemTemplate = SessionTemplate();
+        SessionBox(sessions);
         sessions.SelectionChanged += (_, _) => { if (!filling && sessions.SelectedItem is Item i) { wantLap = null; Pick(i); } };
         // (since 4.10.12) the session picked deleted, with its race video
         var delete = IconButton("", T("Delete this session and its video"));
@@ -598,11 +617,8 @@ internal sealed class SessionsView
     {
         analysis = a;
         friction.Analysis = a;
-        scores.Children.Clear();
         numbers.Children.Clear();
         tips.Children.Clear();
-        split.Children.Clear();
-        split.ColumnDefinitions.Clear();
         ShowOverlays();
         UseThis(current, a, wantLap);
         wantLap = null;
@@ -624,42 +640,6 @@ internal sealed class SessionsView
         parts.Add(P(ups, "{0} throttle application", "{0} throttle applications"));
         about.ToolTip = string.Join(" · ", parts);
         ShowTitle();
-
-        Tile(T("Overall"), a.OverallScore, T("The scores together, the brake release counting most"));
-        Tile(T("Brake application"), a.BrakeApplyScore, T("Firm and in one movement"));
-        Tile(T("Brake release"), a.BrakeReleaseScore, T("Gradual and in one movement"));
-        Tile(T("Throttle application"), a.ThrottleApplyScore, T("Progressive and in one movement"));
-        Tile(T("Throttle release"), a.ThrottleReleaseScore, T("Clean and in one movement"));
-        // (since 4.17.8 no Steering; Consistency the laps' times)
-        Tile(T("Consistency"), a.ConsistencyScore, T("How alike the laps' times are (two laps or more)"));
-        // (since 4.17.8) contact: Crashes (the hard hits, walls mostly) orange at 1, red from 2; Impacts (cars, mostly)
-        // orange 1-3, red from 4, as the contact tip
-        if (a.Data.HasG || a.Data.HasSpeed)
-        {
-            int crashes = a.Incidents.Count(x => x.Crash), impacts = a.Incidents.Count - crashes;
-            Count(T("Impacts"), impacts, 1, 4, T("Lighter hits: other cars, mostly"));
-            Count(T("Crashes"), crashes, 1, 2, F("Hits of {0:0.0} g or more: walls, mostly", Incident.CrashG));
-        }
-
-        void Part(double pct, Color colour, string name)
-        {
-            if (pct <= 0) return;
-            split.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(pct, GridUnitType.Star) });
-            // (since 4.17.8 the name and share on the colour; a legend under it before)
-            var label = new TextBlock
-            {
-                Text = F("{0} {1:0}%", name, pct), FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White,
-                TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0, 3, 0),
-            };
-            var r = new Border { Background = PedalColours.Frozen(colour), ToolTip = F("{0}: {1:0.0}%", name, pct), Child = label };
-            Grid.SetColumn(r, split.ColumnDefinitions.Count - 1);
-            split.Children.Add(r);
-        }
-        Part(a.FullThrottlePct, PedalColours.Throttle, T("Full throttle"));
-        Part(a.PartThrottlePct, Color.FromRgb(0x2A, 0x8A, 0x4E), T("Part throttle"));
-        Part(a.BrakingPct, PedalColours.Brake, T("Braking"));
-        Part(a.OverlapPct, PedalColours.Warning, T("Both"));
-        Part(a.CoastPct, Color.FromRgb(0x80, 0x80, 0x80), T("Coasting"));
 
         var firm = a.Brakes.Where(z => z.Peak >= 0.15).ToList();
         if (firm.Count > 0)
@@ -740,28 +720,140 @@ internal sealed class SessionsView
         return row;
     }
 
-    private void Tile(string name, double score, string tip) =>
-        Tile(name, double.IsNaN(score) ? "–" : score.ToString("0"), double.IsNaN(score) ? null : score >= 85 ? PedalColours.Throttle : score >= 65 ? PedalColours.Warning : PedalColours.Brake, tip);
-
-    /// <summary>(since 4.17.8) A count's tile: green at none, orange from <paramref name="orange"/>, red from <paramref name="red"/>.</summary>
-    private void Count(string name, int count, int orange, int red, string tip) =>
-        Tile(name, count.ToString(), count >= red ? PedalColours.Brake : count >= orange ? PedalColours.Warning : PedalColours.Throttle, tip);
-
-    /// <summary>A score's tile (since 4.17.8 as high as Compare's two rows, the tiles sharing the width between them).</summary>
-    private void Tile(string name, string text, Color? colour, string tip)
+    /// <summary>(since 4.17.10) The scores: Session 1's; with a Session 2 (another session) both side by side, or only
+    /// the one highlighted (S1 or S2 clicked).</summary>
+    private void ShowScores()
     {
-        var b = new Border { Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 6, 6), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1), ToolTip = name + ": " + tip };
+        scores.Children.Clear();
+        scores.ColumnDefinitions.Clear();
+        var two = otherSession.SelectedItem is Item o && !Same(o, mineItem) && lastB != null ? other : null;
+        var shown = analysis == null ? Array.Empty<(PedalAnalysis, int)>()
+            : two == null || compareChart.HighlightRun == 1 ? new[] { (analysis, 1) }
+            : compareChart.HighlightRun == 2 ? new[] { (two, 2) }
+            : new[] { (analysis, 1), (two, 2) };
+        foreach (var (a, slot) in shown)
+        {
+            if (scores.ColumnDefinitions.Count > 0) scores.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+            scores.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var group = ScoreGroup(a, shown.Length > 1 ? slot : 0);
+            Grid.SetColumn(group, scores.ColumnDefinitions.Count - 1);
+            scores.Children.Add(group);
+        }
+    }
+
+    /// <summary>A number in a tile and its colour (null: the text's).</summary>
+    private sealed record Num(string Text, Color? Colour);
+
+    private static Num Score(double score) =>
+        new(double.IsNaN(score) ? "–" : score.ToString("0"), double.IsNaN(score) ? null : score >= 85 ? PedalColours.Throttle : score >= 65 ? PedalColours.Warning : PedalColours.Brake);
+
+    /// <summary>(since 4.17.8) A count: green at none, orange from <paramref name="orange"/>, red from <paramref name="red"/>.</summary>
+    private static Num Counted(int count, int orange, int red) =>
+        new(count.ToString(), count >= red ? PedalColours.Brake : count >= orange ? PedalColours.Warning : PedalColours.Throttle);
+
+    /// <summary>(since 4.17.10) A session's tiles (Overall and Consistency in one, Brake, Throttle, Impacts / Crashes; a
+    /// tile a score until 4.17.8) with its time split under them; S1 or S2 before them when both are shown.</summary>
+    private static FrameworkElement ScoreGroup(PedalAnalysis a, int slot)
+    {
+        var tiles = new Grid();
+        bool both = slot > 0;
+        Tile(tiles, both, (T("Overall"), new[] { Score(a.OverallScore) }, T("The scores together, the brake release counting most")),
+            (T("Consistency"), new[] { Score(a.BrakeConsistency), Score(a.ThrottleConsistency) }, T("Brake / throttle: how alike the brake points and throttle applications are lap to lap (two laps or more)")));
+        Tile(tiles, both, (T("Brake"), new[] { Score(a.BrakeApplyScore), Score(a.BrakeReleaseScore) }, T("Application / release: firm, then gradual, each in one movement")));
+        Tile(tiles, both, (T("Throttle"), new[] { Score(a.ThrottleApplyScore), Score(a.ThrottleReleaseScore) }, T("Application / release: progressive, then clean, each in one movement")));
+        // (since 4.17.8) contact: Impacts (lighter hits, cars mostly) orange 1-3, red from 4; Crashes (the hard hits,
+        // walls mostly) orange at 1, red from 2, as the contact tip
+        if (a.Data.HasG || a.Data.HasSpeed)
+        {
+            int crashes = a.Incidents.Count(x => x.Crash), impacts = a.Incidents.Count - crashes;
+            Tile(tiles, both, (T("Impacts / Crashes"), new[] { Counted(impacts, 1, 4), Counted(crashes, 1, 2) },
+                F("Lighter hits (other cars, mostly) / hits of {0:0.0} g or more (walls, mostly)", Incident.CrashG)));
+        }
+
+        var split = new Grid { Height = 18, Margin = new Thickness(0, 0, 6, 6) };
+        void Part(double pct, Color colour, string name)
+        {
+            if (pct <= 0) return;
+            split.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(pct, GridUnitType.Star) });
+            // (since 4.17.8 the name and share on the colour; a legend under it before)
+            var label = new TextBlock
+            {
+                Text = F("{0} {1:0}%", name, pct), FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White,
+                TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0, 3, 0),
+            };
+            var r = new Border { Background = PedalColours.Frozen(colour), ToolTip = F("{0}: {1:0.0}%", name, pct), Child = label };
+            Grid.SetColumn(r, split.ColumnDefinitions.Count - 1);
+            split.Children.Add(r);
+        }
+        Part(a.FullThrottlePct, PedalColours.Throttle, T("Full throttle"));
+        Part(a.PartThrottlePct, Color.FromRgb(0x2A, 0x8A, 0x4E), T("Part throttle"));
+        Part(a.BrakingPct, PedalColours.Brake, T("Braking"));
+        Part(a.OverlapPct, PedalColours.Warning, T("Both"));
+        Part(a.CoastPct, Color.FromRgb(0x80, 0x80, 0x80), T("Coasting"));
+
+        var group = new DockPanel();
+        DockPanel.SetDock(split, Dock.Bottom);
+        group.Children.Add(split);
+        if (both)
+        {
+            var tag = new TextBlock { Text = slot == 1 ? T("S1") : T("S2"), FontWeight = FontWeights.SemiBold, FontSize = 11, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 6) };
+            tag.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+            DockPanel.SetDock(tag, Dock.Left);
+            group.Children.Add(tag);
+        }
+        group.Children.Add(tiles);
+        return group;
+    }
+
+    /// <summary>A tile (since 4.17.8 as high as Compare's two rows, the tiles sharing the width between them): its numbers
+    /// (since 4.17.10 one or two, "/" between them, each its colour) over its name; since 4.17.10 two such side by side
+    /// in one (Overall and Consistency), a line between them, twice as wide.</summary>
+    private static void Tile(Grid tiles, bool small, params (string Name, Num[] Nums, string Tip)[] parts)
+    {
+        var b = new Border
+        {
+            Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 6, 6), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1),
+            ToolTip = string.Join("\n", parts.Select(p => p.Name + ": " + p.Tip)),
+        };
         b.SetResourceReference(Border.BackgroundProperty, "RoomBrush");
         b.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
-        var s = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        var value = new TextBlock { Text = text, FontSize = 22, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center };
-        if (colour is { } c) value.Foreground = PedalColours.Frozen(c);
-        s.Children.Add(value);
-        var label = new TextBlock { Text = name, FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center };
-        label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        s.Children.Add(label);
-        b.Child = s;
-        scores.Children.Add(b);
+        var row = new Grid();
+        foreach (var part in parts)
+        {
+            if (row.Children.Count > 0)
+            {
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                var line = new Border { Width = 1, Margin = new Thickness(6, 4, 6, 4) };
+                line.SetResourceReference(Border.BackgroundProperty, "CardBorderBrush");
+                Grid.SetColumn(line, row.ColumnDefinitions.Count - 1);
+                row.Children.Add(line);
+            }
+            var s = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            var value = new TextBlock { FontSize = small ? 17 : 22, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center };
+            for (int k = 0; k < part.Nums.Length; k++)
+            {
+                if (k > 0)
+                {
+                    var slash = new System.Windows.Documents.Run(" / ") { FontWeight = FontWeights.Normal };
+                    slash.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty, "TextSecondaryBrush");
+                    value.Inlines.Add(slash);
+                }
+                var n = new System.Windows.Documents.Run(part.Nums[k].Text);
+                if (part.Nums[k].Colour is { } c) n.Foreground = PedalColours.Frozen(c);
+                value.Inlines.Add(n);
+            }
+            s.Children.Add(new Viewbox { Child = value, StretchDirection = StretchDirection.DownOnly });
+            var label = new TextBlock { Text = part.Name, FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Center };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+            s.Children.Add(label);
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            Grid.SetColumn(s, row.ColumnDefinitions.Count - 1);
+            row.Children.Add(s);
+        }
+        b.Child = row;
+        tiles.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(parts.Length, GridUnitType.Star) });
+        Grid.SetColumn(b, tiles.Children.Count);
+        tiles.Children.Add(b);
     }
 
     /// <summary>(since 4.17.8) The Session card's title: the track and the time of Session 1's lap (the best lap when
@@ -862,12 +954,8 @@ internal sealed class SessionsView
         for (int k = 0; k < 3; k++) top.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         scores.Margin = new Thickness(12, 0, 6, 0);
         Grid.SetColumn(scores, 1);
-        Grid.SetRowSpan(scores, 2);
+        Grid.SetRowSpan(scores, 3);
         top.Children.Add(scores);
-        split.Margin = new Thickness(12, 0, 12, 6);
-        Grid.SetColumn(split, 1);
-        Grid.SetRow(split, 2);
-        top.Children.Add(split);
         s.Children.Add(top);
         // (since 4.17.0 Share Session: Daisy's Server, export and import; since 4.7.0 Import, an icon)
         var share = IconButton("", T("Share Session"));
@@ -883,12 +971,12 @@ internal sealed class SessionsView
             // (since 4.13.0 a click on it opens a window to find a session in)
             row.Children.Add(new Border { Width = 44, VerticalAlignment = VerticalAlignment.Center, Child = PickerLink(label, slot) });
             session.Margin = part.Margin = new Thickness(0, 0, 6, 0);
-            session.ItemContainerStyle = WholeLines();
-            session.ItemTemplate = SessionTemplate();
-            session.SetBinding(FrameworkElement.ToolTipProperty, new Binding("SelectedItem.Title") { RelativeSource = RelativeSource.Self });
+            SessionBox(session);
             row.Children.Add(session);
             row.Children.Add(part);
             channels.VerticalAlignment = VerticalAlignment.Center;
+            // (since 4.17.10 at the right of its cell: Session 2's has no Combine before it)
+            channels.HorizontalAlignment = HorizontalAlignment.Right;
             channels.Margin = new Thickness(0, 0, 0, 6);
             foreach (var x in after) row.Children.Add(x);
             Grid.SetRow(row, slot - 1);
@@ -908,9 +996,23 @@ internal sealed class SessionsView
         deltaChip.Margin = new Thickness(14, 0, 0, 0);
         Row(T("S1"), 1, thisSession, thisPart, thisChannels, compareStatus);
         Row(T("S2"), 2, otherSession, otherPart, otherChannels, deltaChip);
-        thisSession.SelectionChanged += (_, _) => { if (!filling && thisSession.SelectedItem is Item i) { wantLap = null; Pick(i); } };
+        // (since 4.17.10 Import at the bottom of each: Share Session for that slot, the box back to what it had)
+        bool Importing(ComboBox box, SelectionChangedEventArgs e, int slot)
+        {
+            if (box.SelectedItem is not Blank { Import: true }) return false;
+            filling = true;
+            box.SelectedItem = e.RemovedItems.Count > 0 ? e.RemovedItems[0] : null;
+            filling = false;
+            ImportInto(slot);
+            return true;
+        }
+        thisSession.SelectionChanged += (_, e) =>
+        {
+            if (filling || Importing(thisSession, e, 1)) return;
+            if (thisSession.SelectedItem is Item i) { wantLap = null; Pick(i); }
+        };
         thisPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
-        otherSession.SelectionChanged += async (_, _) => { if (!filling) await PickOther(); };
+        otherSession.SelectionChanged += async (_, e) => { if (!filling && !Importing(otherSession, e, 2)) await PickOther(); };
         otherPart.SelectionChanged += (_, _) => { if (!filling) ShowCompare(); };
 
         compareChart.Margin = new Thickness(0, 4, 0, 0);
@@ -1321,11 +1423,20 @@ internal sealed class SessionsView
         on.ContextMenu = menu;
     }
 
+    /// <summary>(since 4.17.10) A session box, the title row's and Session 1's and 2's alike: its lines (the title, the
+    /// laps, the video icon) whole when it's open, the one picked as its tooltip.</summary>
+    private static void SessionBox(ComboBox box)
+    {
+        box.ItemContainerStyle = WholeLines();
+        box.ItemTemplate = SessionTemplate();
+        box.SetBinding(FrameworkElement.ToolTipProperty, new Binding("SelectedItem.Line") { RelativeSource = RelativeSource.Self });
+    }
+
     /// <summary>(since 4.7.0) A session box's lines whole when it's open, however narrow the box; the title as its tooltip.</summary>
     private static Style WholeLines()
     {
         var style = new Style(typeof(ComboBoxItem), Application.Current?.TryFindResource(typeof(ComboBoxItem)) as Style);
-        style.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, new Binding(nameof(Item.Title))));
+        style.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, new Binding(nameof(Item.Line))));
         return style;
     }
 
@@ -1409,7 +1520,7 @@ internal sealed class SessionsView
     private static DataTemplate SessionTemplate()
     {
         var text = new FrameworkElementFactory(typeof(TextBlock));
-        text.SetBinding(TextBlock.TextProperty, new Binding(nameof(Item.Title)));
+        text.SetBinding(TextBlock.TextProperty, new Binding(nameof(Item.Line)));
         text.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
         var icon = new FrameworkElementFactory(typeof(TextBlock), "video");
         icon.SetValue(TextBlock.TextProperty, "\uE714");
@@ -1479,6 +1590,7 @@ internal sealed class SessionsView
         var matches = items.Where(i => Same(i, mineItem) ? Math.Max(i.Laps, mine?.Data.Laps.Count ?? 0) >= 2 : OnTrackOfThis(i)).ToList();
         otherSession.Items.Add(new Blank(matches.Count > 0 || mineItem == null ? T("None") : T("-- No Matches --")));
         foreach (var i in matches) otherSession.Items.Add(i);
+        otherSession.Items.Add(new Blank(T("Import…"), true));
         otherSession.SelectedItem = otherSession.Items.OfType<Item>().FirstOrDefault(i => i.Key == keep) ?? otherSession.Items[0];
         filling = false;
         OthersListed?.Invoke();
@@ -1542,7 +1654,7 @@ internal sealed class SessionsView
         {
             filling = true;
             // (asked for by name, as Compare With: there even if it's elsewhere)
-            if (!otherSession.Items.Contains(pick)) otherSession.Items.Add(pick);
+            if (!otherSession.Items.Contains(pick)) otherSession.Items.Insert(Math.Max(1, otherSession.Items.Count - 1), pick);
             otherSession.SelectedItem = pick;
             filling = false;
         }
@@ -1552,7 +1664,7 @@ internal sealed class SessionsView
         filling = false;
         if (otherSession.SelectedItem is Item item)
         {
-            try { other = await Load(item.File); }
+            try { other = await Analyse(item); }
             catch (Exception ex) { compareStatus.Text = F("The session couldn't be read: {0}", ex.Message); }
             if (other != null && otherSession.SelectedItem == item)
             {
@@ -1648,6 +1760,7 @@ internal sealed class SessionsView
         // (since 4.15.4 S2 highlighted with no Session 2: not)
         if (compareChart.HighlightRun == 2 && lastB == null) compareChart.HighlightRun = null;
         ShowPickerLinks();
+        ShowScores();
     }
 
     /// <summary>A run's channels on a chart, after <paramref name="first"/>: (since 4.16.1) a drop-down of a box (shown or
@@ -1853,8 +1966,9 @@ internal sealed class SessionsView
         return output.ToString();
     }
 
-    /// <summary>Adds session files (someone else's exported laps) to the list, and compares with the first.</summary>
-    internal async void Import()
+    /// <summary>Adds session files (someone else's exported laps) to the list, and compares with the first (since 4.17.10
+    /// <paramref name="slot"/> 1: puts it in Session 1).</summary>
+    internal async void Import(int slot = 2)
     {
         var dialog = new Microsoft.Win32.OpenFileDialog { Filter = T("Session") + " (*.csv)|*.csv", Multiselect = true };
         if (dialog.ShowDialog(Window.GetWindow(Host)) != true) return;
@@ -1877,7 +1991,9 @@ internal sealed class SessionsView
         if (problems.Count > 0) MessageBox.Show(Window.GetWindow(Host), string.Join("\n", problems), T("Analysis"));
         if (first == null) return;
         Refresh();
-        if (mine != null && items.FirstOrDefault(i => i.Key == first) is { } imported) await PickOther(imported);
+        if (items.FirstOrDefault(i => i.Key == first) is not { } imported) return;
+        if (slot == 1) Load(imported);
+        else if (mine != null) await PickOther(imported);
     }
 
     // ---------------------------------------------------------------- helpers

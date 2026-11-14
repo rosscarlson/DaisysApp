@@ -114,7 +114,9 @@ internal sealed class SessionData
         return (started, driver, name, video);
     }
 
-    public static SessionData Load(string path)
+    /// <param name="recorded">(since 4.17.10) The laps the game recorded for this race (its number, 1 the first, and time):
+    /// the last one whole though the log stops at the line.</param>
+    public static SessionData Load(string path, IReadOnlyDictionary<int, float>? recorded = null)
     {
         var ms = new List<long>();
         var cols = new List<double>[Columns];
@@ -209,7 +211,7 @@ internal sealed class SessionData
         data.HasGear = data.Gear.Any(v => v >= 1) && data.Rpm.Any(v => v > 0);
         data.HasRpm = data.Rpm.Any(v => v > 0);
         data.Pauses.AddRange(pauses);
-        data.FindLaps();
+        data.FindLaps(recorded);
         return data;
     }
 
@@ -235,10 +237,13 @@ internal sealed class SessionData
     }
 
     /// <summary>The laps, from the lap number the game sends: a run of the same number is a lap, complete when the next
-    /// one follows it and it started at the line (the time into it near 0).</summary>
-    private void FindLaps()
+    /// one follows it and it started at the line (the time into it near 0). Since 4.17.10 the last one too when the log
+    /// stops in it (a race's finish: the log ends as the line's crossed) and the game recorded it (else, someone
+    /// else's, it's as long as a whole one, within 2%).</summary>
+    private void FindLaps(IReadOnlyDictionary<int, float>? recorded)
     {
         int i = 0, n = Count;
+        bool lastFromLine = false;
         while (i < n)
         {
             if (double.IsNaN(LapNo[i])) { i++; continue; }
@@ -257,7 +262,12 @@ internal sealed class SessionData
             else if (next && !double.IsNaN(LapTime[e]) && !double.IsNaN(LapTime[i]) && LapTime[i] < Dt) time = LapTime[e] + Dt - LapTime[i];
             double d0 = FirstKnown(Distance, s, s + Hz), d1 = LastKnown(Distance, e - Hz, e);
             Laps.Add(new Lap((int)no, s, e, time, double.IsNaN(d0) || double.IsNaN(d1) ? double.NaN : d1 - d0, next && fromLine));
+            lastFromLine = fromLine;
         }
+        if (Laps.Count == 0 || Laps[^1] is not { Complete: false } last || !lastFromLine || last.End < n - 1 - Hz) return;
+        float? game = recorded != null && recorded.TryGetValue(last.Number + 1, out float rt) && rt > 0 ? rt : null;
+        bool alike = !double.IsNaN(last.Length) && Laps.Any(l => l.Complete && !double.IsNaN(l.Length) && Math.Abs(l.Length - last.Length) <= 0.02 * l.Length);
+        if (game != null || alike) Laps[^1] = last with { Complete = true, Seconds = game ?? last.Seconds };
     }
 
     private static double FirstKnown(double[] x, int a, int b)

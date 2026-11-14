@@ -21,11 +21,12 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// by itself (a toggle at the bottom); under it every session shared on the server, everyone's, searched as you type
 /// (every column, the box at the top right) and filtered from a right-click on a header, sorted by a header. Compare
 /// downloads the one picked (once) into Imported and puts it in Session 2; a double-click does too and closes the window.
-/// One window.
+/// One window. Since 4.17.10 also from Session 1's and 2's Import: searched for Session 1's track (a note when none are
+/// shared), what's compared (or imported from a file) going into that slot.
 /// </summary>
 internal sealed class ShareWindow
 {
-    private static Window? open;
+    private static ShareWindow? open;
 
     private readonly SessionsView view;
     private readonly Window window;
@@ -54,6 +55,9 @@ internal sealed class ShareWindow
     private ICollectionView? shown;
     private SessionsView.Item? item;
     private bool busy;
+    /// <summary>(since 4.17.10) Where Compare (and Import) put a session: Session 1 or 2.</summary>
+    private int slot = 2;
+    private bool listed;
 
     private sealed class Row
     {
@@ -92,17 +96,22 @@ internal sealed class ShareWindow
         return b;
     }
 
-    public static void Show(FrameworkElement owner, SessionsView view)
+    /// <param name="slot">(since 4.17.10) Where Compare puts a session: Session 1 or 2.</param>
+    /// <param name="find">(since 4.17.10) Searched for at first (Session 1's track).</param>
+    public static void Show(FrameworkElement owner, SessionsView view, int slot = 2, string? find = null)
     {
-        if (open is { IsLoaded: true })
+        if (open is { window.IsLoaded: true } was)
         {
-            if (open.WindowState == WindowState.Minimized) open.WindowState = WindowState.Normal;
-            open.Activate();
+            was.slot = slot;
+            if (find != null) was.search.Text = find;
+            if (was.window.WindowState == WindowState.Minimized) was.window.WindowState = WindowState.Normal;
+            was.window.Activate();
             return;
         }
-        open = new ShareWindow(owner, view).window;
-        open.Closed += (_, _) => open = null;
-        open.Show();
+        var w = open = new ShareWindow(owner, view) { slot = slot };
+        if (find != null) w.search.Text = find;
+        w.window.Closed += (_, _) => open = null;
+        w.window.Show();
     }
 
     private ShareWindow(FrameworkElement owner, SessionsView view)
@@ -126,7 +135,7 @@ internal sealed class ShareWindow
         head.Children.Add(header);
         search.Width = 320;
         System.Windows.Automation.AutomationProperties.SetName(search, T("Search"));
-        search.TextChanged += (_, _) => shown?.Refresh();
+        search.TextChanged += (_, _) => { shown?.Refresh(); ShowNone(); };
         DockPanel.SetDock(search, Dock.Right);
         head.Children.Add(search);
         var label = new TextBlock { Text = T("Search"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 8, 0) };
@@ -244,7 +253,7 @@ internal sealed class ShareWindow
             if (view.Session1?.Key == item.Key && view.CanExport) view.Export();
             else view.Export(item);
         };
-        import.Click += (_, _) => view.Import();
+        import.Click += (_, _) => view.Import(slot);
         shareState.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         // (Share, gone once it's shared, or Remove; then Export and Import)
         share.Margin = unshare.Margin = export.Margin = import.Margin = new Thickness(0, 0, 8, 0);
@@ -408,6 +417,7 @@ internal sealed class ShareWindow
             var list = await SessionServer.ListAsync();
             rows.Clear();
             rows.AddRange(list.Select(s => new Row { S = s }));
+            listed = true;
             Show();
         }
         catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException)
@@ -429,7 +439,17 @@ internal sealed class ShareWindow
             c.SortDirection = sorts.FirstOrDefault(s => s.PropertyName == c.SortMemberPath) is { PropertyName: not null } s ? s.Direction : null;
         if (keep != null) grid.SelectedItem = shown.Cast<Row>().FirstOrDefault(r => r.S.Id == keep);
         if (ServerLink.Configured) status.Text = "";
+        ShowNone();
         Enable();
+    }
+
+    /// <summary>(since 4.17.10) The search finding none of the sessions shared: said.</summary>
+    private void ShowNone()
+    {
+        if (!listed || !ServerLink.Configured) return;
+        string find = search.Text.Trim();
+        if (find.Length > 0 && shown != null && shown.IsEmpty) status.Text = F("No shared sessions for {0}", find);
+        else if (status.Text.StartsWith(F("No shared sessions for {0}", ""), StringComparison.Ordinal)) status.Text = "";
     }
 
     /// <summary>The server's news: a session shared, changed or taken off (by anyone).</summary>
@@ -517,7 +537,7 @@ internal sealed class ShareWindow
                 Enable();
             }
         }
-        await view.CompareDownloaded(key);
+        await view.CompareDownloaded(key, slot);
         if (close) window.Close();
     }
 }

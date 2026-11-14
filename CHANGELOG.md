@@ -4,11 +4,19 @@ What changed in each release, newest first. (The [README](README.md) describes t
 module's guide describes that module.)
 
 **4.17.10**
-- **Back and forward through the tabs**: the mouse's back and forward buttons (and a keyboard's Browser Back /
-  Forward keys) go back through the tabs and sub-tabs in the order they were opened, and forward again, as in a
-  browser (SimEffects → Analysis, then Video → Recording: back goes to Analysis). Opening another tab while back drops
-  the ones ahead. Two shortcuts, **Back** and **Forward**, in Settings → Shortcuts (unbound to start with).
-- **Tools → Screen**: beside each shortcut's button, what it's bound to, or **Unbound**.
+- **SimEffects → Analysis**: a race's last lap counts as a whole lap (it showed "Lap 3 (part)": the log stops as the
+  line's crossed at the finish) when the game recorded it, or (someone else's) when it's as long as a whole lap.
+  The race drop-downs show the fastest lap and how many, "(2/3)", for a race of more than one lap. Session 1's list
+  is sorted by name (the track, then the car), the title row's by date; the three use the same code. **Import…** at
+  the bottom of Session 1's and Session 2's lists opens Share Session searched for Session 1's track ("No shared
+  sessions for …" when there are none); a double-click (or Import from a file) puts the session in that slot.
+- **Scores** in four tiles: **Overall** and **Consistency** in one, **Brake** (application / release), **Throttle**
+  (application / release), **Impacts / Crashes**, each number its colour. Consistency is now two numbers, **brake /
+  throttle**: how alike the brake points and throttle applications are lap to lap, each corner's spread in metres
+  (two laps or more; the laps' times in 4.17.8). With a Session 2 (another race) both sessions' scores and time
+  splits are side by side; S1 or S2 highlighted shows only that one's.
+- **Playback**: no 8× rewind or fast forward; **To the start** (|<) first and **Next lap** (>|) last, greyed out
+  with no lap after the cursor. Session 2's Channels drop-down is at the right of its row, as Session 1's.
 
 **4.17.9**
 - **SimEffects → Overlays**: no list. A box for each of the 8 overlays, four across and two down (Dash, Inputs,

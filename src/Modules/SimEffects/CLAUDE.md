@@ -58,6 +58,17 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.17.10 (the user's Horizon Mexico Circuit 11/12 10:16 PM race, `2026-11-12 22.16.19.csv`):** its log ends at
+  the finish line in lap index 2 (laptime 62.283, the store's lap 3 62.240): `SessionData.Load(path, recorded)` makes
+  the last lap whole from `Item.LapTimes` (the store's laps, 1-based) or a length within 2%. `Item.Line` = Title +
+  `LapsTag` (" (fastest/total)") is what the boxes show (`SessionBox`); exports still use `Title`. `Blank(.., Import:
+  true)` ends Session 1's and 2's lists (`Importing` puts the box back, `ImportInto` → `ShareWindow.Show(.., slot,
+  find)`; `CompareDownloaded`/`Import` take the slot). Scores: `ShowScores` from `ShowLegend` (S1, S2 or both by
+  `HighlightRun`), `ScoreGroup`/`Tile` (params parts: Overall+Consistency one tile 2* wide). `PedalAnalysis.
+  Brake/ThrottleConsistency` (`Consistency`, `PlaceIn`). The user asked "This is both brake and throttle consistency,
+  correct?": it was lap times (4.17.8), so it was made so. Their message's "When clicking on S2 dropdown" was cut
+  off. Worktree `D:\Temp\da-s419` (`da-share`'s link was pruned again); UIA helpers `%TEMP%\share419\` (`ui.ps1`
+  name action, `pick.ps1` match box, `shot.ps1` PrintWindow).
 - **4.17.8 (no Session box; scores, the user's Temple Cross Country 11/13 12:09 run):** `SessionsView`'s
   `headButtons` (picker, delete, place, export, manage) + Share on Compare's card, `headCard` is that card (title
   "Session", found by `Titled` and kept as `about`; `ShowTitle` from `ShowCompare`/`ShowSession`, the Item's `Best`

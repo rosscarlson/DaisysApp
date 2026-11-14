@@ -239,10 +239,12 @@ not; those older files aren't listed (they name no race), and stay in the folder
 - **Session** (Session Analysis until 4.13.1; since 4.17.8 not a box of its own: its picker and icons at the top
   right of Compare's card, its scores and time split between Compare's rows): the date, car, length, laps and best,
   the brake zones and throttle applications (since 4.17.8 the title's tooltip); then the
-  **scores**, 0 to 100 (green 85 and over, amber 65 and over): Overall (the others together, the brake release
-  counting most), Brake application, Brake release, Throttle application, Throttle release, Consistency (Steering
-  until 4.17.7), and (since 4.17.8) the **Impacts** (orange from 1, red from 4) and **Crashes** (orange at 1, red from
-  2), green at none; the **time split** (full throttle, part throttle, braking, both together, coasting; since 4.17.8
+  **scores**, 0 to 100 (green 85 and over, amber 65 and over), since 4.17.10 in four tiles (a tile each before):
+  **Overall** (the others together, the brake release counting most) and **Consistency** (brake / throttle) in one,
+  **Brake** (application / release), **Throttle** (application / release) and **Impacts / Crashes** (since 4.17.8;
+  impacts orange from 1, red from 4, crashes orange at 1, red from 2, green at none); Steering until 4.17.7. With a
+  Session 2 (another race) since 4.17.10 both sessions' tiles and time splits side by side (S1 and S2 before them);
+  S1 or S2 highlighted: only that one's. The **time split** (full throttle, part throttle, braking, both together, coasting; since 4.17.8
   its names and shares on the colours); and (hidden since 4.17.8) **key numbers**: the
   average brake peak, application time, release time and trail braking; coasting from brake to throttle; throttle
   to brake; throttle application time; throttle stabs; steering corrections a minute; impacts and crashes.
@@ -258,7 +260,12 @@ not; those older files aren't listed (they name no race), and stay in the folder
   compare with), so a track with one session can still be compared. **Compare With** from the table puts a race in Session 2 even if it's elsewhere, or another lap
   of Session 1's own. The session boxes are 140 px wide (their lines whole when open, the title as a tooltip; since
   4.13.0 an icon after a session with a race video, the date without the year), the lap boxes a fixed width, and each
-  row's channels are at its right end (since 4.9.1), so both rows line up.
+  row's channels are at its right end (since 4.9.1; Session 2's at the right of its cell since 4.17.10), so both rows
+  line up. Since 4.17.10 the title row's box and these two are set up alike, each race's line ending with its fastest
+  lap and how many, "(2/3)", when it has more than one; Session 1's list is sorted by name (the track, then the car;
+  imported last), the title row's by date. **Import…** at the bottom of Session 1's and 2's lists opens Share Session
+  searched for Session 1's track ("No shared sessions for …" when none are), a double-click there (or Import from a
+  file) putting the session in that slot.
   - **Find a session** (since 4.13.0): a click on **S1** or **S2** (the words Session 1 and Session 2 until 4.13.2, now a blue outline) opens a small window of the
     sessions that slot can have: Date, Game, Track, Car, Kind, Laps, Best and Video, sorted by any header (newest first
     at first), Game, Kind and Video filtered from a right-click on their headers, **Search** by track or car. A row
@@ -292,8 +299,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
     Map's dot are at it). Under the chart (since 4.10.3; a scroll bar since 4.6.9) the whole run drawn small
     (Session 1's speed, its laps' starts, the cursor) with a frame round the part the chart shows, the rest dimmed:
     drag the frame to move along, click elsewhere to bring it there; the wheel zooms, a double-click shows it all.
-  - **Playback** (since 4.10.3, under that): **Rewind** (8×, 4×, 2×; 8× and 4× since 4.10.10), **Slow motion back** (½×), **Play** / **Pause**,
-    **Slow motion** (½×) and **Fast forward** (2×, 4×, 8×): Session 1's run plays from the cursor, the cursor, readout, Track
+  - **Playback** (since 4.10.3, under that): (since 4.17.10) **To the start**, **Rewind** (4×, 2×; 4× since 4.10.10, 8×
+    4.10.10–4.17.8), **Slow motion back** (½×), **Play** / **Pause**, **Slow motion** (½×), **Fast forward** (2×, 4×)
+    and (since 4.17.10) **Next lap** (greyed out with no lap after the cursor in the run): Session 1's run plays from the cursor, the cursor, readout, Track
     Map and Video with it, the chart moving on a page when the cursor nears its edge; its time and the run's at the
     right. A button again pauses; it stops at the run's end. The video's sound only at 1×; going back, the video
     shows fewer frames (each is decoded from the keyframe before it).
@@ -433,7 +441,9 @@ an application or a release. Its time is 10% to 90% of the way; its smoothness i
 by 20% or more within 0.3 s.
 
 **Laps** (`Sessions/SessionData.cs`): a run of the same lap number; complete when the next one follows and it started
-at the line. Its time is the game's time into it at its end, plus what was left across the line.
+at the line. Its time is the game's time into it at its end, plus what was left across the line. Since 4.17.10 the
+last one is complete too when the log stops in it (a race's log ends as the finish line's crossed) and the game
+recorded that lap (its time then the game's), or it's within 2% as long as a complete lap.
 
 **Contact** (`Sessions/Incidents.cs`), as the Shaker's Crashes and Impacts feel it: a crash is 3.5 g or more sideways
 and lengthways together; an impact is a jolt, that g changing by 1.3 g or more within 50 ms, or a suspension hit of
@@ -458,9 +468,11 @@ tip of its own (the gearing too short). The costs: a second on the limiter ≈ 0
 under the best (0.15 s at most), an over-rev ≈ 0.05 s.
 
 **Also:** steering corrections are turns back of less than 13° on Forza's 450° wheel, within a second (no score since
-4.17.8: off-road it's many, on a quick lap); consistency (since 4.17.8) is the laps' times' standard deviation over
-their average, 2.5% scoring 0, with two laps or more (a first lap from a standstill left out; 4.17.7 and before how
-much the firm zones' peak, application time and release time varied, 4 zones or more); the time split
+4.17.8: off-road it's many, on a quick lap); consistency (since 4.17.10, brake / throttle) is where the
+firm brake zones start and the throttle applications of half the pedal or more start, lap to lap: each lap's matched
+to the lap with the most by place (the car's, else the distance into the lap; within 40 m), each group's spread
+(metres from its middle) averaged, 20 m (brake) and 25 m (throttle) scoring 0, with two laps or more (4.17.8 the laps'
+times; 4.17.7 and before how much the firm zones' peak, application time and release time varied); the time split
 counts only time within 3 s of something moving.
 
 Not yet: sectors; wheelspin.
