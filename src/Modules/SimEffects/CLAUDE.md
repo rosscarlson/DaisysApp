@@ -58,6 +58,12 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.17.17 (the user: Profiles as a block per game):** `ProfileCard.Build(game, profile)` per `Games.All` + Desktop
+  (null); a game = its first profile (the active one if it's that game's). `SimProfile.Enabled` (default true; off:
+  not in `Picker`, skipped by `GameSwitcher`); `SimProfiles.SetEnabled(game, on)` makes one with `Add(p, use: false)`
+  or, unticking the active one, `Use(first on, play: false)`. Defaults in `Games.Port`/`Programs` (FH 8001 + fm4/azimuth,
+  as `Defaults.json`). Cards `VerticalAlignment.Top` (an unfolded one mustn't stretch its row). Edit/New/Delete and
+  rename gone. UIA shot script: `%TEMP%\prof4117\shot.ps1 -path SimEffects,Profiles,...` (by Name, any pattern).
 - **4.17.16 (Shared Session Manager, the user's list while gaming on this PC: not run in DaisysDev):** `ShareWindow`
   ticks sessions in a `ToggleButton` + `Popup` of `CheckBox`es (`boxes`, `ticked`, `lastBox` for Shift ranges;
   `Show(.., check:)` ticks), `ShareQueue.ShareMany` (batch `n of m` in `Badge`), `TitleOf` = track, description "".

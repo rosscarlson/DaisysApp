@@ -1016,5 +1016,21 @@
   "Session 1's lap, Session 2's, and Session 2's less Session 1's": "Session 1's lap, Session 2's, and Session 2's less Session 1's",
   "Shared Session Manager": "Shared Session Manager",
   "Sessions to share": "Sessions to share",
-  "Pick the sessions to share": "Pick the sessions to share"
+  "Pick the sessions to share": "Pick the sessions to share",
+  "A profile for no game": "A profile for no game",
+  "A profile for this game": "A profile for this game",
+  "Playing": "Playing",
+  "In use": "In use",
+  "Use": "Use",
+  "Use and play this profile": "Use and play this profile",
+  "Use {0}": "Use {0}",
+  "Options": "Options",
+  "Modules": "Modules",
+  "Port {0}": "Port {0}",
+  "No Auto Start": "No Auto Start",
+  "{0} process": "{0} process",
+  "{0} processes": "{0} processes",
+  "Defaults": "Defaults",
+  "The game's own port and processes": "The game's own port and processes",
+  "Starts with this profile": "Starts with this profile"
 }
