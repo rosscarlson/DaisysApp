@@ -14,9 +14,15 @@ public static class OverlayKinds
 {
     public const string Inputs = "Inputs", Dash = "Dash";
 
-    /// <summary>Every kind, in the order New offers them (the blocks only while Analysis is on).</summary>
+    /// <summary>Every kind (the blocks only while Analysis is on).</summary>
     public static IEnumerable<string> All(bool analysis) =>
         new[] { Inputs, Dash }.Concat(analysis ? Blocks.All.Select(b => b.Id) : Enumerable.Empty<string>());
+
+    /// <summary>(since 4.17.9) The tab's boxes, in order: four across, two down.</summary>
+    public static readonly string[] Boxes =
+    {
+        Dash, Inputs, Blocks.Performance.Id, Blocks.Tires.Id, Blocks.TrackMap.Id, Blocks.Position.Id, Blocks.Timing.Id, Blocks.Leaderboard.Id,
+    };
 
     public static string Name(string id) => id switch
     {
@@ -26,7 +32,8 @@ public static class OverlayKinds
 
 /// <summary>
 /// SimEffects → Overlays (since 3.33.0; the Input Overlay before, ForzaWheel's until 3.17.0): widgets over the game,
-/// each made, edited and deleted in the tab's list: <b>Inputs</b> (the pedals' and wheel's last few seconds, and the
+/// each switched on in its box on the tab (since 4.17.9; made in a list before; one switched off has no window, nor
+/// anything reading for it), then shown or hidden by its shortcut: <b>Inputs</b> (the pedals' and wheel's last few seconds, and the
 /// speed), the <b>Dash</b> (a tach, the gear and speed, TCS and ABS), and Analysis' blocks (Tires, Performance, Timing,
 /// Position, Leaderboard; their widgets were made on the Analysis tab before, and still read from there). They show
 /// while the tool is on (kept per SimEffects profile, as its shortcut and title bar bubble say) and the profile plays,
@@ -37,7 +44,7 @@ public sealed class InputOverlayApplet : IApplet
     private readonly OverlaySettings settings = OverlaySettings.Load();
     private readonly OverlayReader reader;
     private readonly InputOverlayView view;
-    private readonly Hotkey hotkey, dashKey;
+    private readonly Hotkey hotkey, dashKey, inputsKey;
     private readonly Dictionary<string, Hotkey> blockKeys = new();
     // a hidden window of its own, which DirectInput reads controllers in the background for
     private readonly HwndSource window = new(new HwndSourceParameters("DaisysApp Input Overlay") { Width = 0, Height = 0, WindowStyle = 0 });
@@ -60,6 +67,11 @@ public sealed class InputOverlayApplet : IApplet
             Id = "Overlays.Dash", Module = T("Overlays"), Target = T("Dash"), Name = T("Overlay on / off"),
             Get = () => settings.Dash.Key, Set = v => { settings.Dash.Key = v; settings.Save(); },
         }, () => Toggle(OverlayKinds.Dash));
+        inputsKey = Hotkeys.Add(new HotkeySpec
+        {
+            Id = "Overlays.Inputs", Module = T("Overlays"), Target = T("Inputs"), Name = T("Overlay on / off"),
+            Get = () => settings.InputsKey, Set = v => { settings.InputsKey = v; settings.Save(); },
+        }, () => Toggle(OverlayKinds.Inputs));
         SimProfiles.Register(new ToolScope
         {
             Id = "InputOverlay", Title = T("Overlays"), Settings = settings, Props = OverlaySettings.Scoped,
@@ -105,8 +117,11 @@ public sealed class InputOverlayApplet : IApplet
     internal OverlayWindow? Overlay => overlay;
     internal AnalysisApplet? Analysis => analysis;
 
-    /// <summary>An overlay's on / off shortcut (none for Inputs: the tool's own).</summary>
-    internal Hotkey? KeyOf(string id) => id == OverlayKinds.Dash ? dashKey : blockKeys.GetValueOrDefault(id);
+    /// <summary>An overlay's show / hide shortcut.</summary>
+    internal Hotkey? KeyOf(string id) => id switch
+    {
+        OverlayKinds.Dash => dashKey, OverlayKinds.Inputs => inputsKey, _ => blockKeys.GetValueOrDefault(id),
+    };
 
     /// <summary>On or off (ON / OFF, the shortcut, the tray, the Profiles tab): kept in the profile in use.</summary>
     internal void SetEnabled(bool on)
@@ -140,14 +155,26 @@ public sealed class InputOverlayApplet : IApplet
     internal void ShowBadge() =>
         TitleBadges.Set("InputOverlay", settings.On ? F("Overlay: {0}", SimProfiles.Active.Name) : null, T("The overlays are on"));
 
-    // ---------------------------------------------------------------- the list
+    // ---------------------------------------------------------------- on and shown
 
     internal IReadOnlyList<string> Made => settings.Overlays ??= new List<string>();
 
-    /// <summary>The kinds not made yet, that New offers.</summary>
-    internal IEnumerable<string> CanMake => OverlayKinds.All(analysis != null).Where(k => !Made.Contains(k));
+    /// <summary>Switched on in its box (its window made, its shortcut working).</summary>
+    internal bool IsOn(string id) => Made.Contains(id);
 
-    /// <summary>Ticked in the list: it shows while the tool's on and the profile plays.</summary>
+    /// <summary>Its box's tick: on, and shown (off: closed, its place kept).</summary>
+    internal void Enable(string id, bool on)
+    {
+        if (on == IsOn(id)) return;
+        if (on) settings.Overlays!.Add(id);
+        else settings.Overlays!.Remove(id);
+        Logging.Log.Here.Info($"Overlays: {id} switched {(on ? "on" : "off")}");
+        SetTicked(id, on);
+        if (!on) Close(id);
+        ShowOverlays();
+    }
+
+    /// <summary>Shown (its shortcut, its eye on the tab): it shows while the tool's on and the profile plays.</summary>
     internal bool IsTicked(string id) => id switch
     {
         OverlayKinds.Inputs => settings.Inputs,
@@ -163,36 +190,24 @@ public sealed class InputOverlayApplet : IApplet
         settings.Save();
         Logging.Log.Here.Info($"Overlays: {id} {(on ? "ticked" : "unticked")}");
         ShowOverlays();
-        view.ShowList();
     }
 
+    /// <summary>Its shortcut: shown or hidden, only while it's switched on.</summary>
     private void Toggle(string id)
     {
-        if (!Made.Contains(id)) settings.Overlays!.Add(id);
+        if (!IsOn(id))
+        {
+            Logging.Log.Here.Info($"Overlays: {id}'s shortcut, but it's switched off");
+            DaisysApp.Shell.Notifications.Show(T("Overlays"), F("{0} is switched off: tick it on the Overlays tab", OverlayKinds.Name(id)));
+            return;
+        }
         SetTicked(id, !IsTicked(id));
         if (IsTicked(id) && !settings.On)
             DaisysApp.Shell.Notifications.Show(T("Overlays"), F("{0}: shows while Overlays is on and the profile plays", OverlayKinds.Name(id)));
     }
 
-    /// <summary>New: made, ticked, and shown to be placed.</summary>
-    internal void Create(string id)
-    {
-        if (!Made.Contains(id)) settings.Overlays!.Add(id);
-        SetTicked(id, true);
-        Edit(id);
-    }
-
-    /// <summary>Delete (the tab's, and every overlay's own strip's, since 3.35.0; the strip's only unticked it, and one
-    /// being edited stays open unticked, so nothing seemed to happen): out of the list and closed (its place is kept, for
-    /// when it's made again).</summary>
-    internal void Delete(string id)
-    {
-        settings.Overlays!.Remove(id);
-        SetTicked(id, false);
-        Close(id);
-        ShowOverlays();
-        view.ShowList();
-    }
+    /// <summary>Delete (each overlay's own strip's trash can): switched off and closed (its place is kept).</summary>
+    internal void Delete(string id) => Enable(id, false);
 
     /// <summary>Edit: shown (even while off) with its edit strip, to drag and stretch until Done.</summary>
     internal void Edit(string id)
@@ -211,7 +226,19 @@ public sealed class InputOverlayApplet : IApplet
     internal void Redraw(string id)
     {
         if (id == OverlayKinds.Inputs) { overlay?.Changed(); return; }
-        if (id == OverlayKinds.Dash) { dash?.Changed(); return; }
+        if (id == OverlayKinds.Dash)
+        {
+            if (dash == null) return;
+            if (dash.Layout == DashView.LayoutOf(settings.Dash)) { dash.Changed(); return; }
+            // another shape (a dial on or off, analog or digital): as wide per unit of its space, made again
+            var d = settings.Dash;
+            double perUnit = d.Width > 0 ? d.Width / DashView.SpaceOf(LayoutOnly(dash.Layout, d)).Width : 0;
+            if (perUnit > 0) d.Width = (int)Math.Round(perUnit * DashView.SpaceOf(d).Width);
+            settings.Save();
+            Close(id);
+            ShowOverlays();
+            return;
+        }
         if (!blocks.ContainsKey(id)) return;
         Close(id);
         ShowOverlays();
@@ -247,7 +274,7 @@ public sealed class InputOverlayApplet : IApplet
         made.Showing = false;
         made.EditingChanged += () =>
         {
-            view.ShowList();
+            view.ShowStates();
             Reading();
             if (!made.Editing) Application.Current?.Dispatcher.BeginInvoke(ShowOverlays);
         };
@@ -292,15 +319,28 @@ public sealed class InputOverlayApplet : IApplet
             w.Showing = want && settings.On;
         }
         Reading();
-        view.ShowList();
+        view.ShowStates();
     }
 
     /// <summary>The reader runs while the tab or an overlay shows; Analysis reads while one of its blocks does.</summary>
     internal void Reading()
     {
         bool Shown(Widget? w) => w != null && (w.IsVisible || w.Editing);
-        reader.Wanted = view.IsVisible || Shown(overlay) || Shown(dash);
+        // (the tab reads only for an overlay that's on: one off reads nothing)
+        reader.Wanted = (view.IsVisible && (IsOn(OverlayKinds.Inputs) || IsOn(OverlayKinds.Dash))) || Shown(overlay) || Shown(dash);
         analysis?.Reading();
+    }
+
+    /// <summary>The Dash's settings as they were for <paramref name="layout"/> (<see cref="DashView.LayoutOf"/>), for its size.</summary>
+    private static DashSettings LayoutOnly(string layout, DashSettings now)
+    {
+        var p = layout.Split(':');
+        return new DashSettings
+        {
+            Look = Enum.TryParse<DashLook>(p[0], out var look) ? look : now.Look,
+            Tach = p.Length > 1 ? p[1] == "True" : now.Tach, Speedo = p.Length > 2 ? p[2] == "True" : now.Speedo,
+            Lights = p.Length > 3 ? p[3] == "True" : now.Lights,
+        };
     }
 
     private bool BlocksShowing() => blocks.Values.Any(b => b.Window.IsVisible || b.Window.Editing);
@@ -358,6 +398,7 @@ public sealed class InputOverlayApplet : IApplet
         SimProfiles.Changed -= ShowBadge;
         hotkey.Dispose();
         dashKey.Dispose();
+        inputsKey.Dispose();
         foreach (var k in blockKeys.Values) k.Dispose();
         if (analysis != null)
         {

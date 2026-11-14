@@ -2,6 +2,13 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.9 (Overlays as 8 boxes; the Dash's speedometer and Digital look):** SimEffects → Overlays: the boxes, a
+  picture each; tick one on and off (its overlay appears and goes), its eye and shortcut hide and show it (a shortcut
+  of one that's off only says so), Edit places it. Dash: Tach and Speedometer each off (the last can't be), Analog and
+  Digital, in a race (needles, the bar of lights, the gear flashing at the shift point, TCS and ABS). Seen in a test
+  copy without a game: the boxes and pictures, Dash on (two dials, 520 × 260), Digital (593 × 83), Tach or Speedometer
+  alone, the eye and the tick closing it. Not tried: a game's telemetry on the new dials, Device mode's rows in the
+  narrow box, a narrow window (the boxes are at least 240 wide).
 - **4.17.8 (Analysis: no Session box; scores):** SimEffects → Analysis: the race picker and icons at the top right of
   the "Session: track - time" card, the scores between the S1/S2 rows and Channels, the time split under them with
   its words on the colours; no Steering; Consistency on races of two laps or more; Impacts and Crashes tiles. Seen in

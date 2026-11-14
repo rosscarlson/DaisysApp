@@ -13,6 +13,9 @@ public enum OverlaySource { Game, Device }
 
 public enum SpeedUnit { Mph, Kmh }
 
+/// <summary>The Dash's dials (since 4.17.9): round, with needles, or digital, a low strip.</summary>
+public enum DashLook { Analog, Digital }
+
 /// <summary>A trace read from a controller: its axis, and reversed (a pedal that reads full when released).</summary>
 public sealed class OverlayAxis
 {
@@ -41,6 +44,11 @@ public sealed class DashSettings : IWidgetPlace
     public bool Lights { get; set; } = true;
     /// <summary>The gear flashes at the shift point.</summary>
     public bool ShiftFlash { get; set; } = true;
+    /// <summary>(since 4.17.9) The tach, and the speedometer at its right (at least one of them).</summary>
+    public bool Tach { get; set; } = true;
+    public bool Speedo { get; set; } = true;
+    /// <summary>(since 4.17.9) Round dials with needles, or digital.</summary>
+    public DashLook Look { get; set; }
 }
 
 /// <summary>
@@ -60,7 +68,7 @@ public sealed class OverlaySettings : IWidgetPlace
     /// <summary>The overlays showing (each ticked in the list) while the profile plays; kept per profile.</summary>
     public bool Enabled { get; set; }
 
-    /// <summary>The overlays made, in the list's order, by kind (<see cref="OverlayKinds.Inputs"/>, <see cref="OverlayKinds.Dash"/>,
+    /// <summary>The overlays switched on (since 4.17.9; the ones made in the list before), by kind (<see cref="OverlayKinds.Inputs"/>, <see cref="OverlayKinds.Dash"/>,
     /// or an Analysis block's id); null in a file from before 3.33.0.</summary>
     public List<string>? Overlays { get; set; }
 
@@ -75,6 +83,8 @@ public sealed class OverlaySettings : IWidgetPlace
     /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
     [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;
     public string? OnOffKey { get; set; }
+    /// <summary>(since 4.17.9) The Inputs overlay's own show / hide shortcut.</summary>
+    public string? InputsKey { get; set; }
     /// <summary>3.17's Switch On With Game (or ForzaWheel's overlay showing): on in every game's profile at first.</summary>
     public bool SwitchOnWithGame { get; set; }
 

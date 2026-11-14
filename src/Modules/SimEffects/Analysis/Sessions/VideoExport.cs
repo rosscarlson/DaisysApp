@@ -254,7 +254,7 @@ internal static class VideoExport
             settings.Background = 0;
             videoW = w;
             scale = h / 1080.0 * 1.25;
-            dash = new DashView(settings, () => 0) { Has = true, Width = BlockH, Height = BlockH };
+            dash = new DashView(settings, () => 0, classic: true) { Has = true, Width = BlockH, Height = BlockH };
             trace = new OverlayWindow.Trace(settings) { Margin = new Thickness(BlockH, 0, 0, 0) };
             block = new Grid { Width = BlockW, Height = BlockH, Background = Back, Children = { dash, trace } };
             dash.HorizontalAlignment = HorizontalAlignment.Left;

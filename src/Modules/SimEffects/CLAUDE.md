@@ -66,6 +66,12 @@ Read only when working in this folder. Current state and lessons; history is in 
   the contact tip's thresholds (crash = hard hit, walls mostly: the user's "impacts = walls" guess reversed, as they
   asked). That race: 5 impacts, 2 crashes on an off-road track (jumps may count as jolts; not changed). Seen in
   DaisysDev (`%TEMP%\share417\pickname.ps1` picks the title-row picker by name).
+- **4.17.9 (Overlays as 8 boxes; Dash speedometer and Digital):** `Overlays` (the old "made" list) = switched on
+  (`IsOn`/`Enable`); `IsTicked` = shown (eye, shortcut; a shortcut of one off only notifies). Boxes' pictures
+  (`OverlayPreviews`) are static, made-up readings; the reader runs for the tab only if Inputs or Dash is on.
+  `DashView.SpaceOf/LayoutOf`; another layout = the window closed and made again with `Width` scaled per unit (Aspect
+  keeps width only). `classic` for VideoExport. Seen in DaisysDev3 (UIA: `D:\Temp\da-overlays-tools\uia.ps1`,
+  PrintWindow shots, `combo <n> <item>`); no game.
 - **4.17.6 (share status in the title bar; Channels stays open):** `ShareQueue` sets Core's `TitleBadges`
   ("AnalysisShare", blue `#58A6FF` while going, green/red for 10 s via `Done`/`turn`; Waiting for YouTube from
   `Consider`). Compare's Channels popup `StaysOpen = true`, closed by its button, the window's Deactivated/LocationChanged

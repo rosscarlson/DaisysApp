@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.9**
+- **SimEffects → Overlays**: no list. A box for each of the 8 overlays, four across and two down (Dash, Inputs,
+  Performance, Tires, Track Map, Position, Timing, Leaderboard), each with a picture of it, all its settings (Inputs'
+  overlay, speed and Read From in its one box) and a tick at its top left that switches it on. One switched off has no
+  window and nothing reading for it; its shortcut, the eye beside it (show / hide) and **Edit** work only while it's
+  on. Inputs has its own shortcut too.
+- **Dash**: a **speedometer** right of the tach (the speed large in the middle; its scale grows with the car), either
+  dial can be off, and a **Digital** look: one low strip with a bar of lights for the RPM and its number, the gear,
+  the speed and the TCS and ABS lights. Its window takes the new shape, as wide per dial as before. Analysis' exported
+  videos keep the round tach.
+
 **4.17.8**
 - **SimEffects → Analysis**: no Session box. Its race picker (200 px wide; its list as wide as its races) and icons
   are at the top right of the card below (Share still last), now titled **Session:** the track and the lap's time
