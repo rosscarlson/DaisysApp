@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 4.17.6** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 4.17.7** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -328,7 +328,7 @@ src/
                           Windows' event logs, HangWatch), theming, title bar bubbles and notifications from modules
                           (Shell/TitleBadges, Shell/Notifications), other modules' channels on the AI module's remote control connection
                           (Shell/RemoteChannels: none since 3.26.5), Daisy's Server (Server/: the one connection, its card in Settings → General, KeptChannel), files opened with the app (Shell/OpenFiles), and Shared/Hotkeys, Shared/Charts (the time
-                          graph), Shared/Widgets (every widget window), Shared/Network (the speed test, and one pinger for every module), Shared/Ui (the pieces code-built views are made of), Shared/Sizes (sizes, speeds and times as text), Shared/ConnectionForm (a server's address, Test connection), Shared/GroupGrid (groups of boxes packed in a grid, as Zabbix's and HA's), Shared/SessionLog (driving sessions), Shared/Win32 (physical-pixel rectangles and window styles), Shell/TabGroups (tabs no module owns: Gaming), Shared/RunningPrograms (one process list for every module watching for a
+                          graph), Shared/Widgets (every widget window; RenderPace: how fast WPF really draws, for logs), Shared/Network (the speed test, and one pinger for every module), Shared/Ui (the pieces code-built views are made of), Shared/Sizes (sizes, speeds and times as text), Shared/ConnectionForm (a server's address, Test connection), Shared/GroupGrid (groups of boxes packed in a grid, as Zabbix's and HA's), Shared/SessionLog (driving sessions), Shared/Win32 (physical-pixel rectangles and window styles), Shell/TabGroups (tabs no module owns: Gaming), Shared/RunningPrograms (one process list for every module watching for a
                           game), Shared/Audio/AppAudio (the app's output and input, Settings → General → Audio; no packages), Shared/Csv, Shared/LiveDataGrid,
                           and since 4.0.0 (Core 0.55) what modules had copies of: Shared/Win32/Native (Windows' calls, HighResTimer),
                           Shared/Debounce, JsonStore.SaveSoon (and saves written whole or not at all), Ui.Every (a timer while

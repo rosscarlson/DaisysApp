@@ -206,7 +206,7 @@ internal sealed class MirrorCompositor : IDisposable
                 parts.Add($"{snapshot[i].Monitor.DeviceName} ({b.Path}) {frames / seconds:0.#}/s{(frames > 0 ? $" at {Ms(cost) / frames:0.#} ms each" : "")}");
             }
             string draw = drawStats?.Invoke() ?? "";
-            bool drawSlow = draw.Contains("UI thread busy", StringComparison.Ordinal);
+            bool drawSlow = draw.Contains("UI thread busy", StringComparison.Ordinal) || draw.Contains("WPF behind", StringComparison.Ordinal);
             double perSecond = composed / seconds;
             // (a still screen brings nothing, and then nothing needs drawing)
             slow = drawSlow || captured >= 5 && perSecond < 0.6 * Math.Min(target, captured);

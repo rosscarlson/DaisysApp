@@ -4,6 +4,17 @@ Past work on this part of Daisy's App (Claude Code reads this file only when it 
 
 ## Latest
 
+- **4.17.7 (2026-11-14: the friend again, after 4.16.3: lags only while mirrors and SimEffects' overlays show together;
+  logging, no fix):** suspect: WPF's one render thread per process; mirrors (`AllowsTransparency`) and Core widgets
+  (overlays) are layered windows, each change read back from the GPU (slow with the game loading the GPU); the overlay's
+  `FrameHook` keeps `CompositionTarget.Rendering` hooked (every refresh) while it has readings. 4.16.3's UI-thread wait
+  can't see that (the UI thread isn't blocked, WPF just commits fewer frames). New Core `Shared/Widgets/RenderPace`
+  (counts Rendering; `Sample(ms)` hooks it for a while; `SeeThrough()` lists visible `AllowsTransparency` windows with
+  sizes). `MirrorWindow.SamplePace`: 3 s sample at 11 s and 56 s after each report; `DrawStats` appends it, "WPF
+  behind" < 30/s = slow (compositor's `drawSlow`). `FrameHook.Report` in SimEffects (15 s after hooking, then each
+  minute; Info first and when behind). Tested in DaisysDev (mirror 800×450: WPF 109–115/s, list right; json restored);
+  the overlay's line not (no game). **If it's WPF behind:** make the mirror a non-layered window (circle by
+  `SetWindowRgn`), or the overlays not hooked every frame.
 - **4.16.3 (asked 2026-11-13: a friend's mirrors and the Mini Mirror tab ~5 fps "in the last several releases",
   SimEffects' overlays fine; find a bug or add logging):** no change in Mini Mirror since 4.0.0 explains it (4.0.0
   only moved P/Invokes and the program watch to Core, checked). Changed: `MirrorWindow.OnFrameReady` copies the

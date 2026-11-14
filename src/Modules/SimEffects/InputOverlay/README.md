@@ -51,6 +51,11 @@ Inputs unticked there if the Input Overlay was off).
     rest at the top) and **✕**. A device unplugged is opened again when it's back; one plugged in since the controllers were listed needs
     **Refresh** (the arrow beside Read From, in Device mode; since 3.25.3).
 
+**The log** (SimEffects, since 4.17.7): while an overlay draws a game, 15 s in and then each minute it's behind (each
+minute on Debug logging): its readings a second, how many it drew, how many frames a second the app really drew ("WPF
+behind" under 30: the app draws all its windows on one thread, so a busy Mini Mirror can hold an overlay back), and
+the app's see-through windows showing with their sizes.
+
 **Session logs** (until 4.5.0, for Forza Analysis): while the overlay showed, the pedals and wheel were logged as
 sessions (since 4.4.0 with the game's telemetry), races or not. Since 4.5.0 SimEffects → [Analysis](../Analysis/README.md)
 logs each race itself and keeps only the races it records; **Record a session log while it shows** went.
@@ -66,7 +71,7 @@ and Handbrake. If ForzaWheel's overlay was showing, it's on in every game's prof
 | `InputOverlayApplet.cs` | The tool: settings, the reader, the on / off shortcut (Core `Hotkeys`) and the Dash's and blocks' (`Overlays.Dash`, `Analysis.Widget.<block>`), its part in the SimEffects profiles (`SimProfiles.Register`, `ProfileLoaded`), the title bar bubble, the list (`OverlayKinds`, `Made`, `IsTicked`, `Create`, `Delete`, `Edit`), each overlay's window (`ShowOverlays`: open while made and ticked, `Showing` while on and playing; the blocks' from `AnalysisApplet.Current`, `Ticked`), `FromBefore` (3.33.0's first start), the tray item; a hidden window DirectInput reads in the background for |
 | `InputOverlayView.cs` | The tab: the top line, the list (New ▾, Edit, Delete) and the one picked's settings: Inputs (Overlay and Speed, drawn again for another profile; Read From: Game, or a row per axis with Set, ForzaWheel's `Capture.cs`, linked), the Dash, a block |
 | `DashWindow.cs` | The Dash: Core's widget (no card; its Background slider the dial's) round `DashView`, drawn from the reader's last frame (`OverlayReader.Frame`) in a 200 × 200 space |
-| `FrameHook.cs` | When the widgets draw (since 4.0.0): once per screen frame only while one shows and readings are coming (not with no game, nor paused), and only on a new reading (`OverlayReader.Version`) |
+| `FrameHook.cs` | When the widgets draw (since 4.0.0): once per screen frame only while one shows and readings are coming (not with no game, nor paused), and only on a new reading (`OverlayReader.Version`); since 4.17.7 logs the pace WPF really drew at (Core's `RenderPace`) |
 | `OverlayReader.cs` | Its thread while the overlay or the tab shows: the module's telemetry (`SimData.Open()`: the profile in use's game), the controllers' axes in Device mode (`GameControllers`, in `src/DaisysApp.Controllers`), the session log |
 | `OverlayWindow.cs` | The overlay: the trace (history, bars, wheel) and the speeds (now, the window's highest and lowest) in Core's `Shared/Widgets/Widget` (no card; the edit strip on right-click, its Delete switching it off) |
 | `OverlaySettings.cs` | `InputOverlay.json` (`Scoped`: what each SimEffects profile keeps, with `Inputs` ticked), `Overlays` (the list), `DashSettings`, and taking ForzaWheel's overlay settings and axes the first time |

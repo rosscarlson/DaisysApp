@@ -33,6 +33,8 @@ internal sealed class MirrorWindow : Window
     private int statDrawn, statSkipped;
     private long statWaitTicks, statWaitMax, statWriteTicks;
     private string drawing = "";
+    // (since 4.17.7) how fast WPF really drew the app's windows, sampled for 3 s before each report (RenderPace)
+    private string pace = "";
     private static readonly DaisysApp.Logging.Logger log = DaisysApp.Logging.Log.Here;
 
     public MirrorWindow(MirrorDefinition definition, CaptureManager captureManager, Func<IEnumerable<PixelRect>> snapTargets, bool hideFromCapture)
@@ -81,6 +83,10 @@ internal sealed class MirrorWindow : Window
             ApplyDefinitionChanged();
             drawing = Drawing();
             compositor.Start();
+            // the first report is 15 s in: its sample 11–14 s
+            var first = new DispatcherTimer { Interval = TimeSpan.FromSeconds(11) };
+            first.Tick += (_, _) => { first.Stop(); SamplePace(); };
+            first.Start();
             log.Info($"Mirror {Definition.Name} shown: window {Definition.WindowBounds.Width}x{Definition.WindowBounds.Height}, region {Definition.SourceRect.Width}x{Definition.SourceRect.Height}, zoom {Definition.Zoom:0.##}, {Definition.TargetFps}/s, {drawing}");
         };
         SizeChanged += (_, _) => UpdateClip();
@@ -155,11 +161,39 @@ internal sealed class MirrorWindow : Window
             statWaitTicks = statWaitMax = statWriteTicks = 0;
         }
         double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
-        if (drawn == 0) return $"window drew none{(skipped > 0 ? $", {skipped} skipped: UI thread busy" : "")}";
+        string sampled;
+        lock (frameGate) { sampled = pace; pace = ""; }
+        // the next report's sample, 3 s about a minute from now (reports come each minute)
+        try
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                var next = new DispatcherTimer { Interval = TimeSpan.FromSeconds(56) };
+                next.Tick += (_, _) => { next.Stop(); SamplePace(); };
+                next.Start();
+            });
+        }
+        catch (OperationCanceledException) { /* app shutting down */ }
+        if (sampled.Length > 0) sampled = "; " + sampled;
+        if (drawn == 0) return $"window drew none{(skipped > 0 ? $", {skipped} skipped: UI thread busy" : "")}{sampled}";
         double avgWait = Ms(wait) / drawn;
         // the UI thread taking longer than a frame to get to a picture is what slows a mirror on this side
         string busy = avgWait > 1000.0 / Math.Max(1, compositor.TargetFps) && skipped > drawn / 4 ? " (UI thread busy)" : "";
-        return $"window drew {drawn}, {skipped} skipped for a newer one{busy}; UI thread got to each after {avgWait:0.#} ms, longest {Ms(waitMax):0}; writing each took {Ms(write) / drawn:0.##} ms; {drawing}";
+        return $"window drew {drawn}, {skipped} skipped for a newer one{busy}; UI thread got to each after {avgWait:0.#} ms, longest {Ms(waitMax):0}; writing each took {Ms(write) / drawn:0.##} ms; {drawing}{sampled}";
+    }
+
+    /// <summary>
+    /// For the next report: how many frames a second WPF really put on screen (it draws every window of the app on one
+    /// thread, see-through ones like this and SimEffects' overlays copied back from the graphics card each change), and
+    /// which see-through windows were showing. Under 30 a second is "WPF behind": the mirror can't go faster than that.
+    /// </summary>
+    private void SamplePace()
+    {
+        if (closed) return;
+        DaisysApp.Shared.Widgets.RenderPace.Sample(3000, (text, perSecond) =>
+        {
+            lock (frameGate) pace = perSecond < 30 ? text.Replace("frames/s", "frames/s (WPF behind)") : text;
+        });
     }
 
     /// <summary>How WPF draws the app (on the UI thread): on the graphics card or in software (Settings → General, or after a blank window).</summary>

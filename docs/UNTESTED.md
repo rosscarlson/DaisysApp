@@ -2,6 +2,15 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.7 (Mini Mirror + overlays lag together, a friend's PC; logging):** he said 4.16.3 didn't help: "anytime
+  mini mirror and the overlay are active together, they lag... individually, they don't" (the user's PC, 5070 Ti, is
+  fine; his is a 4070 Ti). On his PC, after updating: a game running, mirrors and overlays showing for 2–3 minutes,
+  then one minute with only the mirrors; send the Video and SimEffects logs. Look for `WPF drew N frames/s` (under 30:
+  `WPF behind`) with the see-through windows listed, in both `Mirror …` and `Overlays: …` lines. Behind only while
+  both show = the shared render thread (the fix would be mirrors not being see-through windows, round ones by a
+  window region); fine there but the mirror still slow = the capture or the game's GPU load (the 4.16.3 fields).
+  Tried in a test copy: a 800×450 mirror at 60/s, `WPF drew 109–115 frames/s`, the see-through windows listed. Not
+  tried: the overlay's line (needs a game's telemetry), his PC.
 - **4.17.6 (share status in the title bar; Channels stays open):** end a race with Share each session automatically
   on: the title bar should show Analysis: Waiting for YouTube (if its video uploads), Preparing, Uploading n%, then
   Share Complete in green, gone 10 s later. In Compare, open Channels and tick and untick several, and highlight one:

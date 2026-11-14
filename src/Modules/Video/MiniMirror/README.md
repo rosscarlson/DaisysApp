@@ -89,7 +89,9 @@ slow (every minute on Debug logging), where its time went: per monitor, pictures
 to SDR or GDI) and what each cost; pictures composed and how long each took; the real waits between frames; and the
 window's side: pictures drawn, skipped for a newer one, and how long the app's UI thread took to get to each. A
 capture refused while Video's recording, virtual webcam or SimEffects → Analysis' race video holds the same monitor
-says so (Windows allows a program one capture of a monitor).
+says so (Windows allows a program one capture of a monitor). Since 4.17.7 those lines also say how many frames a
+second the app really drew over 3 s (it draws all its windows on one thread, and see-through ones like mirrors and
+SimEffects' overlays cost it more), "WPF behind" under 30, and the see-through windows showing with their sizes.
 
 **The log, for a mirror that won't move** (Video log, Normal logging): the first capture describes the PC (Windows
 build, GPUs and driver versions, monitors with refresh rate and HDR, GPU scheduling, multiplane overlay, Windows'

@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.7**
+- **Video → Mini Mirror and SimEffects → Overlays:** the logs say how fast the app really puts its windows on screen,
+  for a PC where mirrors and overlays lag only while both show: the app draws all its windows on one thread, and
+  see-through ones (mirrors, overlays) cost it a copy back from the graphics card each time they change. A mirror's
+  lines in the Video log (15 s in, then each minute) add the frames a second the app drew over 3 s and the see-through
+  windows showing, with their sizes; "WPF behind" (under 30 a second) counts as slow, so it's logged at Info. While an
+  overlay is drawing a game, the SimEffects log has its readings a second, how many it drew, the app's frames a second
+  and the see-through windows showing (15 s in, then each minute it's behind; each minute on Debug logging).
+
 **4.17.6**
 - **SimEffects → Analysis → Share Session**: a share shows in the title bar while it goes, as **Analysis: Preparing**
   and **Analysis: Uploading n%** (blue), then **Analysis: Share Complete** (green) or **Analysis: Share Failed** (red)
