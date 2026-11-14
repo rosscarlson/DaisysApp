@@ -253,15 +253,15 @@ internal sealed class Playback
 }
 
 /// <summary>
-/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: (since 4.17.11) to the start, rewind 2× (since
-/// 4.10.10 also 4×; 8× until 4.17.8), slow motion back ½×, play/pause, slow motion ½×, fast forward 2× (4×), (since
+/// (since 4.10.3) <see cref="Playback"/>'s controls, under a chart: (since 4.17.11) to the start (since 4.17.16 of the
+/// lap the cursor's in, then each lap before it, pressed again within 3 seconds), rewind 2× (4× 4.10.10–4.17.15; 8×
+/// until 4.17.8), slow motion back ½×, play/pause, slow motion ½×, fast forward 2× (since 4.10.10 also 4×), (since
 /// 4.17.11) the next lap (greyed out with none after the cursor), and the clock.
 /// </summary>
 internal sealed class PlaybackBar : DockPanel
 {
     private static readonly (double Rate, string Glyph, string Speed, bool Mirror, string Name)[] Rates =
     {
-        (-4, "", "4×", false, "Rewind (4×)"),
         (-2, "", "2×", false, "Rewind (2×)"),
         (-0.5, "", "½×", true, "Slow motion back (½×)"),
         (1, "", "", false, "Play"),
@@ -275,13 +275,15 @@ internal sealed class PlaybackBar : DockPanel
     private Button loop = null!;
     private readonly Button next;
     private readonly TextBlock clock = new() { VerticalAlignment = VerticalAlignment.Center, MinWidth = 120, Margin = new Thickness(10, 0, 0, 0) };
+    /// <summary>(since 4.17.16) When the start was last pressed: again within 3 seconds goes a lap further back.</summary>
+    private readonly Stopwatch lastBack = new();
 
     public PlaybackBar(Playback playback)
     {
         this.playback = playback;
         Margin = new Thickness(52, 6, 8, 0);
         var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
-        row.Children.Add(Jump("", T("To the start"), () => { if (playback.Run is { } r) playback.Seek(r.From); }));
+        row.Children.Add(Jump("", T("To the start"), () => { if (LapBack() is var s && !double.IsNaN(s)) playback.Seek(s); }));
         foreach (var (r, glyph, speed, mirror, name) in Rates)
         {
             // (since 4.10.15) the section set from a chart's menu, played round; greyed out until both its ends are set
@@ -342,6 +344,21 @@ internal sealed class PlaybackBar : DockPanel
         double found = double.NaN;
         foreach (var lap in r.Data.Laps)
             if (lap.Start > at + 1 && lap.Start > r.From && lap.Start < r.To && !(lap.Start >= found)) found = lap.Start;
+        return found;
+    }
+
+    /// <summary>(since 4.17.16) Where the start button goes: the start of the lap the cursor's in (the run's start in the
+    /// first); pressed again within 3 seconds, or already there, the lap before's.</summary>
+    private double LapBack()
+    {
+        if (playback.Run is not { } r) return double.NaN;
+        double at = double.IsNaN(playback.Position) ? r.From : playback.Position;
+        var starts = r.Data.Laps.Select(l => (double)l.Start).Where(s => s > r.From && s < r.To).Append(r.From).Distinct().OrderBy(s => s).ToList();
+        bool again = lastBack.IsRunning && lastBack.Elapsed < TimeSpan.FromSeconds(3);
+        lastBack.Restart();
+        // (the lap the cursor's in; pressed again, or at its start already, the one before)
+        double found = starts.LastOrDefault(s => s <= at, r.From);
+        if (again || at - found < 1) found = starts.LastOrDefault(s => s < found, r.From);
         return found;
     }
 

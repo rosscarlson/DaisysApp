@@ -247,7 +247,7 @@ internal sealed class SessionsView
         else if (Same(pick, current)) current = pick;
         else if (Host.IsVisible) Open(pick);
         Listed?.Invoke();
-        ShareQueue.Consider(items, Describe, Driver);
+        ShareQueue.Consider(items, Driver);
     }
 
     /// <summary>(since 4.17.0) The name exports and shares carry: the one kept, else Windows' user name.</summary>
@@ -413,16 +413,12 @@ internal sealed class SessionsView
         place.Content = Compass();
         place.Margin = new Thickness(0, 0, 4, 0);
         place.Click += (_, _) => LocationAsked?.Invoke(Host);
-        // (since 4.7.0 here, an icon; Compare's Export… button before)
-        var export = IconButton("", T("Export this lap (or session) to send to someone"));
-        export.Margin = new Thickness(0, 0, 4, 0);
-        export.Click += (_, _) => Export();
         // (since 4.12.0) the Session Manager (4.13.3–4.16.2 the Analysis Manager): every session, its disk use, loaded from there
         var manage = IconButton("", T("Session Manager"));
         manage.Click += (_, _) => SessionManager.Show(Host, this);
         // (since 4.17.8 no Session box: its picker and icons at the top right of Compare's card, Share last; its scores
-        // and time split between Compare's rows)
-        headButtons = new UIElement[] { sessions, delete, place, export, manage };
+        // and time split between Compare's rows; since 4.17.16 no Export, 4.7.0–4.17.15 between Location and the Manager)
+        headButtons = new UIElement[] { sessions, delete, place, manage };
 
         // (since 4.6.2) Compare and the lines both runs took; since 4.7.0 the Trace too (Session 1 alone, Session 2 None)
         compareChart.Hovered += x =>
@@ -506,9 +502,9 @@ internal sealed class SessionsView
         // (since 4.15.0) a race video's name and description on YouTube, from its session
         RaceUploads.Describe = key => items.FirstOrDefault(i => i.Key.Equals(key, StringComparison.OrdinalIgnoreCase)) is { } i ? Describe(i) : null;
         // (since 4.17.0) sessions shared by themselves: once a YouTube upload ends, and each minute (one waiting for its video to be saved)
-        RaceUploads.Changed += () => ShareQueue.Consider(items, Describe, Driver);
+        RaceUploads.Changed += () => ShareQueue.Consider(items, Driver);
         var shareTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
-        shareTimer.Tick += (_, _) => ShareQueue.Consider(items, Describe, Driver);
+        shareTimer.Tick += (_, _) => ShareQueue.Consider(items, Driver);
         shareTimer.Start();
         compareChart.ZoneClicked += z => Pick(z, fromChart: true);
         Cards.Add(BuildCompare());
@@ -727,13 +723,13 @@ internal sealed class SessionsView
     }
 
     /// <summary>(since 4.17.11) The scores: Session 1's; with a Session 2 both side by side, or only the one highlighted
-    /// (S1 or S2 clicked); since 4.17.14 each session's whole, Session 2 the same race too (another lap), and before them
-    /// the two laps' times.</summary>
+    /// (S1 or S2 clicked); since 4.17.14 each session's whole and before them the two laps' times. Session 2 the same race
+    /// (another lap): only Session 1's, the same (shown twice in 4.17.14 and 4.17.15).</summary>
     private void ShowScores()
     {
         scores.Children.Clear();
         scores.ColumnDefinitions.Clear();
-        var two = otherSession.SelectedItem is Item && lastB != null ? other : null;
+        var two = otherSession.SelectedItem is Item o && !Same(o, mineItem) && lastB != null ? other : null;
         var shown = analysis == null ? Array.Empty<(PedalAnalysis, int)>()
             : two == null || compareChart.HighlightRun == 1 ? new[] { (analysis, 1) }
             : compareChart.HighlightRun == 2 ? new[] { (two, 2) }
@@ -1000,9 +996,9 @@ internal sealed class SessionsView
         top.Children.Add(scores);
         s.Children.Add(top);
         // (since 4.17.0 Share Session: Daisy's Server, export and import; since 4.7.0 Import, an icon)
-        var share = IconButton("", T("Share Session"));
+        var share = IconButton("", T("Shared Session Manager"));
         share.Margin = new Thickness(0, 0, 4, 0);
-        share.Click += (_, _) => ShareWindow.Show(Host, this);
+        share.Click += (_, _) => ShareWindow.Show(Host, this, check: mineItem is { Imported: false } m ? new[] { m.Key } : null);
 
         // (since 4.7.0) Session 1 (the session analysed) and Session 2 (a race on the same track, any car, anyone's, or
         // None: the Trace), each a row: its race, its lap, then its channels, so the rows line up (since 4.9.1 the
@@ -1893,7 +1889,8 @@ internal sealed class SessionsView
         var channel = c;
         string text = CompareChart.NameOf(c);
         bool delta = c == Channel.Delta;
-        bool hi = !delta && chart.Highlight == (c, 1);
+        // (since 4.17.16 Delta highlighted too)
+        bool hi = chart.Highlight == (c, 1);
         var box = new CheckBox { IsChecked = delta ? chart.ShowDelta : !chart.Hidden.Contains((c, 1)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = T("Show") };
         System.Windows.Automation.AutomationProperties.SetName(box, F("Show {0}", text));
         Ui.OnToggle(box, on =>
@@ -1910,14 +1907,14 @@ internal sealed class SessionsView
         var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, FontWeight = hi ? FontWeights.SemiBold : FontWeights.Normal };
         var tag = new Border
         {
-            CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 10, 3), Cursor = delta ? null : Cursors.Hand,
+            CornerRadius = new CornerRadius(10), Padding = new Thickness(8, 2, 10, 3), Cursor = Cursors.Hand,
             ToolTip = delta ? T("The other's time less this one's: above the line, this one is ahead") : T("Highlight"),
             BorderThickness = new Thickness(1), BorderBrush = hi ? colour : PedalColours.Frozen(Colors.Gray, 0x60),
             Background = hi ? PedalColours.Frozen(Colors.White, 0x26) : Brushes.Transparent,
             Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, label } },
         };
         // (since 4.17.14 the channel in both sessions)
-        if (!delta) tag.MouseLeftButtonUp += (_, _) => { chart.Highlight = hi ? null : (channel, 1); chart.HighlightRun = null; again(); chart.InvalidateVisual(); };
+        tag.MouseLeftButtonUp += (_, _) => { chart.Highlight = hi ? null : (channel, 1); chart.HighlightRun = null; again(); chart.InvalidateVisual(); };
         return new StackPanel { Orientation = Orientation.Horizontal, Children = { box, tag } };
     }
 
@@ -1933,51 +1930,6 @@ internal sealed class SessionsView
     private Run? lastA, lastB;
 
     // ---------------------------------------------------------------- export and import
-
-    /// <summary>Saves this lap (or the session) as a session file of its own, with the driver's name and the session's,
-    /// to send to someone: their Analysis imports it.</summary>
-    /// <summary>(since 4.17.0) Session 1's lap (or the whole session) can be exported.</summary>
-    internal bool CanExport => mine != null && mineItem != null && thisPart.SelectedItem is Part;
-
-    internal void Export()
-    {
-        if (mine == null || mineItem == null || thisPart.SelectedItem is not Part part) return;
-        string driver = Driver;
-        string name = mineItem.Title;
-        string suggested = string.Join("_", $"{driver} - {name}{(part.Lap != null ? " - " + F("Lap {0}", part.Lap.Number + 1) : "")}".Split(Path.GetInvalidFileNameChars()));
-        var dialog = new Microsoft.Win32.SaveFileDialog { FileName = suggested + ".csv", Filter = T("Session") + " (*.csv)|*.csv", DefaultExt = ".csv" };
-        if (dialog.ShowDialog(Window.GetWindow(Host)) != true) return;
-        try
-        {
-            long from = (long)part.From * 1000 / SessionData.Hz, to = (long)part.To * 1000 / SessionData.Hz;
-            var link = RaceVideos.Of(mineItem.Key);
-            double? at = link?.YouTube != null ? link.VideoAt(mine.Data.Started, from / 1000.0) : null;
-            string text = ExportText(mineItem.File.FullName, mine.Data.Started, from, to, driver, name + (part.Lap != null ? " · " + part.Text : ""), link?.YouTube, at);
-            File.WriteAllText(dialog.FileName, text, new UTF8Encoding(false));
-            Logging.Log.Here.Info($"Analysis: exported {dialog.FileName}");
-        }
-        catch (Exception ex) { MessageBox.Show(Window.GetWindow(Host), F("It couldn't be saved: {0}", ex.Message), T("Analysis")); }
-    }
-
-    /// <summary>(since 4.17.4) A whole session of this PC's saved as a session file (Share Session's pick, when it isn't
-    /// Session 1).</summary>
-    internal void Export(Item item)
-    {
-        if (item.Imported) return;
-        string driver = Driver;
-        string suggested = string.Join("_", $"{driver} - {item.Title}".Split(Path.GetInvalidFileNameChars()));
-        var dialog = new Microsoft.Win32.SaveFileDialog { FileName = suggested + ".csv", Filter = T("Session") + " (*.csv)|*.csv", DefaultExt = ".csv" };
-        if (dialog.ShowDialog(Window.GetWindow(Host)) != true) return;
-        try
-        {
-            var started = SessionLog.StartedOf(item.File);
-            var link = RaceVideos.Of(item.Key);
-            double? at = link?.YouTube != null ? link.VideoAt(started, 0) : null;
-            File.WriteAllText(dialog.FileName, ExportText(item.File.FullName, started, 0, long.MaxValue, driver, item.Title, link?.YouTube, at), new UTF8Encoding(false));
-            Logging.Log.Here.Info($"Analysis: exported {dialog.FileName}");
-        }
-        catch (Exception ex) { MessageBox.Show(Window.GetWindow(Host), F("It couldn't be saved: {0}", ex.Message), T("Analysis")); }
-    }
 
     /// <summary>A session's log from <paramref name="from"/> to <paramref name="to"/> (ms) as a session file of its own,
     /// with the driver's name and the session's (since 4.17.0 also what Daisy's Server shares): their Analysis imports it.</summary>

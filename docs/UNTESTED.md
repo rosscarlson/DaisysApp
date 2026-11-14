@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.16 (Shared Session Manager, Session Manager's Share and right-click, To the start by laps, the cursor's
+  readout on its left, one set of scores for the same race, Delta highlighted):** built, not run: the user was gaming
+  on this PC, so DaisysDev wasn't opened. To try: tick several sessions (Shift-click a range) and Share, watching the
+  title bar's "n of m"; the Session Manager's Share and its right-click menu; |< in lap 5 then again quickly; the
+  readout trailing the cursor; Delta clicked in Channels; two laps of one race showing one set of scores.
 - **4.17.14 (Analysis: one Channels, Combine in S2's row, the laps' times block, S2's scores for the same race,
   2×2 cards):** seen in DaisysDev with the Horizon Mexico Circuit 11/12 10:16 PM race against its own lap 1: S1
   1:02.240, S2 1:04.770, +2.530 in red; S2 highlighted shows S2's scores; the four cards two by two beside the Tips.

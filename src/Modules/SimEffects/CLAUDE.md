@@ -58,6 +58,14 @@ Read only when working in this folder. Current state and lessons; history is in 
   A headless WPF test of the player is `D:\Temp\yttools\yt` (needs System.Text.Json 9 beside it). `RaceVideoLink`
   gained `YouTube`, `Upload`; options in `RaceVideos` (`AnalysisVideos.json`). `video2` in `SessionsView` follows
   `SampleOfB`. Video file "" = deleted, kept on YouTube.
+- **4.17.16 (Shared Session Manager, the user's list while gaming on this PC: not run in DaisysDev):** `ShareWindow`
+  ticks sessions in a `ToggleButton` + `Popup` of `CheckBox`es (`boxes`, `ticked`, `lastBox` for Shift ranges;
+  `Show(.., check:)` ticks), `ShareQueue.ShareMany` (batch `n of m` in `Badge`), `TitleOf` = track, description "".
+  `Consider(items, driver)` (no describe) also sends a shared session's YouTube link once it's there (edit path).
+  Session Manager: `share` button + grid `ContextMenu` (`Menu`, deletes via MessageBox). `PlaybackBar.LapBack`
+  (`lastBack` Stopwatch, 3 s). `CompareChart.Readout(.., trail)` for the cursor's; `DeltaPen` (Delta highlightable).
+  `ShowScores` back to `!Same(o, mineItem)` (the user: scores are per session, so one set for two laps of one race).
+  SessionsView's `export` icon, `Export()`/`Export(Item)`/`CanExport` gone (`ExportText` stays for shares).
 - **4.17.14 (Compare's rows and scores):** one Channels (`Entry(.., r, b, both, ..)`: `(c,1)` and `(c,2)` hidden
   together, synced at start; Delta a `ChannelItem` toggling `ShowDelta`; `chart.Highlight = (c, 1)` and CompareChart
   now highlights a channel in both runs, `Highlight?.Channel == c`). `deltaChip` and `otherChannels` gone; `combineChip`

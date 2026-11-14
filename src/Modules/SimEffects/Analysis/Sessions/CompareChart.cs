@@ -571,7 +571,7 @@ internal sealed class CompareChart : LayeredChart
                 dc.DrawText(PedalColours.Text(this, F("+{0:0.0} s", deltaRange), 9, dim), new Point(area.Left + 3, area.Top + 1));
                 dc.DrawText(PedalColours.Text(this, F("-{0:0.0} s", deltaRange), 9, dim), new Point(area.Left + 3, area.Bottom - 13));
                 // above the line: the other run slower (this one gaining), in this one's colour
-                DrawSeries(dc, a!, delta!, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(c)), 1.6, Highlight != null || HighlightRun != null ? 0.35 : 1), area);
+                DrawSeries(dc, a!, delta!, 0, Yd, DeltaPen(), area);
             }
             else
             {
@@ -720,6 +720,13 @@ internal sealed class CompareChart : LayeredChart
         return LinePen(brush, hi ? 2.6 : 1.5, faded ? 0.3 : 1, dotted && run == 2);
     }
 
+    /// <summary>(since 4.17.16) Delta's line: bold when it's highlighted, faded when something else is.</summary>
+    private Pen DeltaPen()
+    {
+        bool hi = Highlight?.Channel == Channel.Delta;
+        return PedalColours.Pen(PedalColours.Frozen(ColourOf(Channel.Delta)), hi ? 2.6 : 1.6, !hi && (Highlight != null || HighlightRun != null) ? 0.35 : 1);
+    }
+
     /// <summary>(since 4.15.2) What the chart was last drawn with, for its top layer (null: nothing to compare).</summary>
     private (List<Lane> Lanes, double Bottom, bool Tip)? drawn;
 
@@ -731,11 +738,13 @@ internal sealed class CompareChart : LayeredChart
         double px = Px(playX);
         if (px < Left || px > Left + PlotWidth) return;
         dc.DrawLine(PedalColours.Pen(Brushes.White, 1.5), new Point(px, d.Lanes[0].Area.Top - 2), new Point(px, d.Bottom));
-        if (hover == null && !d.Tip && dragFrom == null) Readout(dc, px, d.Lanes, ActualWidth, PedalColours.Theme(this, "TextBrush"));
+        if (hover == null && !d.Tip && dragFrom == null) Readout(dc, px, d.Lanes, ActualWidth, PedalColours.Theme(this, "TextBrush"), trail: true);
     }
 
-    /// <summary>The readout at a place on the chart (pixels across): where, the time, Delta and each channel's values.</summary>
-    private void Readout(DrawingContext dc, double px, List<Lane> lanes, double w, Brush text)
+    /// <summary>The readout at a place on the chart (pixels across): where, the time, Delta and each channel's values.
+    /// <paramref name="trail"/> (since 4.17.16, the cursor's): always on its left, so what's coming isn't covered; not
+    /// shown till there's room.</summary>
+    private void Readout(DrawingContext dc, double px, List<Lane> lanes, double w, Brush text, bool trail = false)
     {
         double x = XAt(px);
         var lines = new List<string> { ByDistance ? $"{x:0} m" + Times(x) : SessionChart.Clock(x, true) };
@@ -755,7 +764,8 @@ internal sealed class CompareChart : LayeredChart
         if (Has(Channel.Gear) && (Shown(Channel.Gear, 1) || Shown(Channel.Gear, 2)))
             lines.Add(T("Gear") + " " + Pair(Channel.Gear, d => d.Gear, v => Math.Round(v) switch { < 0 => "R", 0 => "N", var g => $"{g:0}" }));
         var ft = PedalColours.Text(this, string.Join("\n", lines), 11, text);
-        double bx = px + 12 + ft.Width + 12 > w ? px - 12 - ft.Width - 12 : px + 12;
+        double bx = trail || px + 12 + ft.Width + 12 > w ? px - 12 - ft.Width - 12 : px + 12;
+        if (trail && bx < Left) return;
         dc.DrawRoundedRectangle(PedalColours.Theme(this, "PopupBrush"), PedalColours.Pen(PedalColours.Theme(this, "ControlBorderBrush"), 1), new Rect(bx, lanes[0].Area.Top + 4, ft.Width + 12, ft.Height + 8), 4, 4);
         dc.DrawText(ft, new Point(bx + 6, lanes[0].Area.Top + 8));
     }
@@ -793,7 +803,7 @@ internal sealed class CompareChart : LayeredChart
         if (run == 1 && ShowDelta && delta != null)
         {
             double Yd(double v) => area.Top + area.Height / 2 - v / deltaRange * area.Height / 2;
-            DrawSeries(dc, r, delta, 0, Yd, PedalColours.Pen(PedalColours.Frozen(ColourOf(Channel.Delta)), 1.6, Highlight != null || HighlightRun != null ? 0.35 : 1), area);
+            DrawSeries(dc, r, delta, 0, Yd, DeltaPen(), area);
         }
         // (the highlighted one on top)
         foreach (var c in channels.OrderBy(c => Highlight?.Channel == c))

@@ -19,7 +19,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// boxes in the headers before). Load analyses the session picked in the window behind, this one staying open; Show in
 /// Folder opens Explorer with its log (or video) picked. Since 4.13.1 several can be picked with Ctrl or Shift: Delete
 /// takes them all, the others want one. Since 4.13.2 the buttons are icons, their names their tooltips, and the totals
-/// tiles at the right. One window.
+/// tiles at the right. One window. Since 4.17.16 Share opens the Shared Session Manager with those picked ticked, and a
+/// right-click on a session has every button's action for those picked.
 /// </summary>
 internal sealed class SessionManager
 {
@@ -35,7 +36,8 @@ internal sealed class SessionManager
     private readonly WrapPanel totals = new() { Margin = new Thickness(0, 0, 0, 10), HorizontalAlignment = HorizontalAlignment.Right };
     private readonly HeaderFilter days = new(T("Date"), (a, b) => DateTime.Parse(b, CultureInfo.CurrentCulture).CompareTo(DateTime.Parse(a, CultureInfo.CurrentCulture))),
         games = new(T("Game")), tracks = new(T("Track")), cars = new(T("Car")), kinds = new(T("Kind")), videos = new(T("Video"));
-    private readonly Button upload = Tool("", T("Upload to YouTube"), new Thickness(8, 0, 0, 0)),
+    private readonly Button share = Tool("", T("Share on Daisy's Server"), new Thickness(8, 0, 0, 0)),
+        upload = Tool("", T("Upload to YouTube"), new Thickness(8, 0, 0, 0)),
         dropFiles = Tool("", T("Delete Video Files (kept on YouTube)"), new Thickness(8, 0, 0, 0)), watch = Tool("", T("Open on YouTube"), new Thickness(8, 0, 0, 0));
     /// <summary>Puts Delete Video Files' Confirm? back.</summary>
     private Action disarmFiles = () => { };
@@ -134,21 +136,11 @@ internal sealed class SessionManager
         showLog.Click += (_, _) => { if (Picked is { } r) Ui.ShowInExplorer(r.Item.File.FullName); };
         showVideo.Click += (_, _) => { if (Picked is { VideoFile: { } v }) Ui.ShowInExplorer(v); };
         System.Windows.Automation.AutomationProperties.SetName(delete, T("Delete Session"));
-        disarm = ConfirmButton.ArmIcon(delete, () =>
-        {
-            var picked = grid.SelectedItems.OfType<Row>().Select(r => r.Item).ToList();
-            if (picked.Count > 0) view.Delete(picked);
-        });
-        upload.Click += (_, _) =>
-        {
-            if (!YouTube.SignedIn) { YouTubeOptions.Show(window); return; }
-            RaceUploads.Queue(grid.SelectedItems.OfType<Row>().Select(r => r.Item.Key).ToList());
-        };
-        disarmFiles = ConfirmButton.ArmIcon(dropFiles, () =>
-        {
-            RaceUploads.DeleteFiles(grid.SelectedItems.OfType<Row>().Select(r => r.Item.Key).ToList());
-            view.Refresh();
-        });
+        disarm = ConfirmButton.ArmIcon(delete, Delete);
+        upload.Click += (_, _) => Upload();
+        disarmFiles = ConfirmButton.ArmIcon(dropFiles, DropFiles);
+        // (since 4.17.16) the Shared Session Manager, those picked ticked
+        share.Click += (_, _) => Share();
         watch.Click += (_, _) => { if (Picked is { YouTube: { } url }) Ui.Open(url); };
         // (since 4.15.0) the YouTube account, and what's uploaded
         var tube = new Button { Content = YouTubeOptions.Logo(), Padding = new Thickness(10, 6, 10, 6), Margin = new Thickness(0, 0, 8, 0), ToolTip = T("YouTube") };
@@ -173,7 +165,7 @@ internal sealed class SessionManager
         var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { tube, keys, recording, refresh, close } };
         DockPanel.SetDock(right, Dock.Right);
         buttons.Children.Add(right);
-        buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { load, showLog, showVideo, delete, upload, dropFiles, watch } });
+        buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { load, showLog, showVideo, delete, upload, dropFiles, watch, share } });
         DockPanel.SetDock(buttons, Dock.Bottom);
         body.Children.Add(buttons);
 
@@ -222,6 +214,25 @@ internal sealed class SessionManager
         tracks.Label = v => rows.Count(r => r.Track == v && Passes(r, tracks)) is > 1 and var n ? $"{v} ({n})" : v;
 
         grid.SelectionChanged += (_, _) => { disarm(); disarmFiles(); Enable(); };
+        // (since 4.17.16) a right-click on a session: it's picked (unless it's one of those picked), then the menu
+        grid.ContextMenu = new ContextMenu();
+        grid.PreviewMouseRightButtonDown += (_, e) =>
+        {
+            if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow { Item: Row r } && !grid.SelectedItems.Contains(r))
+            {
+                grid.SelectedItems.Clear();
+                grid.SelectedItem = r;
+            }
+        };
+        grid.ContextMenuOpening += (_, e) =>
+        {
+            if (e.OriginalSource is not DependencyObject d || ItemsControl.ContainerFromElement(grid, d) is not DataGridRow || grid.SelectedItems.Count == 0)
+            {
+                e.Handled = true;
+                return;
+            }
+            Menu(grid.ContextMenu);
+        };
         grid.MouseDoubleClick += (_, e) =>
         {
             if (e.OriginalSource is DependencyObject d && ItemsControl.ContainerFromElement(grid, d) is DataGridRow) Load();
@@ -360,6 +371,50 @@ internal sealed class SessionManager
 
     private static string Percent(long part, long whole) => (whole > 0 ? 100.0 * part / whole : 0).ToString("0", CultureInfo.CurrentCulture) + "%";
 
+    /// <summary>(since 4.17.16) The right-click menu: the buttons' actions, as they're enabled; the deletes asked first.</summary>
+    private void Menu(ContextMenu menu)
+    {
+        menu.Items.Clear();
+        void Item(string text, Button like, Action click)
+        {
+            var m = new MenuItem { Header = text, IsEnabled = like.IsEnabled };
+            m.Click += (_, _) => click();
+            menu.Items.Add(m);
+        }
+        bool Sure(string what) => MessageBox.Show(window, what, T("Session Manager"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+        Item(T("Load"), load, Load);
+        Item(T("Share on Daisy's Server"), share, Share);
+        Item(T("Upload to YouTube"), upload, Upload);
+        Item(T("Open on YouTube"), watch, () => { if (Picked is { YouTube: { } url }) Ui.Open(url); });
+        menu.Items.Add(new Separator());
+        Item(T("Show in Folder"), showLog, () => { if (Picked is { } r) Ui.ShowInExplorer(r.Item.File.FullName); });
+        Item(T("Show Video in Folder"), showVideo, () => { if (Picked is { VideoFile: { } v }) Ui.ShowInExplorer(v); });
+        menu.Items.Add(new Separator());
+        Item(T("Delete Video Files (kept on YouTube)"), dropFiles, () => { if (Sure(T("Delete Video Files (kept on YouTube)") + "?")) DropFiles(); });
+        Item(T("Delete"), delete, () => { if (Sure(delete.ToolTip + "?")) Delete(); });
+    }
+
+    private void Delete()
+    {
+        var picked = grid.SelectedItems.OfType<Row>().Select(r => r.Item).ToList();
+        if (picked.Count > 0) view.Delete(picked);
+    }
+
+    private void Upload()
+    {
+        if (!YouTube.SignedIn) { YouTubeOptions.Show(window); return; }
+        RaceUploads.Queue(grid.SelectedItems.OfType<Row>().Select(r => r.Item.Key).ToList());
+    }
+
+    private void DropFiles()
+    {
+        RaceUploads.DeleteFiles(grid.SelectedItems.OfType<Row>().Select(r => r.Item.Key).ToList());
+        view.Refresh();
+    }
+
+    private void Share() =>
+        ShareWindow.Show(window, view, check: grid.SelectedItems.OfType<Row>().Where(r => !r.Item.Imported).Select(r => r.Item.Key).ToList());
+
     private void Enable()
     {
         var r = Picked;
@@ -373,6 +428,7 @@ internal sealed class SessionManager
         upload.IsEnabled = picked.Any(p => p.VideoFile != null && p.YouTube == null && RaceUploads.Progress(p.Item.Key) == null);
         dropFiles.IsEnabled = picked.Any(p => p.VideoFile != null && p.YouTube != null);
         watch.IsEnabled = r?.YouTube != null;
+        share.IsEnabled = picked.Any(p => !p.Item.Imported);
     }
 
     /// <summary>(since 4.15.0) An upload moved on or finished: its row's YouTube column, and the buttons.</summary>

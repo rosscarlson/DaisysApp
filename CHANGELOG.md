@@ -3,6 +3,24 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.16**
+- **SimEffects → Analysis → Shared Session Manager** (Share Session before): the sessions to share are ticked in a
+  drop-down (Shift-click ticks every one between), then **Share** sends them one after the other, the title bar
+  saying which ("2 of 5") and how far. Each goes as its track: no **Title** or **Description** to type (the server
+  keeps the fields), and no Title column. Every button is at the bottom (**Share**, **Import** with a new icon,
+  **Compare**, **Open on YouTube**, **Delete**, **Refresh**; **Auto** and **Close** at the right); **Remove** (the
+  same as Delete) and **Export to a file** went.
+- **Session Manager**: **Share** opens the Shared Session Manager with the sessions picked ticked; a right-click on a
+  session has **Load**, **Share**, **Upload to YouTube**, **Open on YouTube**, **Show in Folder**, **Show Video in
+  Folder**, **Delete Video Files** and **Delete**.
+- A session shared before its race video was on YouTube gets the video's link once it's there, so others can watch it
+  (shared without one, the link stays empty).
+- **Playback**: **To the start** goes to the start of the lap the cursor's in, and pressed again within 3 seconds to
+  the lap before's, and so on (in lap 1, the start). **Rewind 4×** went. The readout at the cursor is always on its
+  left, so what's coming isn't covered, and isn't shown until there's room.
+- **Scores**: comparing two laps of the same race shows its scores once (4.17.14 showed the same scores twice).
+- **Delta** in Channels highlights like the others. The Session card's **Export** icon went.
+
 **4.17.15**
 - **Back and forward through the AI tab's sessions too**, and Notepad's and Terminal's tabs and Logs' (4.17.13 left
   out tabs that can be closed). A tab that's been closed since is passed over.

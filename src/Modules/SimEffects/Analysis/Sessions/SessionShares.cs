@@ -261,6 +261,8 @@ internal static class ShareQueue
     private const string Blue = "#58A6FF";
     private static bool waiting, held;
     private static int turn;
+    /// <summary>(since 4.17.16) Several shared one after the other: which one's going, of how many (0: one alone).</summary>
+    private static int batchAt, batchOf;
 
     /// <summary>A share started, moved on, finished or failed.</summary>
     public static event Action? Changed;
@@ -277,6 +279,29 @@ internal static class ShareQueue
         : Failure(item.Key) != null ? T("Failed")
         : SessionShares.All.Auto && Wanted(item) && WaitsForYouTube(item.Key) ? T("Waiting for YouTube")
         : "";
+
+    /// <summary>(since 4.17.16) What a session's shared as: its track (else what YouTube's told), no description.</summary>
+    public static string TitleOf(SessionsView.Item i) => i.TrackName.Length > 0 ? i.TrackName : SessionsView.Describe(i).Title;
+
+    /// <summary>(since 4.17.16) Sessions shared one after the other (those shared or going already passed over), the
+    /// title bar saying which. Null, or the last problem.</summary>
+    public static async Task<string?> ShareMany(IReadOnlyList<SessionsView.Item> items, string driver)
+    {
+        string? problem = null;
+        var left = items.Where(i => !i.Imported && SessionShares.Of(i.Key) == null && !going.ContainsKey(i.Key)).ToList();
+        batchOf = left.Count > 1 ? left.Count : 0;
+        try
+        {
+            for (int k = 0; k < left.Count; k++)
+            {
+                batchAt = k + 1;
+                if (SessionShares.Of(left[k].Key) != null || going.ContainsKey(left[k].Key)) continue;
+                problem = await Share(left[k], TitleOf(left[k]), "", driver) ?? problem;
+            }
+        }
+        finally { batchAt = batchOf = 0; }
+        return problem;
+    }
 
     /// <summary>Shares a session now (or, shared already, sends its title, description and video link again). Null, or the problem.</summary>
     public static async Task<string?> Share(SessionsView.Item item, string title, string description, string driver)
@@ -344,6 +369,8 @@ internal static class ShareQueue
     private static void Badge(string? text, string? tip, string? color)
     {
         turn++;
+        // (since 4.17.16 several: "2 of 5" before it)
+        if (text != null && batchOf > 1) text = F("{0} of {1}: {2}", batchAt, batchOf, text);
         TitleBadges.Set(BadgeId, text == null ? null : F("Analysis: {0}", text), tip, color, "SimEffects/" + SimEffectsApplet.Analysis);
     }
 
@@ -380,9 +407,10 @@ internal static class ShareQueue
         RaceVideos.All.YouTubeAuto && RaceVideos.Of(key) is { YouTube: null } link
         && (RaceUploads.Progress(key) != null || (link.Upload && RaceUploads.Failure(key) == null));
 
-    /// <summary>The sessions listed: those to share by themselves, shared in turn (the newest last). Called when they're
-    /// listed again, an upload to YouTube moves on, and each minute.</summary>
-    public static async void Consider(IReadOnlyList<SessionsView.Item> items, Func<SessionsView.Item, (string Title, string Description)> describe, string driver)
+    /// <summary>The sessions listed: those to share by themselves, shared in turn (the newest last); (since 4.17.16) and
+    /// those shared before their race video was on YouTube given its link. Called when they're listed again, an upload
+    /// to YouTube moves on, and each minute.</summary>
+    public static async void Consider(IReadOnlyList<SessionsView.Item> items, string driver)
     {
         bool wait = SessionShares.All.Auto && ServerLink.Configured
             && items.Any(i => Wanted(i) && SessionShares.Of(i.Key) == null && Failure(i.Key) == null && WaitsForYouTube(i.Key));
@@ -392,10 +420,19 @@ internal static class ShareQueue
             // (not over a share going, or one just done)
             if (going.Count == 0 && !held) Idle();
         }
-        if (busy || !SessionShares.All.Auto || !ServerLink.Configured) return;
+        if (busy || !ServerLink.Configured) return;
         busy = true;
         try
         {
+            // (since 4.17.16 a session shared without its video, the video on YouTube since: its link sent, so others
+            // can watch it)
+            foreach (var i in items.Where(i => !i.Imported).ToList())
+            {
+                if (SessionShares.Of(i.Key) is not { Video: null } s || RaceVideos.Of(i.Key)?.YouTube == null || going.ContainsKey(i.Key)) continue;
+                if (failed.TryGetValue(i.Key, out var f) && DateTime.Now - f.At < TimeSpan.FromMinutes(10)) continue;
+                if (await Share(i, s.Title, s.Description, driver) != null) break;
+            }
+            if (!SessionShares.All.Auto) return;
             foreach (var i in items.Where(Wanted).OrderBy(i => i.Started).ToList())
             {
                 if (SessionShares.Of(i.Key) != null || going.ContainsKey(i.Key)) continue;
@@ -405,8 +442,7 @@ internal static class ShareQueue
                 // (the race's log still being written, or just ended: its video still being saved)
                 i.File.Refresh();
                 if (!i.File.Exists || DateTime.Now - i.File.LastWriteTime < TimeSpan.FromSeconds(60)) continue;
-                var (title, description) = describe(i);
-                if (await Share(i, title, description, driver) != null) break;
+                if (await Share(i, TitleOf(i), "", driver) != null) break;
             }
         }
         finally { busy = false; }
