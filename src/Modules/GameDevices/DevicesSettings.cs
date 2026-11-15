@@ -36,6 +36,8 @@ public sealed class KnownDevice
     public HashSet<int> Inverted { get; set; } = new();
     /// <summary>The button (0 first) that's first gear, or a sequential shifter's up (null: the type's usual).</summary>
     public int? FirstGear { get; set; }
+    /// <summary>The buttons it really has, of the ones Windows says (null: all of them).</summary>
+    public int? ButtonCount { get; set; }
     public DeviceWidgetPlace? Widget { get; set; }
     /// <summary>Its Device Widget (its main control, and the other axes and buttons as they're used).</summary>
     public DeviceWidgetPlace? Activity { get; set; }

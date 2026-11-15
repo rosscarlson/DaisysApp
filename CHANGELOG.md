@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.25**
+- **Gaming → Devices**: a throttle's, joystick's, HOTAS's and wheel's axes can be a **Thruster** (left / right, up /
+  down), for the small analog stick many have, drawn as a small stick in the picture (a throttle's Rx and Ry take it
+  by themselves; the others only when picked).
+- The device's picture takes the left third, its axes the right two thirds beside it; Calibration comes next, then
+  the buttons, each part split by a thin line.
+- A drop-down after the buttons sets how many the device really has (Windows often says 128 for 32), kept for it:
+  the tab, the picture and the Device Widget show only those.
+
 **4.17.24**
 - **ForzaWheel**: the app no longer freezes when the wheel base stops taking force feedback, which 4.17.19 didn't
   fully fix (it froze again on the rig in FH4). Every force sent to the wheel's driver is now given up on after half a

@@ -34,7 +34,7 @@ internal sealed class DevicesView : Grid
     private readonly Border alertCard;
     private readonly TextBlock noneText = Ui.Note(T("No game controllers"), 4);
     private readonly FrameworkElement widgetList;
-    private readonly DeviceArt art = new() { Height = 300 };
+    private readonly DeviceArt art = new() { VerticalAlignment = VerticalAlignment.Top, MaxHeight = 300 };
     private readonly ControllerState reading = new();
     private readonly List<(Device Device, Ellipse Dot)> dots = new();
     private readonly List<(int Axis, ProgressBar Bar, TextBlock Value, TextBlock Name, Button Row)> axisRows = new();
@@ -54,6 +54,7 @@ internal sealed class DevicesView : Grid
         widgetList = Widget.ListCard();
         calibration = new CalibrationPanel(CalibrationSettings.Load(), hub.Window);
         calibration.Changed += ShowAxisStates;
+        calibration.Margin = new Thickness(0);
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition());
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(340) });
@@ -434,18 +435,29 @@ internal sealed class DevicesView : Grid
         bool calibrates = d.Info is { VJoy: false } ci && ci.HasAxis.Any(a => a);
         calibration.Show(calibrates ? d.Info : null);
         if (!d.Connected) right.Children.Add(Ui.Note(T("Not connected"), new Thickness(0, 0, 0, 6)));
-        // (the picture is one element, moved in here again; its own widget has one of its own)
+        // the picture on the left third, its axes on the rest; the picture is one element, moved in here again (its
+        // own widget has one of its own)
         art.Show(d, hub);
-        right.Children.Add(art);
+        (art.Parent as Panel)?.Children.Remove(art);
+        var top = new Grid();
+        top.ColumnDefinitions.Add(new ColumnDefinition());
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+        var axes = new StackPanel();
+        SetColumn(axes, 2);
+        top.Children.Add(art);
+        top.Children.Add(axes);
+        right.Children.Add(top);
         if (d.Info is not { } c) return;
 
         var roles = DeviceKinds.Roles(d.Kind);
         var assigned = d.Roles;
         foreach (int axis in Enumerable.Range(0, 8).Where(a => c.HasAxis[a]))
-            right.Children.Add(AxisRow(d, axis, roles, assigned));
-        if (d.Kind is DeviceKind.HShifter or DeviceKind.SeqShifter or DeviceKind.AllInOne && c.Buttons > 1)
+            axes.Children.Add(AxisRow(d, axis, roles, assigned));
+        int buttons = d.Buttons;
+        if (d.Kind is DeviceKind.HShifter or DeviceKind.SeqShifter or DeviceKind.AllInOne && buttons > 1)
         {
-            var gear = Ui.Choice(Enumerable.Range(1, c.Buttons).Select(b => (b.ToString(), b - 1)), d.FirstGear, v => { d.Known.FirstGear = v; hub.Saved(d); }, 80);
+            var gear = Ui.Choice(Enumerable.Range(1, buttons).Select(b => (b.ToString(), b - 1)), d.FirstGear, v => { d.Known.FirstGear = v; hub.Saved(d); }, 80);
             AutomationProperties.SetName(gear, T("First gear button"));
             var row = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
             var label = Ui.Secondary(d.Kind == DeviceKind.SeqShifter ? T("Up button (Down is the next)") : T("First gear button (R is seventh, 7 eighth)"));
@@ -454,14 +466,20 @@ internal sealed class DevicesView : Grid
             DockPanel.SetDock(gear, Dock.Left);
             row.Children.Add(gear);
             row.Children.Add(label);
-            right.Children.Add(row);
+            axes.Children.Add(row);
         }
+        if (calibrates)
+        {
+            right.Children.Add(Rule());
+            right.Children.Add(calibration);
+        }
+        if (c.Buttons > 0 || c.Povs > 0) right.Children.Add(Rule());
         if (c.Buttons > 0)
         {
-            right.Children.Add(Ui.Header(T("Buttons"), new Thickness(0, 14, 0, 6)));
+            right.Children.Add(Ui.Header(T("Buttons"), new Thickness(0, 0, 0, 6)));
             var wrap = new WrapPanel();
             Array.Clear(capsDown);
-            for (int i = 0; i < c.Buttons; i++)
+            for (int i = 0; i < buttons; i++)
             {
                 var cap = new Border { Width = 28, Height = 24, CornerRadius = new CornerRadius(4), Margin = new Thickness(0, 0, 3, 3),
                     Child = new TextBlock { Text = (i + 1).ToString(), FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } };
@@ -469,6 +487,18 @@ internal sealed class DevicesView : Grid
                 buttonCaps.Add(cap);
                 wrap.Children.Add(cap);
             }
+            // how many it really has: Windows often says more (128 for 32)
+            var count = Ui.Choice(Enumerable.Range(1, c.Buttons).Reverse().Select(n => (n.ToString(), n)), buttons, n =>
+            {
+                d.Known.ButtonCount = n == c.Buttons ? null : n;
+                hub.Saved(d);
+                Dispatcher.BeginInvoke(ShowDevice);
+            }, 64);
+            count.Margin = new Thickness(4, 0, 0, 3);
+            count.VerticalAlignment = VerticalAlignment.Center;
+            count.ToolTip = T("Buttons it has");
+            AutomationProperties.SetName(count, T("Buttons it has"));
+            wrap.Children.Add(count);
             right.Children.Add(wrap);
         }
         if (c.Povs > 0)
@@ -477,8 +507,15 @@ internal sealed class DevicesView : Grid
             hatText.Margin = new Thickness(0, 8, 0, 0);
             right.Children.Add(hatText);
         }
-        if (calibrates) right.Children.Add(calibration);
         ShowAxisStates();
+    }
+
+    /// <summary>A thin line between the parts.</summary>
+    private static Border Rule()
+    {
+        var line = new Border { Height = 1, Margin = new Thickness(0, 12, 0, 12) };
+        line.SetResourceReference(Border.BackgroundProperty, "CardBorderBrush");
+        return line;
     }
 
     /// <summary>The axis being calibrated picked, the ones moving in the accent colour (which pedal is which), the ones

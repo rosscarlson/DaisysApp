@@ -46,7 +46,7 @@ internal sealed class DeviceArt : FrameworkElement
         if (has)
         {
             foreach (double a in state.Axes) hash.Add(double.IsNaN(a) ? -1 : (int)(a * 500));
-            for (int i = 0; i < (d!.Info?.Buttons ?? 0); i++) if (state.Buttons[i]) hash.Add(i);
+            for (int i = 0; i < d!.Buttons; i++) if (state.Buttons[i]) hash.Add(i);
             foreach (int p in state.Povs) hash.Add(p);
         }
         int value = hash.ToHashCode();
@@ -57,7 +57,7 @@ internal sealed class DeviceArt : FrameworkElement
         kind = d?.Kind ?? DeviceKind.Other;
         roles = d?.Roles ?? new();
         inverted = d?.Known.Inverted ?? new();
-        buttons = d?.Info?.Buttons ?? 0;
+        buttons = d?.Buttons ?? 0;
         hats = d?.Info?.Povs ?? 0;
         firstGear = d?.FirstGear ?? 0;
         hasAxis = d?.HasAxis ?? new bool[8];
@@ -78,8 +78,12 @@ internal sealed class DeviceArt : FrameworkElement
 
     private bool Down(int button) => read && button >= 0 && button < buttons && state.Buttons[button];
 
-    protected override Size MeasureOverride(Size available) =>
-        new(double.IsInfinity(available.Width) ? W : available.Width, double.IsInfinity(available.Height) ? H : available.Height);
+    /// <summary>All it's given; with no height, its shape at the width it has.</summary>
+    protected override Size MeasureOverride(Size available)
+    {
+        double w = double.IsInfinity(available.Width) ? W : available.Width;
+        return new(w, double.IsInfinity(available.Height) ? w * H / W : available.Height);
+    }
 
     protected override void OnRender(DrawingContext context)
     {
@@ -98,21 +102,30 @@ internal sealed class DeviceArt : FrameworkElement
         {
             case DeviceKind.RacingPedals: RacingPedals(40, 20, 400, 220); break;
             case DeviceKind.FlightPedals: FlightPedals(); break;
-            case DeviceKind.Throttle: Levers(150, 20, 180, 220); break;
+            case DeviceKind.Throttle:
+                Levers(150, 20, 180, 220);
+                Thruster(405, 110);
+                break;
             case DeviceKind.Joystick:
                 Stick(240, 125, 100);
                 if (!double.IsNaN(Role(K.Throttle))) Lever(400, 25, 34, 200, Role(K.Throttle), T("Throttle"));
+                Thruster(70, 110);
                 break;
             case DeviceKind.Hotas:
                 Stick(145, 125, 100);
                 Levers(290, 20, 170, 220);
+                Thruster(36, 32);
                 break;
             case DeviceKind.Yoke: Yoke(); break;
-            case DeviceKind.WheelBase: Wheel(240, 125, 105); break;
+            case DeviceKind.WheelBase:
+                Wheel(240, 125, 105);
+                Thruster(410, 110);
+                break;
             case DeviceKind.AllInOne:
                 Wheel(115, 125, 95);
                 RacingPedals(225, 20, 150, 220);
                 Gate(385, 50, 85, 130);
+                Thruster(36, 232);
                 break;
             case DeviceKind.HShifter: Gate(130, 25, 220, 210); break;
             case DeviceKind.SeqShifter: Sequential(); break;
@@ -359,6 +372,14 @@ internal sealed class DeviceArt : FrameworkElement
         double px = x + (h - 0.5) * 2 * 14, py = y + (v - 0.5) * 2 * 14;
         dc.DrawEllipse(control, Ui.Pen(edge, 2), new Point(x, y), 26, 26);
         dc.DrawEllipse(Down(button) ? success : accent, null, new Point(px, py), 15, 15);
+    }
+
+    /// <summary>A throttle's, stick's or wheel's small analog stick, where an axis has one of its roles.</summary>
+    private void Thruster(double x, double y)
+    {
+        if (double.IsNaN(Role(K.ThrusterX)) && double.IsNaN(Role(K.ThrusterY))) return;
+        ThumbStick(x, y, Centred(K.ThrusterX), Centred(K.ThrusterY), -1);
+        Label(T("Thruster"), x, y + 30, 12, muted);
     }
 
     /// <summary>A controller as DirectInput sees an Xbox pad: both triggers on one axis, 50% at rest.</summary>

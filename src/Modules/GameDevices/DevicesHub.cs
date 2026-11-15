@@ -29,6 +29,8 @@ internal sealed class Device
     public DeviceKind Kind => Known.Kind ?? Detected;
     public int FirstGear => Known.FirstGear ?? DeviceKinds.FirstGear(Kind, Known.WindowsName);
     public bool[] HasAxis => Info?.HasAxis ?? new bool[8];
+    /// <summary>The buttons shown: as many as the user said it has, of Windows' count.</summary>
+    public int Buttons => Math.Min(Known.ButtonCount ?? int.MaxValue, Info?.Buttons ?? 0);
     public Dictionary<string, int> Roles => DeviceKinds.Assign(Kind, HasAxis, Known.Roles);
 
     /// <summary>A reading (0 – 1) as the tab's bars show it, the way the picture goes: a reversed control turned over, and

@@ -20,7 +20,13 @@ internal static class DeviceKinds
     public const string Throttle = "Throttle", Brake = "Brake", Clutch = "Clutch", Steering = "Steering", Rudder = "Rudder",
         LeftBrake = "LeftBrake", RightBrake = "RightBrake", StickX = "StickX", StickY = "StickY", Twist = "Twist",
         Throttle2 = "Throttle2", Slider = "Slider", Handbrake = "Handbrake", LeftX = "LeftX", LeftY = "LeftY",
-        RightX = "RightX", RightY = "RightY", Triggers = "Triggers";
+        RightX = "RightX", RightY = "RightY", Triggers = "Triggers", ThrusterX = "ThrusterX", ThrusterY = "ThrusterY";
+
+    /// <summary>A throttle's, stick's or wheel's small analog stick: only on an axis it's usually on, or one picked.</summary>
+    private static Role[] Thruster(params int[] prefer) =>
+        new[] { new Role(ThrusterX, T("Thruster left / right"), prefer.Take(1).ToArray()), new Role(ThrusterY, T("Thruster up / down"), prefer.Skip(1).ToArray()) };
+
+    private static Role[] With(Role[] roles, Role[] more) => roles.Concat(more).ToArray();
 
     /// <summary>The types in the order they're offered.</summary>
     public static readonly DeviceKind[] All =
@@ -62,12 +68,12 @@ internal static class DeviceKinds
     {
         DeviceKind.FlightPedals => new[] { new Role(Rudder, T("Rudder"), Rz, X, Z), new Role(LeftBrake, T("Left brake"), X, Rx, Y), new Role(RightBrake, T("Right brake"), Y, Ry, Z) },
         DeviceKind.RacingPedals => new[] { new Role(Throttle, T("Throttle")), new Role(Brake, T("Brake")), new Role(Clutch, T("Clutch")) },
-        DeviceKind.Throttle => new[] { new Role(Throttle, T("Left throttle"), Z, X), new Role(Throttle2, T("Right throttle"), Rz, Y), new Role(Slider, T("Slider"), S1, S2) },
-        DeviceKind.Joystick => new[] { new Role(StickX, T("Stick left / right"), X), new Role(StickY, T("Stick up / down"), Y), new Role(Twist, T("Twist"), Rz, Rx), new Role(Throttle, T("Throttle"), S1, Z, S2) },
-        DeviceKind.Hotas => new[] { new Role(StickX, T("Stick left / right"), X), new Role(StickY, T("Stick up / down"), Y), new Role(Twist, T("Twist"), Rz, Rx), new Role(Throttle, T("Left throttle"), Z, S1), new Role(Throttle2, T("Right throttle"), S2, Ry) },
+        DeviceKind.Throttle => With(new[] { new Role(Throttle, T("Left throttle"), Z, X), new Role(Throttle2, T("Right throttle"), Rz, Y), new Role(Slider, T("Slider"), S1, S2) }, Thruster(Rx, Ry)),
+        DeviceKind.Joystick => With(new[] { new Role(StickX, T("Stick left / right"), X), new Role(StickY, T("Stick up / down"), Y), new Role(Twist, T("Twist"), Rz, Rx), new Role(Throttle, T("Throttle"), S1, Z, S2) }, Thruster()),
+        DeviceKind.Hotas => With(new[] { new Role(StickX, T("Stick left / right"), X), new Role(StickY, T("Stick up / down"), Y), new Role(Twist, T("Twist"), Rz, Rx), new Role(Throttle, T("Left throttle"), Z, S1), new Role(Throttle2, T("Right throttle"), S2, Ry) }, Thruster()),
         DeviceKind.Yoke => new[] { new Role(StickX, T("Roll"), X), new Role(StickY, T("Pitch"), Y), new Role(Throttle, T("Throttle"), Z, S1) },
-        DeviceKind.WheelBase => new[] { new Role(Steering, T("Steering"), X) },
-        DeviceKind.AllInOne => new[] { new Role(Steering, T("Steering"), X), new Role(Throttle, T("Throttle"), Y, Z), new Role(Brake, T("Brake"), Rz, Z), new Role(Clutch, T("Clutch"), S1, Z) },
+        DeviceKind.WheelBase => With(new[] { new Role(Steering, T("Steering"), X) }, Thruster()),
+        DeviceKind.AllInOne => With(new[] { new Role(Steering, T("Steering"), X), new Role(Throttle, T("Throttle"), Y, Z), new Role(Brake, T("Brake"), Rz, Z), new Role(Clutch, T("Clutch"), S1, Z) }, Thruster()),
         DeviceKind.Handbrake => new[] { new Role(Handbrake, T("Handbrake")) },
         DeviceKind.Xbox or DeviceKind.Gamepad => new[]
         {
@@ -83,11 +89,11 @@ internal static class DeviceKinds
     /// more of it is a lower reading. Pedals' Throttle isn't one: it goes up as it's pressed.
     /// </summary>
     public static bool Reversed(DeviceKind kind, string role) =>
-        role is StickY or LeftY or RightY || kind is not (DeviceKind.RacingPedals or DeviceKind.AllInOne) && role is Throttle or Throttle2 or Slider;
+        role is StickY or LeftY or RightY or ThrusterY || kind is not (DeviceKind.RacingPedals or DeviceKind.AllInOne) && role is Throttle or Throttle2 or Slider;
 
     /// <summary>
     /// Which axis drives each role (-1: none): the user's where they've said, else the axis the role is usually on, else
-    /// the next one free (in X, Y, Z… order).
+    /// the next one free (in X, Y, Z… order). A thruster takes no axis but its usual one: most devices don't have one.
     /// </summary>
     public static Dictionary<string, int> Assign(DeviceKind kind, bool[] hasAxis, IReadOnlyDictionary<string, int> chosen)
     {
@@ -104,7 +110,7 @@ internal static class DeviceKinds
         {
             if (result.ContainsKey(r.Id)) continue;
             int pick = r.Prefer.Where(a => hasAxis[a] && !used.Contains(a)).DefaultIfEmpty(-1).First();
-            if (pick < 0) pick = Enumerable.Range(0, 8).Where(a => hasAxis[a] && !used.Contains(a)).DefaultIfEmpty(-1).First();
+            if (pick < 0 && r.Id is not (ThrusterX or ThrusterY)) pick = Enumerable.Range(0, 8).Where(a => hasAxis[a] && !used.Contains(a)).DefaultIfEmpty(-1).First();
             result[r.Id] = pick;
             if (pick >= 0) used.Add(pick);
         }

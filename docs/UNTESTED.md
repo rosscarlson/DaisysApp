@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.25 (Devices: Thruster roles, picture beside the axes, buttons under Calibration with a count):** tried on
+  DaisysDev's fakes (and the VKB's 128 → 32). To try: Gaming → Devices, your throttle's mini stick axes set to Thruster
+  left / right and up / down (the small stick in the picture moves), the VKB's buttons set to 32 and still 32 after a
+  restart.
 - **4.17.24 (ForzaWheel and Wheel freeze, again):** built, not run: the user was racing. 4.17.19 froze again
   (19:13 on the rig: Wheel's stall caught, then the app hung, no dump). To try: race with ForzaWheel's FFB (and the
   Wheel if wanted); if forces stick, the app should stay usable, ForzaWheel's log say "force-feedback driver isn't

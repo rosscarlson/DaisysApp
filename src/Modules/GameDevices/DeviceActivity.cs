@@ -108,7 +108,7 @@ internal sealed class DeviceActivity : FrameworkElement
     /// <summary>What changed since the last reading, and when.</summary>
     private void Track(Device device, long now)
     {
-        int buttons = Math.Min(device.Info?.Buttons ?? 0, down.Length);
+        int buttons = Math.Min(device.Buttons, down.Length);
         if (!primed)
         {
             // the first reading is where things are: nothing has moved yet

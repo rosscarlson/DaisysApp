@@ -2,6 +2,16 @@
 
 Read only when working in this folder. Keep it short.
 
+**4.17.25 (asked 2026-11-15: Thruster X/Y roles for throttles, joysticks, wheels; picture 1/3 left, axes 2/3 right;
+buttons under Calibration with a count drop-down remembered per device; thin separators):** `DeviceKinds.Thruster`
+(roles `ThrusterX/Y`, Reversed like StickY; `Assign` gives them only their Prefer: Throttle Rx/Ry, others none, so
+they never steal a free axis); `DeviceArt.Thruster` (ThumbStick, label) per type; `KnownDevice.ButtonCount` (null =
+all) → `Device.Buttons` (view, art, activity); `DevicesView.Rule()` (1 px CardBorderBrush, 12 margins);
+`DeviceArt.MeasureOverride` with no height = width × 280/480 (art detached from its old grid on each ShowDevice).
+Decisions (mine): Hotas and all-in-one get thrusters too; the count drop-down lists 1…Windows' count, highest first.
+Tested: private copy `%TEMP%\DaisysDevax` (`%TEMP%\devax\shot.ps1 -Press`, `count.ps1 -Box -Pick`): layout, 32 of
+the VKB's 128 saved, Test Throttle thrusters drawn. Not tried with a real thruster.
+
 **Where things stand (2026-11-06):** 4.6.7 released. Waiting on the user (rig): 4.6.7's Calibration (Find Ranges,
 Apply) on the SimJack pedals and the PXN-HB (4.6.2's axis fix never tried on a real device); 4.6.2/4.6.0's Device Widget with real
 devices (fading, handbrake lever, axis-named tiles), Apply Order with a real veto (3.37.x), and what real devices show

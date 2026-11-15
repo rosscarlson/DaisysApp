@@ -17,9 +17,11 @@ one is, a warning when that changes, a live picture of what each one is doing, a
   **Refresh** (top right) looks for devices again. A device in the normal order but not plugged in stays, greyed.
 - **Details** (the arrow on a block): the **type** at the top right, the pencil to rename, **Alert on Change**, then its number, DirectInput
   order, what's normal, Windows' name, VID:PID, whether the joystick API has it, axes, buttons, hats and force feedback.
-- **The device picked** (right): its picture, its axes, each with a bar, its **role** (what it does in the picture) and
-  **Invert** (the bar and the picture the other way round), its buttons, which light when pressed, and under them its
-  [Calibration](#calibration) (click an axis to calibrate it). At the top right: **Cancel** and **Apply** while the
+- **The device picked** (right): its picture on the left third and its axes on the rest (since 4.17.25), each with a
+  bar, its **role** (what it does in the picture) and **Invert** (the bar and the picture the other way round); under
+  them its [Calibration](#calibration) (click an axis to calibrate it), then its buttons, which light when pressed, the
+  parts split by a thin line. The drop-down after the buttons is how many it really has (Windows often says 128 for
+  32): kept for the device, it's what the tab, the picture and the Device Widget show. At the top right: **Cancel** and **Apply** while the
   calibration has changes, **Device Widget** (below), **Make Widget** (also on a right-click of the picture) and
   **Properties**.
 
@@ -86,7 +88,10 @@ Flight pedals (rudder and toe brakes) · Racing pedals · Throttle · Joystick �
 base · Wheel, pedals and H-shifter (all in one) · H-pattern shifter · Sequential shifter · Handbrake (an axis, or any
 button) · Xbox controller · Gamepad · Button box · Other (a bar per axis, its hats).
 
-Roles start on the axes they're usually on, then the next ones free. A pedal set's order differs from maker to maker:
+A throttle, joystick, HOTAS and wheel (and an all-in-one) also offer **Thruster left / right** and **up / down**, for
+the small analog stick many have (since 4.17.25): drawn as a small stick beside the rest. Roles start on the axes
+they're usually on, then the next ones free; a thruster takes only its usual axis (a throttle's Rx and Ry), or the one
+you pick. A pedal set's order differs from maker to maker:
 set them with each axis's drop-down, and Invert a pedal that rests at 100%. Shifters take a **first gear button**:
 gears are that button and the ones after it, R seventh and 7 eighth (Logitech's order); a sequential shifter's are Up
 and the next one. An Xbox pad through DirectInput has both triggers on one axis, 50% at rest.
@@ -183,7 +188,7 @@ one pretend device of each type, moving by themselves (calibrated only in memory
 | `DeviceArt.cs` | The pictures: one element drawn in a 480 × 280 space, for the tab and a widget |
 | `DevicesView.cs` | The tab |
 | `JoyProperties.cs` | Properties, through joy.cpl (control ids 1020 and 1002 in its dialog, its list through UI Automation) |
-| `DevicesSettings.cs` | `GameDevices.json` |
+| `DevicesSettings.cs` | `GameDevices.json` (`ButtonCount`: the buttons a device really has) |
 | `FakeDevices.cs` | The pretend devices |
 | `Calibration/CalibrationPanel.cs` | The Calibration block: the axis picked (bars, graph, min / centre / max), Find Ranges, the changes, Apply and Cancel; read on the tab's tick |
 | `Calibration/Calibrator.cs` | `Calibrator.Open`, `Axis`, `IController`, `DiController` (each controller open twice: in raw mode (`DIPROP_CALIBRATIONMODE`) and as games see it; `DIPROP_LOGICALRANGE` and `DIPROP_CALIBRATION` got and set through the COM vtable, as Vortice keeps them internal; the state read into a DIJOYSTATE2 buffer, each axis given its place there by its type (`GameControllers.AxisIndex`): an object's own `Offset` is the device's native one, and Vortice's `GetObjectInfoByOffset` always fails), `FakeController` (a pretend device's axes) |
