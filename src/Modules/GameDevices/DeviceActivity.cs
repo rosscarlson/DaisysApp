@@ -15,7 +15,9 @@ namespace DaisysApp.Applets.GameDevices;
 /// </summary>
 internal sealed class DeviceActivity : FrameworkElement
 {
-    private const double H = 100, Gap = 8, TileW = 58;
+    private const double H = 120, Gap = 8, TileW = 76;
+    /// <summary>Text sizes: the buttons' numbers biggest, then a value (a tile's %), then what it is.</summary>
+    private const double ButtonSize = 56, ValueSize = 20, LabelSize = 16, LabelY = 98;
     /// <summary>A tile stays this long after its control last changed, then fades out over <see cref="Fade"/>.</summary>
     private const long Hold = 2500, Fade = 600;
     /// <summary>A move smaller than this (of the axis's range) is jitter: not activity, as the tab's green dot.</summary>
@@ -234,9 +236,10 @@ internal sealed class DeviceActivity : FrameworkElement
         _ => 0,
     };
 
-    private double TileWidth(string id) => id == "buttons" ? Math.Max(TileW, Measure(ButtonsText, 26, true) + 16) : TileW;
+    private double TileWidth(string id) => id == "buttons" ? Math.Max(TileW, Measure(ButtonsText, ButtonSize, true) + 28) : TileW;
 
-    private string ButtonsText => string.Join(" ", buttonsShown.Select(b => (b + 1).ToString()));
+    /// <summary>The buttons' numbers, a dot between them so 1 and 2 aren't 12.</summary>
+    private string ButtonsText => string.Join(" · ", buttonsShown.Select(b => (b + 1).ToString()));
 
     // ---------------------------------------------------------------- pieces
 
@@ -268,7 +271,7 @@ internal sealed class DeviceActivity : FrameworkElement
 
     private void Wheel(double x)
     {
-        double v = Role(K.Steering), turn = double.IsNaN(v) ? 0 : (v - 0.5) * 450, cx = x + 50, cy = 46, r = 40;
+        double v = Role(K.Steering), turn = double.IsNaN(v) ? 0 : (v - 0.5) * 450, cx = x + 50, cy = 48, r = 46;
         dc.PushTransform(new RotateTransform(turn, cx, cy));
         dc.DrawEllipse(null, Ui.Pen(muted, r * 0.18), new Point(cx, cy), r * 0.88, r * 0.88);
         var spoke = Line(muted, r * 0.15);
@@ -277,12 +280,12 @@ internal sealed class DeviceActivity : FrameworkElement
         dc.DrawEllipse(control, Ui.Pen(edge, 1.5), new Point(cx, cy), r * 0.28, r * 0.28);
         dc.DrawLine(Line(accent, r * 0.14), new Point(cx, cy - r * 0.8), new Point(cx, cy - r * 0.96));
         dc.Pop();
-        Label(double.IsNaN(v) ? "–" : $"{(v - 0.5) * 200:+0;-0;0}%", cx, 86, 10, muted, max: 100);
+        Label(double.IsNaN(v) ? "–" : $"{(v - 0.5) * 200:+0;-0;0}%", cx, LabelY, LabelSize, muted, max: 100);
     }
 
     private void Stick(double x)
     {
-        double cx = x + 50, cy = 50, r = 44;
+        double cx = x + 50, cy = 56, r = 48;
         dc.DrawEllipse(control, Ui.Pen(edge, 1.5), new Point(cx, cy), r, r);
         dc.DrawLine(Ui.Pen(edge, 1), new Point(cx - r, cy), new Point(cx + r, cy));
         dc.DrawLine(Ui.Pen(edge, 1), new Point(cx, cy - r), new Point(cx, cy + r));
@@ -295,13 +298,13 @@ internal sealed class DeviceActivity : FrameworkElement
     /// <summary>A throttle lever in its slot: forward (up) is 100%.</summary>
     private void Lever(double x, double reading)
     {
-        double v = double.IsNaN(reading) ? double.NaN : 1 - reading, cx = x + 20, top = 6, track = 76;
+        double v = double.IsNaN(reading) ? double.NaN : 1 - reading, cx = x + 20, top = 6, track = 88;
         dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(cx - 5, top, 10, track), 5, 5);
         bool none = double.IsNaN(v);
         double p = none ? 0 : Math.Clamp(v, 0, 1), ly = top + (1 - p) * track;
         if (!none) dc.DrawRoundedRectangle(accent, null, new Rect(cx - 5, ly, 10, top + track - ly), 5, 5);
         dc.DrawRoundedRectangle(none ? edge : text, null, new Rect(cx - 16, ly - 6, 32, 12), 4, 4);
-        Label(none ? "–" : $"{v * 100:0}%", cx, 86, 10, muted, max: 44);
+        Label(none ? "–" : $"{v * 100:0}%", cx, LabelY, LabelSize, muted, max: 50);
     }
 
     /// <summary>
@@ -314,13 +317,13 @@ internal sealed class DeviceActivity : FrameworkElement
         double v = Role(K.Handbrake);
         if (axis < 0 && read) v = down.Any(b => b) ? 1 : 0;
         double p = double.IsNaN(v) ? 0 : Math.Clamp(v, 0, 1), angle = (8 + 52 * p) * Math.PI / 180;
-        Point pivot = new(x + 24, 58), tip = new(pivot.X + Math.Cos(angle) * 62, pivot.Y - Math.Sin(angle) * 62);
-        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(x + 10, 55, 40, 8), 3, 3);
+        Point pivot = new(x + 24, 64), tip = new(pivot.X + Math.Cos(angle) * 62, pivot.Y - Math.Sin(angle) * 62);
+        dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(x + 10, 61, 40, 8), 3, 3);
         dc.DrawLine(Line(muted, 5), pivot, tip);
         dc.DrawEllipse(accent, null, tip, 6, 6);
         dc.DrawEllipse(text, null, pivot, 3, 3);
-        Label(double.IsNaN(v) ? "–" : $"{v * 100:0}%", x + 50, 68, 12, text, bold: true, max: 100);
-        Label(axis >= 0 ? K.AxisName(axis) : T("Button"), x + 50, 84, 10, muted, max: 100);
+        Label(double.IsNaN(v) ? "–" : $"{v * 100:0}%", x + 50, 68, ValueSize, text, bold: true, max: 100);
+        Label(axis >= 0 ? K.AxisName(axis) : T("Button"), x + 50, LabelY, LabelSize, muted, max: 100);
     }
 
     /// <summary>An axis that moved: its value, a bar, and which axis it is (X Axis, Z Rotation…).</summary>
@@ -335,8 +338,8 @@ internal sealed class DeviceActivity : FrameworkElement
             K.Clutch => Ui.Brush(ClutchColor),
             _ => accent,
         };
-        double v = Value(axis), cx = x + TileW / 2, top = 18, track = 62, w = 18;
-        Label(double.IsNaN(v) ? "–" : $"{v * 100:0}%", cx, 0, 12, text, bold: true);
+        double v = Value(axis), cx = x + TileW / 2, top = 28, track = 68, w = 20;
+        Label(double.IsNaN(v) ? "–" : $"{v * 100:0}%", cx, 0, ValueSize, text, bold: true);
         dc.DrawRoundedRectangle(control, Ui.Pen(edge, 1), new Rect(cx - w / 2, top, w, track), 5, 5);
         if (!double.IsNaN(v))
         {
@@ -349,7 +352,7 @@ internal sealed class DeviceActivity : FrameworkElement
             }
             else if (p > 0) dc.DrawRoundedRectangle(brush, null, new Rect(cx - w / 2, top + (1 - p) * track, w, p * track), 5, 5);
         }
-        Label(name, cx, 84, 10, muted);
+        Label(name, cx, LabelY, LabelSize, muted);
     }
 
     /// <summary>The buttons pressed last (held together), by number.</summary>
@@ -357,20 +360,20 @@ internal sealed class DeviceActivity : FrameworkElement
     {
         double w = TileWidth("buttons");
         bool held = buttonsShown.Any(b => down[b]);
-        dc.DrawRoundedRectangle(held ? success : control, Ui.Pen(edge, 1), new Rect(x, 14, w, 64), 8, 8);
-        var f = Text(ButtonsText, 26, held ? Brushes.Black : text, true);
-        dc.DrawText(f, new Point(x + (w - f.Width) / 2, 46 - f.Height / 2));
-        Label(buttonsShown.Count > 1 ? T("Buttons") : T("Button"), x + w / 2, 84, 10, muted, max: w + 6);
+        dc.DrawRoundedRectangle(held ? success : control, Ui.Pen(edge, 1), new Rect(x, 2, w, 94), 10, 10);
+        var f = Text(ButtonsText, ButtonSize, held ? Brushes.Black : text, true);
+        dc.DrawText(f, new Point(x + (w - f.WidthIncludingTrailingWhitespace) / 2, 49 - f.Height / 2));
+        Label(buttonsShown.Count > 1 ? T("Buttons") : T("Button"), x + w / 2, LabelY, LabelSize, muted, max: w + 6);
     }
 
     /// <summary>The hat, the way it was pushed last.</summary>
     private void Hat(double x)
     {
-        double cx = x + TileW / 2, cy = 46, r = 24;
+        double cx = x + TileW / 2, cy = 50, r = 30;
         bool held = read && state.Povs[0] >= 0;
         dc.DrawEllipse(control, Ui.Pen(edge, 1), new Point(cx, cy), r, r);
         double a = hatShown / 100.0 * Math.PI / 180 - Math.PI / 2;
         dc.DrawLine(Line(held ? success : muted, 6), new Point(cx, cy), new Point(cx + Math.Cos(a) * (r - 5), cy + Math.Sin(a) * (r - 5)));
-        Label(T("Hat"), cx, 84, 10, muted);
+        Label(T("Hat"), cx, LabelY, LabelSize, muted);
     }
 }

@@ -38,7 +38,6 @@ public sealed class KnownDevice
     public int? FirstGear { get; set; }
     /// <summary>The buttons it really has, of the ones Windows says (null: all of them).</summary>
     public int? ButtonCount { get; set; }
-    public DeviceWidgetPlace? Widget { get; set; }
     /// <summary>Its Device Widget (its main control, and the other axes and buttons as they're used).</summary>
     public DeviceWidgetPlace? Activity { get; set; }
     /// <summary>Alert on Change: off, it has no alerts of its own (missing, new, moved) and isn't counted in the others'

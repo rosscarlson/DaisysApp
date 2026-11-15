@@ -34,7 +34,7 @@ internal sealed class DevicesView : Grid
     private readonly Border alertCard;
     private readonly TextBlock noneText = Ui.Note(T("No game controllers"), 4);
     private readonly FrameworkElement widgetList;
-    private readonly DeviceArt art = new() { VerticalAlignment = VerticalAlignment.Top, MaxHeight = 300 };
+    private readonly DeviceArt art = new() { VerticalAlignment = VerticalAlignment.Top, Width = DeviceArt.W, Height = DeviceArt.H };
     private readonly ControllerState reading = new();
     private readonly List<(Device Device, Ellipse Dot)> dots = new();
     private readonly List<(int Axis, ProgressBar Bar, TextBlock Value, TextBlock Name, Button Row)> axisRows = new();
@@ -94,7 +94,7 @@ internal sealed class DevicesView : Grid
         SetColumn(rightScroll, 2);
         Children.Add(rightScroll);
 
-        Widget.Offer(art, () => { if (Selected is { } d) hub.MakeWidget(d); });
+        Widget.Offer(art, () => { if (Selected is { } d) hub.MakeActivity(d); });
         hub.Changed += Render;
         hub.Ticked += Tick;
         IsVisibleChanged += (_, _) =>
@@ -417,32 +417,30 @@ internal sealed class DevicesView : Grid
             right.Children.Add(Ui.Note(T("Pick a device")));
             return;
         }
-        var make = Ui.IconButton(PopOut, "", T("Make Widget"), () => hub.MakeWidget(d));
         var properties = Ui.IconButton(Gear, "", T("Properties"), () =>
         {
             if (d.Info is not { } c) return;
             int occurrence = hub.Devices.Where(x => x.Info?.Name == c.Name).OrderBy(x => x.Position).ToList().FindIndex(x => x.Key == d.Key);
             _ = JoyProperties.Open(c.Name, Math.Max(0, occurrence));
         });
-        var activity = Ui.IconButton(Controller, "", T("Device Widget"), () => hub.MakeActivity(d));
-        foreach (var b in new[] { activity, make, properties }) b.Padding = new Thickness(8, 5, 8, 5);
+        var activity = Ui.IconButton(PopOut, "", T("Device Widget"), () => hub.MakeActivity(d));
+        foreach (var b in new[] { activity, properties }) b.Padding = new Thickness(8, 5, 8, 5);
         properties.IsEnabled = d.Connected;
         var name = Ui.Header(d.Name, new Thickness(0));
         name.TextTrimming = TextTrimming.CharacterEllipsis;
         // (Apply and Cancel are the calibration's, shown while it has changes; made once, so taken from the row before)
         foreach (var b in new[] { calibration.Cancel, calibration.Apply }) (b.Parent as Panel)?.Children.Remove(b);
-        right.Children.Add(Ui.HeaderRow(name, calibration.Cancel, calibration.Apply, activity, make, properties));
+        right.Children.Add(Ui.HeaderRow(name, calibration.Cancel, calibration.Apply, activity, properties));
         bool calibrates = d.Info is { VJoy: false } ci && ci.HasAxis.Any(a => a);
         calibration.Show(calibrates ? d.Info : null);
         if (!d.Connected) right.Children.Add(Ui.Note(T("Not connected"), new Thickness(0, 0, 0, 6)));
-        // the picture on the left third, its axes on the rest; the picture is one element, moved in here again (its
-        // own widget has one of its own)
+        // the picture at its full size on the left, its axes on the rest; the picture is one element, moved in here again
         art.Show(d, hub);
         (art.Parent as Panel)?.Children.Remove(art);
         var top = new Grid();
-        top.ColumnDefinitions.Add(new ColumnDefinition());
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
-        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+        top.ColumnDefinitions.Add(new ColumnDefinition());
         var axes = new StackPanel();
         SetColumn(axes, 2);
         top.Children.Add(art);

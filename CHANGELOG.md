@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.26**
+- **Gaming → Devices**: the device's picture stays at its full size, the axes beside it taking the rest of the width.
+- **Device Widget**: much larger text, the button numbers largest; buttons held together have a dot between them (3 · 12,
+  not 312). Its button is now the pop-out icon; **Make Widget** (the widget of the picture) is gone, and a right-click
+  of the picture makes the Device Widget.
+
 **4.17.25**
 - **Gaming → Devices**: a throttle's, joystick's, HOTAS's and wheel's axes can be a **Thruster** (left / right, up /
   down), for the small analog stick many have, drawn as a small stick in the picture (a throttle's Rx and Ry take it

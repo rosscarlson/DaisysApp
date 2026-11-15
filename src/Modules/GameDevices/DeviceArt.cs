@@ -8,12 +8,11 @@ namespace DaisysApp.Applets.GameDevices;
 
 /// <summary>
 /// The picture of a device doing what it's doing: pedals for pedals, a wheel for a wheel. Drawn in a space of
-/// <see cref="W"/> × <see cref="H"/> scaled to fit, so the tab and a widget are the same picture at any size, and only
-/// when something changed. Grey while the device isn't plugged in.
+/// <see cref="W"/> × <see cref="H"/> scaled to fit (the tab shows it at that size), and only when something changed. Grey while the device isn't plugged in.
 /// </summary>
 internal sealed class DeviceArt : FrameworkElement
 {
-    private const double W = 480, H = 280;
+    public const double W = 480, H = 280;
     private const string ThrottleColor = "#3FB950", BrakeColor = "#F85149", ClutchColor = "#58A6FF";
 
     private readonly ControllerState state = new();

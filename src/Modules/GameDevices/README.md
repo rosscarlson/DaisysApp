@@ -17,13 +17,12 @@ one is, a warning when that changes, a live picture of what each one is doing, a
   **Refresh** (top right) looks for devices again. A device in the normal order but not plugged in stays, greyed.
 - **Details** (the arrow on a block): the **type** at the top right, the pencil to rename, **Alert on Change**, then its number, DirectInput
   order, what's normal, Windows' name, VID:PID, whether the joystick API has it, axes, buttons, hats and force feedback.
-- **The device picked** (right): its picture on the left third and its axes on the rest (since 4.17.25), each with a
+- **The device picked** (right): its picture on the left at its full size (since 4.17.26; the left third in 4.17.25) and its axes on the rest, each with a
   bar, its **role** (what it does in the picture) and **Invert** (the bar and the picture the other way round); under
   them its [Calibration](#calibration) (click an axis to calibrate it), then its buttons, which light when pressed, the
   parts split by a thin line. The drop-down after the buttons is how many it really has (Windows often says 128 for
   32): kept for the device, it's what the tab, the picture and the Device Widget show. At the top right: **Cancel** and **Apply** while the
-  calibration has changes, **Device Widget** (below), **Make Widget** (also on a right-click of the picture) and
-  **Properties**.
+  calibration has changes, **Device Widget** (below; also on a right-click of the picture) and **Properties**.
 
 Names, types, roles and Invert are only how the tab shows a device: they stay in this module's settings, and games and
 Windows see the device as they did. Only the calibration's Apply and Apply Order change what Windows reports.
@@ -101,21 +100,18 @@ throttle lever is at the top at full throttle. Devices send a throttle and a sti
 those axes' bars and percentages are the reading turned over (by role: `DeviceKinds.Reversed`). One that sends it the
 other way takes Invert.
 
-## Widget
-
-The picture, in Core's widget: right-click it for its strip, the trash can deletes it. Devices are read while a widget
-shows, as they are while the tab does.
-
 ## Device Widget
 
-New in 4.6.0: the controller icon at the top right makes a small widget (Core's, one per device) of what the device is
+New in 4.6.0: the pop-out icon at the top right (the controller icon until 4.17.26, when the widget of the picture, Make
+Widget, was dropped) makes a small widget (Core's, one per device) of what the device is
 doing. On the left, its main control, always: a wheel's wheel (with its steering in %), a stick's stick (a yoke's too),
 a throttle's lever, a HOTAS's stick and lever, a handbrake's lever as the tab draws it (its % and its axis; since
 4.6.2); pedals and the other types have none. Then, side by side in the order they came, a tile for each other axis
 that moved (its value, a bar, and which axis it is: X Axis, Z Rotation…, since 4.6.2; throttle green, brake red, clutch
-blue, by role), the buttons pressed last (their numbers; several held together share a tile) and the hat (the way it
+blue, by role), the buttons pressed last (their numbers, the biggest text; several held together share a tile, a dot between them since 4.17.26) and the hat (the way it
 was pushed). Each tile fades out 2.5 seconds after it last changed (5 until 4.6.2), so a pedal held still goes too. A
-move under 1.5% doesn't count, as with the green dot; the first reading after it opens isn't a move.
+move under 1.5% doesn't count, as with the green dot; the first reading after it opens isn't a move. Devices are read
+while one shows, as they are while the tab does. Its text was made larger in 4.17.26.
 
 ## Calibration
 
@@ -167,7 +163,7 @@ when the page is. If the device isn't in its list the window shows as it is. Its
 
 ## Files
 
-Settings: `%APPDATA%\DaisysApp\GameDevices.json` (names, types, roles, widgets and Device Widgets, what's normal, the
+Settings: `%APPDATA%\DaisysApp\GameDevices.json` (names, types, roles, Device Widgets, what's normal, the
 alerts) and `Calibration.json` (the axes left out of Find Ranges, and each axis's calibration before Daisy's App first
 changed it: the Calibration module's file, kept as it was). Log: `GameDevices-<date>.log`, with each calibration
 applied and what it was before (`Calibration-<date>.log` until 4.6.7).
@@ -185,7 +181,7 @@ one pretend device of each type, moving by themselves (calibrated only in memory
 | `LiveDevices.cs` | Reading every device on a thread of its own; the green dot |
 | `DeviceKinds.cs` | The types, their roles, the guess, which axis does what (`Assign`) |
 | `DeviceActivity.cs` | The Device Widget's body: the main control (wheel, stick, lever, handbrake), and a tile per axis, buttons and hat as they're used, each fading out |
-| `DeviceArt.cs` | The pictures: one element drawn in a 480 × 280 space, for the tab and a widget |
+| `DeviceArt.cs` | The pictures: one element drawn in a 480 × 280 space, shown at that size in the tab |
 | `DevicesView.cs` | The tab |
 | `JoyProperties.cs` | Properties, through joy.cpl (control ids 1020 and 1002 in its dialog, its list through UI Automation) |
 | `DevicesSettings.cs` | `GameDevices.json` (`ButtonCount`: the buttons a device really has) |

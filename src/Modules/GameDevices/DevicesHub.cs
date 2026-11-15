@@ -55,7 +55,6 @@ internal sealed class DevicesHub : IDisposable
     private readonly DevicesSettings settings;
     private readonly LiveDevices live;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
-    private readonly Dictionary<string, (Widget Window, DeviceArt Art)> widgets = new();
     private readonly Dictionary<string, (Widget Window, DeviceActivity Body)> activities = new();
     private readonly ControllerState reading = new();
     private List<Device> devices = new();
@@ -99,7 +98,7 @@ internal sealed class DevicesHub : IDisposable
 
     private void Reading()
     {
-        bool on = (viewShowing || widgets.Count > 0 || activities.Count > 0) && !applying;
+        bool on = (viewShowing || activities.Count > 0) && !applying;
         live.Running = on;
         if (on) timer.Start();
         else timer.Stop();
@@ -107,8 +106,6 @@ internal sealed class DevicesHub : IDisposable
 
     private void Tick()
     {
-        foreach (var (key, w) in widgets)
-            w.Art.Show(devices.FirstOrDefault(d => d.Key == key), this);
         foreach (var (key, w) in activities)
             w.Body.Show(devices.FirstOrDefault(d => d.Key == key), this);
         Ticked?.Invoke();
@@ -252,7 +249,6 @@ internal sealed class DevicesHub : IDisposable
             foreach (var a in settings.Alerts.Where(a => a.Key == k.Key)) a.Key = key;
             if (settings.Expanded.Remove(k.Key)) settings.Expanded.Add(key);
             if (settings.Selected == k.Key) settings.Selected = key;
-            if (widgets.Remove(k.Key, out var w)) widgets[key] = w;
             if (activities.Remove(k.Key, out var moved)) activities[key] = moved;
             k.Key = key;
         }
@@ -441,7 +437,6 @@ internal sealed class DevicesHub : IDisposable
     public void Saved(Device d)
     {
         settings.Save();
-        if (widgets.TryGetValue(d.Key, out var w)) w.Window.Title = d.Name;
         if (activities.TryGetValue(d.Key, out var a)) a.Window.Title = d.Name;
     }
 
@@ -453,41 +448,6 @@ internal sealed class DevicesHub : IDisposable
     }
 
     // ---------------------------------------------------------------- widgets
-
-    public bool HasWidget(Device d) => widgets.ContainsKey(d.Key);
-
-    /// <summary>Make Widget: made and shown to be placed (one made already: its edit strip).</summary>
-    public void MakeWidget(Device d)
-    {
-        if (!widgets.TryGetValue(d.Key, out var w))
-        {
-            (d.Known.Widget ??= new DeviceWidgetPlace()).Show = true;
-            settings.Save();
-            w = OpenWidget(d);
-            Reading();
-        }
-        w.Window.BeginEdit();
-    }
-
-    private (Widget Window, DeviceArt Art) OpenWidget(Device d)
-    {
-        string key = d.Key;
-        var art = new DeviceArt();
-        var window = new Widget(d.Known.Widget!, settings.Save, () => DeleteWidget(key), firstSize: new Size(360, 240)) { Body = art, Title = d.Name };
-        var made = (window, art);
-        widgets[key] = made;
-        window.Show();
-        return made;
-    }
-
-    private void DeleteWidget(string key)
-    {
-        if (!widgets.Remove(key, out var w)) return;
-        if (settings.Known.FirstOrDefault(k => k.Key == key) is { Widget: { } place }) place.Show = false;
-        w.Window.Close();
-        settings.Save();
-        Reading();
-    }
 
     /// <summary>Device Widget: made and shown to be placed (one made already: its edit strip).</summary>
     public void MakeActivity(Device d)
@@ -506,7 +466,7 @@ internal sealed class DevicesHub : IDisposable
     {
         string key = d.Key;
         var body = new DeviceActivity();
-        var window = new Widget(d.Known.Activity!, settings.Save, () => DeleteActivity(key), firstSize: new Size(420, 110)) { Body = body, Title = d.Name };
+        var window = new Widget(d.Known.Activity!, settings.Save, () => DeleteActivity(key), firstSize: new Size(480, 140)) { Body = body, Title = d.Name };
         var made = (window, body);
         activities[key] = made;
         window.Show();
@@ -527,7 +487,6 @@ internal sealed class DevicesHub : IDisposable
     {
         if (widgetsRestored) return;
         widgetsRestored = true;
-        foreach (var d in devices.Where(d => d.Known.Widget?.Show == true)) OpenWidget(d);
         foreach (var d in devices.Where(d => d.Known.Activity?.Show == true)) OpenActivity(d);
         Reading();
     }
@@ -537,8 +496,6 @@ internal sealed class DevicesHub : IDisposable
         disposed = true;
         GameControllers.Changed -= Relisted;
         timer.Stop();
-        foreach (var (_, w) in widgets) w.Window.Close();
-        widgets.Clear();
         foreach (var (_, w) in activities) w.Window.Close();
         activities.Clear();
         live.Dispose();

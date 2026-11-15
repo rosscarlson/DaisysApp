@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.26 (Devices: picture at full size, Device Widget's larger text, a dot between buttons, no Make Widget):**
+  tried on DaisysDev's fakes (they press one button at a time). To try: a Device Widget on a real device, two or more
+  buttons held together (a dot between the numbers), the text easy to read at the size you keep it.
 - **4.17.25 (Devices: Thruster roles, picture beside the axes, buttons under Calibration with a count):** tried on
   DaisysDev's fakes (and the VKB's 128 → 32). To try: Gaming → Devices, your throttle's mini stick axes set to Thruster
   left / right and up / down (the small stick in the picture moves), the VKB's buttons set to 32 and still 32 after a

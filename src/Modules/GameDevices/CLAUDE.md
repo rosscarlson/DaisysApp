@@ -2,6 +2,13 @@
 
 Read only when working in this folder. Keep it short.
 
+**4.17.26 (asked 2026-11-15: picture held at full size, axes take the rest; Device Widget text much larger, button
+numbers largest; a dot between buttons held together; drop Make Widget and its widget, its icon for Device Widget):**
+art fixed `DeviceArt.W×H` (480×280) in an Auto column; `DeviceActivity` H 100→120, TileW 76, sizes ButtonSize 56 /
+ValueSize 20 / LabelSize 16, buttons joined by thin space · thin space; firstSize 480×140. Hub's `widgets` dict, `MakeWidget`,
+`KnownDevice.Widget` removed (a saved one is ignored); right-click of the picture makes the Device Widget. Tested on
+DaisysDevax: layout, widget text (fake presses one button at a time, so the dot isn't seen).
+
 **4.17.25 (asked 2026-11-15: Thruster X/Y roles for throttles, joysticks, wheels; picture 1/3 left, axes 2/3 right;
 buttons under Calibration with a count drop-down remembered per device; thin separators):** `DeviceKinds.Thruster`
 (roles `ThrusterX/Y`, Reversed like StickY; `Assign` gives them only their Prefer: Throttle Rx/Ry, others none, so
