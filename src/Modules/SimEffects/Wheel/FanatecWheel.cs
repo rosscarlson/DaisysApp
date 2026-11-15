@@ -47,6 +47,9 @@ internal sealed class FanatecWheel : IWheelLights
 
     /// <summary>A write didn't finish in time: the base stopped taking reports (switch it off and on).</summary>
     public bool Stalled { get; private set; }
+    private bool writeOnly;
+    /// <summary>Handles of bases that stalled: never closed (closing waits on the write the driver never finishes).</summary>
+    private static readonly List<SafeFileHandle> stalled = new();
 
     /// <summary>The base and rim found.</summary>
     public string Name { get; private set; }
@@ -150,7 +153,9 @@ internal sealed class FanatecWheel : IWheelLights
         report[0] = ReportId;
         body.AsSpan(0, Math.Min(body.Length, outputLength - 1)).CopyTo(report.AsSpan(1));
         if (Stalled) return false;
-        if (HidD_SetOutputReport(handle, report, report.Length)) return true;
+        // (HidD_SetOutputReport has no timeout: once it fails, only the write, which has, 4.17.24)
+        if (!writeOnly && HidD_SetOutputReport(handle, report, report.Length)) return true;
+        writeOnly = true;
         return Write(report);
     }
 
@@ -219,7 +224,11 @@ internal sealed class FanatecWheel : IWheelLights
         _ => 0,
     };
 
-    public void Dispose() => handle.Dispose();
+    public void Dispose()
+    {
+        if (!Stalled) { handle.Dispose(); return; }
+        lock (stalled) stalled.Add(handle);
+    }
 
     // ---- Windows' HID ----
 

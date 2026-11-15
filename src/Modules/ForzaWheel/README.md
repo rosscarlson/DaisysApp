@@ -130,8 +130,8 @@ game's range (±10000) is dropped, never sent to the wheel.
 
 **If the forces stick** (since 4.17.19): a Fanatec base can stop taking force feedback, its driver then waiting for
 ever (the last force stays: the wheel pulls one way while steering still works). ForzaWheel gives up on the driver
-after a second rather than freezing the app, says to **switch the wheel base off and on**, and reads the wheel without
-forces until the next Start.
+within half a second rather than freezing the app (every force, since 4.17.24), says to **switch the wheel base off
+and on**, and keeps reading the wheel; once it's been switched off and on, its forces come back by themselves.
 
 The **Force Feedback** block: **Pass force feedback to the wheel**; **Strength** (100% = as EmuWheel); **Reverse** (if
 the wheel pulls away from the centre: or use Forza's Invert Force Feedback, not both); **Test FFB** (since 3.36.13;

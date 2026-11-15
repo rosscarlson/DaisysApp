@@ -196,8 +196,9 @@ public sealed class WheelApplet : IApplet
                 Found = stalled ? T("The wheel stopped taking reports: switch it off and on") : T("Lost the wheel");
                 wheel.Dispose();
                 wheel = null;
-                // (the one it had: looked for again every few seconds until it's back; one that stalled, every 30 s)
-                finder.Change(stalled ? 30000 : 3000, stalled ? 30000 : 3000);
+                // (the one it had: looked for again every few seconds until it's back; one that stalled, once it's
+                // switched off and on (the controllers changing): writing to it again hangs again)
+                finder.Change(stalled ? Timeout.Infinite : 3000, stalled ? Timeout.Infinite : 3000);
             }
         }
     }

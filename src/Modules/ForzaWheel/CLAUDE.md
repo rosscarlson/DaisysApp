@@ -28,6 +28,13 @@ Read only when working in this folder. Current state, decisions and lessons; wha
   ran with ForzaWheel. Now: driver commands via `Bounded` (Gate held, call on its own thread, 1 s / 0.5 s), a stuck
   wheel's reader kept in `abandoned`, not disposed (Unacquire would hang too), `ffbStuck` until the next Start.
   Untested: the stall can't be made on purpose. If it recurs with the Wheel off, it's the base or Fanatec's driver.
+- **4.17.24, frozen again with 4.17.23 (19:13, no dump: killed within seconds):** the Wheel's 250 ms timeout fired,
+  ForzaWheel logged nothing: the stuck call was an effect update in `OnPacket` (unbounded, under Gate), so Gate was
+  held for ever and the UI's Stop/Reopen (emulator lock → Tick → `Reader.Read` → Gate) and the tab's `Devices` hung.
+  Now every driver call after creation runs on the `ForzaWheel FFB` worker via `Bounded` (Gate held, 500 ms, then
+  `Stuck`); Tick drops a stuck FFB at once and keeps reading its reader (in `abandoned`, never disposed); losing that
+  reader (base power-cycled) clears `ffbStuck`. UI-side `Locked` (1 s, else queued in `pending` for Tick); `Devices`
+  is TryEnter with the last count. SimEffects' `FanatecWheel`: stalled handles never closed, no 30 s retry.
 
 ## How it works, decisions
 

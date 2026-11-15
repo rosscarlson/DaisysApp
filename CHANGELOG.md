@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.24**
+- **ForzaWheel**: the app no longer freezes when the wheel base stops taking force feedback, which 4.17.19 didn't
+  fully fix (it froze again on the rig in FH4). Every force sent to the wheel's driver is now given up on after half a
+  second, where only the commands were before: a stuck force held the controllers' lock for ever. The wheel's input
+  is still read; its forces come back by themselves once it's switched off and on. Stop and the tab never wait on
+  the emulator's thread for more than a second.
+- **SimEffects → Wheel**: a Fanatec base that stopped taking reports is no longer closed (closing it waited on the
+  stuck write) or written to again every 30 s; it's looked for again once it's switched off and on. After its first
+  failure, the report that can't time out isn't used.
+
 **4.17.23**
 - **SimEffects → Analysis → Compare**: the chart's readout at the mouse is on its left, so what's coming isn't
   covered (on its right only at the chart's left edge, where there's no room).

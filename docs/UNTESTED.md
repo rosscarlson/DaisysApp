@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.24 (ForzaWheel and Wheel freeze, again):** built, not run: the user was racing. 4.17.19 froze again
+  (19:13 on the rig: Wheel's stall caught, then the app hung, no dump). To try: race with ForzaWheel's FFB (and the
+  Wheel if wanted); if forces stick, the app should stay usable, ForzaWheel's log say "force-feedback driver isn't
+  answering", and switching the base off and on bring forces back by itself.
 - **4.17.23 (Analysis: the chart's readout on the mouse's left):** built, not run: the user was gaming. To try:
   hover the Compare chart; the readout left of the line (right of it only at the far left).
 - **4.17.22 (Analysis: Tips half the row when comparing; "[A]" before the car in the session drop-downs; Share to

@@ -21,6 +21,12 @@ internal sealed class WheelEmulator : IDisposable
     private readonly Dictionary<Guid, GameControllers.Reader> readers = new();
     private readonly Dictionary<Guid, ControllerState> states = new();
     private long nextOpen;
+    /// <summary>
+    /// Stop's and Reopen's work left for the emulator's thread when it held the lock past a second (4.17.24): stuck in a
+    /// wheel's driver, waiting there froze the app.
+    /// </summary>
+    private Action? pending;
+    private (int Open, int Missing) devices;
 
     // what's sent, so only changes are written
     private VJoy.DeviceSetup? setup;
@@ -93,16 +99,19 @@ internal sealed class WheelEmulator : IDisposable
     {
         get
         {
-            lock (gate)
+            // (the last count if the emulator's thread holds the lock: the tab never waits on it)
+            if (!Monitor.TryEnter(gate, 20)) return devices;
+            try
             {
                 var wanted = settings.Config.Devices.Select(d => d.Device).ToList();
                 int open = wanted.Count(readers.ContainsKey);
-                return (open, wanted.Count - open);
+                return devices = (open, wanted.Count - open);
             }
+            finally { Monitor.Exit(gate); }
         }
     }
 
-    public IReadOnlyDictionary<string, double> Values { get { lock (gate) return values; } }
+    public IReadOnlyDictionary<string, double> Values => Volatile.Read(ref values);
 
     /// <summary>Reading for the tab's live values (slowly) while it shows.</summary>
     public bool Preview
@@ -126,13 +135,13 @@ internal sealed class WheelEmulator : IDisposable
         if (d == null || d.Status == VJoy.Status.Missing) return Fail(F("vJoy device {0} doesn't exist: use Set up vJoy device.", id));
         if (d.Status == VJoy.Status.Busy) return Fail(F("vJoy device {0} is in use by another program (EmuWheel, a feeder or Joystick Gremlin?): close it first.", id));
         if (d.Status != VJoy.Status.Own && !VJoy.Acquire(id)) return Fail(F("vJoy device {0} couldn't be taken over.", id));
-        lock (gate)
+        Locked(() =>
         {
             setup = d;
             Array.Fill(sentAxes, int.MinValue);
             Array.Clear(sentButtons);
             sentPov = int.MinValue;
-        }
+        });
         VJoy.Reset(id);
         feeding = true;
         ffbTried = false;
@@ -151,13 +160,13 @@ internal sealed class WheelEmulator : IDisposable
     {
         if (!feeding) return;
         feeding = false;
-        lock (gate)
+        uint id = settings.Config.VJoyDevice;
+        Locked(() =>
         {
-            uint id = settings.Config.VJoyDevice;
             VJoy.Reset(id);
             VJoy.Relinquish(id);
             setup = null;
-        }
+        });
         Reopen(); // lets go of the wheel's force feedback and exclusive hold
         Logging.Log.Here.Info("ForzaWheel stopped");
         StateChanged?.Invoke();
@@ -174,15 +183,32 @@ internal sealed class WheelEmulator : IDisposable
     /// <summary>Opens the controllers again (after the bindings changed or Hush hid or showed devices).</summary>
     public void Reopen()
     {
-        lock (gate)
+        Locked(() =>
         {
             DropFfb();
-            foreach (var r in readers.Values) r.Dispose();
+            foreach (var r in readers.Values) Close(r);
             readers.Clear();
             nextOpen = 0;
-        }
+        });
         wake.Set();
     }
+
+    /// <summary>
+    /// <paramref name="work"/> under the lock, now if it's free within a second, else on the emulator's thread when it
+    /// gets past what holds it (for the UI thread, which mustn't wait on a stuck driver).
+    /// </summary>
+    private void Locked(Action work)
+    {
+        if (Monitor.TryEnter(gate, 1000))
+        {
+            try { work(); }
+            finally { Monitor.Exit(gate); }
+            return;
+        }
+        Logging.Log.Here.Warn("ForzaWheel: its thread is stuck reading a controller; letting go when it's free");
+        lock (pendingLock) pending += work;
+    }
+    private readonly object pendingLock = new();
 
     /// <summary>Readers of a wheel whose driver stopped answering: kept (letting go would wait on the driver too) until the app closes.</summary>
     private static readonly List<GameControllers.Reader> abandoned = new();
@@ -195,10 +221,18 @@ internal sealed class WheelEmulator : IDisposable
         if (f == null) return;
         f.Dispose();
         if (!f.Stuck) return;
-        foreach (var (device, r) in readers.ToList())
-            if (r == f.Reader) { readers.Remove(device); ffbStuck = device; }
+        // (still read: its input works while its forces are stuck; opening it again would wait on the driver)
+        foreach (var (device, r) in readers)
+            if (r == f.Reader) ffbStuck = device;
         lock (abandoned) abandoned.Add(f.Reader);
         Problem = F("{0} stopped taking force feedback: switch the wheel base off and on.", f.Device);
+    }
+
+    private static void Close(GameControllers.Reader r)
+    {
+        bool kept;
+        lock (abandoned) kept = abandoned.Contains(r);
+        if (!kept) r.Dispose();
     }
 
     private void EnsureThread()
@@ -239,6 +273,16 @@ internal sealed class WheelEmulator : IDisposable
         var config = settings.Config;
         lock (gate)
         {
+            Action? left;
+            lock (pendingLock) { left = pending; pending = null; }
+            left?.Invoke();
+            // the wheel's driver stopped answering a force: its reader set aside, the wheel read again without forces
+            if (ffb is { Stuck: true })
+            {
+                DropFfb();
+                nextOpen = 0;
+                StateChanged?.Invoke();
+            }
             long now = Environment.TickCount64;
             if (now >= nextOpen)
             {
@@ -273,8 +317,9 @@ internal sealed class WheelEmulator : IDisposable
             {
                 if (reader.Read(states[device])) continue;
                 Logging.Log.Here.Warn($"ForzaWheel lost {config.Devices.FirstOrDefault(d => d.Device == device).Name}");
-                if (ffb?.Reader == reader) { DropFfb(); if (!readers.ContainsKey(device)) { nextOpen = 0; continue; } }
-                reader.Dispose();
+                if (ffb?.Reader == reader) DropFfb();
+                Close(reader);
+                if (device == ffbStuck) ffbStuck = null; // (switched off and on: its forces may be taken again)
                 readers.Remove(device);
                 nextOpen = 0;
             }
@@ -435,13 +480,13 @@ internal sealed class WheelEmulator : IDisposable
     {
         Stop();
         quit = true;
-        lock (gate) DropFfb();
+        Locked(DropFfb);
         wake.Set();
         thread?.Join(500);
-        lock (gate)
+        Locked(() =>
         {
-            foreach (var r in readers.Values) r.Dispose();
+            foreach (var r in readers.Values) Close(r);
             readers.Clear();
-        }
+        });
     }
 }

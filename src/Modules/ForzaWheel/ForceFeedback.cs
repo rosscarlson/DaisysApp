@@ -21,6 +21,13 @@ internal sealed class ForceFeedback : IDisposable
     private readonly int[] axes;
     private readonly IDirectInputEffect constant, sine, spring, damper;
     private volatile bool stopped;
+    // every call into the driver after the effects are made runs on this thread (4.17.24), so one that never returns
+    // (Fanatec's, once the base stops taking reports) can be given up on with the DirectInput lock let go: in 4.17.19
+    // only the commands were, and a stuck effect update held the lock for ever, freezing the app
+    private readonly Thread worker;
+    private readonly AutoResetEvent work = new(false);
+    private readonly ManualResetEventSlim workDone = new(false);
+    private Action? job;
 
     // the latest of each report, and the last seen (a repeat is ignored, as in EmuWheel)
     private VJoy.EffectReport effect, lastEffect;
@@ -54,6 +61,8 @@ internal sealed class ForceFeedback : IDisposable
         sine = dev.CreateEffect(EffectGuid.Sine, Base(new PeriodicForce()));
         spring = dev.CreateEffect(EffectGuid.Spring, Base(new ConditionSet { Conditions = new Vortice.DirectInput.Condition[1] }));
         damper = dev.CreateEffect(EffectGuid.Damper, Base(new ConditionSet { Conditions = new Vortice.DirectInput.Condition[1] }));
+        worker = new Thread(Work) { IsBackground = true, Name = "ForzaWheel FFB" };
+        worker.Start();
     }
 
     /// <summary>
@@ -100,12 +109,9 @@ internal sealed class ForceFeedback : IDisposable
     public void OnPacket(IntPtr packet)
     {
         if (stopped || !settings.Enabled) return;
-        lock (gate)
-        {
-            if (stopped) return;
-            try { Handle(packet); }
-            catch (Exception ex) { Logging.Log.Here.Debug(() => "ForzaWheel force feedback: " + ex.Message); }
-        }
+        // (the packet is read on the worker while this waits: it's only valid until this returns, and it's read before
+        // any driver call, so one given up on doesn't read it later)
+        Bounded(() => { if (!stopped) Handle(packet); }, 500, wedgeOnBusy: false);
     }
 
     private void Handle(IntPtr p)
@@ -174,24 +180,47 @@ internal sealed class ForceFeedback : IDisposable
             VJoy.FfbControl.Continue => ForceFeedbackCommand.Continue,
             _ => ForceFeedbackCommand.None,
         };
-        if (cmd != ForceFeedbackCommand.None && !Bounded(() => dev.SendForceFeedbackCommand(cmd), 500)) Wedged();
+        if (cmd != ForceFeedbackCommand.None) dev.SendForceFeedbackCommand(cmd); // (on the worker, from Handle)
     }
 
     /// <summary>
-    /// A call into the wheel's driver, under the DirectInput lock (so nothing else calls it at the same time), on a
-    /// thread of its own, waited for at most <paramref name="ms"/>: false if it didn't return (the lock is let go, and
-    /// the call is left to finish whenever the driver does).
+    /// A call into the wheel's driver, under the DirectInput lock (so nothing else calls it at the same time), on the
+    /// worker, waited for at most <paramref name="ms"/>. False if it didn't return (<see cref="Stuck"/>: the lock is let
+    /// go, and the call left to finish whenever the driver does), or the lock wasn't free in that time (stuck too if
+    /// <paramref name="wedgeOnBusy"/>; a packet is just dropped).
     /// </summary>
-    private static bool Bounded(Action call, int ms)
+    private bool Bounded(Action call, int ms, bool wedgeOnBusy)
     {
-        if (!Monitor.TryEnter(GameControllers.Gate, ms)) return false;
+        if (Stuck) return false;
+        if (!Monitor.TryEnter(gate, ms))
+        {
+            if (wedgeOnBusy) Wedged();
+            return false;
+        }
         try
         {
-            var done = new Thread(() => { try { call(); } catch { } }) { IsBackground = true, Name = "ForzaWheel FFB call" };
-            done.Start();
-            return done.Join(ms);
+            if (Stuck) return false;
+            workDone.Reset();
+            job = call;
+            work.Set();
+            if (workDone.Wait(ms)) return true;
+            Wedged();
+            return false;
         }
-        finally { Monitor.Exit(GameControllers.Gate); }
+        finally { Monitor.Exit(gate); }
+    }
+
+    private void Work()
+    {
+        while (true)
+        {
+            work.WaitOne();
+            var j = Interlocked.Exchange(ref job, null);
+            if (j == null) { if (stopped) return; continue; }
+            try { j(); }
+            catch (Exception ex) { Logging.Log.Here.Debug(() => "ForzaWheel force feedback: " + ex.Message); }
+            workDone.Set();
+        }
     }
 
     private void Wedged()
@@ -344,14 +373,15 @@ internal sealed class ForceFeedback : IDisposable
     /// <summary>The forces stopped and let go of; never waits more than a second or so for the driver (on the UI thread).</summary>
     public void Dispose()
     {
-        stopped = true;
-        if (!Stuck && !Bounded(() =>
+        if (!Stuck) Bounded(() =>
             {
+                stopped = true;
                 dev.SendForceFeedbackCommand(ForceFeedbackCommand.StopAll);
                 foreach (var e in new[] { constant, sine, spring, damper })
                     try { e.Dispose(); } catch { }
-            }, 1000))
-            Wedged();
+            }, 1000, wedgeOnBusy: true);
+        stopped = true;
+        work.Set(); // (the worker ends, unless it's stuck in the driver)
         if (!Stuck) Logging.Log.Here.Info($"ForzaWheel: force feedback off ({Device})");
     }
 }
