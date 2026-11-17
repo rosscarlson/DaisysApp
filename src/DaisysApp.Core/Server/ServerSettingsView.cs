@@ -6,7 +6,7 @@ namespace DaisysApp.Server;
 
 /// <summary>
 /// The Daisy's Server card, on Settings → General: the server's address and port, the
-/// user and password (empty: not signed in, Share Session only); <b>Connect</b> tries them and keeps them if they work.
+/// user and password (empty: not signed in; since 4.18.0 Share Session is on ForzaLeaderBoard, not here); <b>Connect</b> tries them and keeps them if they work.
 /// The server's key (its fingerprint, kept from the first connection) with Forget, for a reinstalled server. Once
 /// signed in: Change password (the user's data key wrapped again there, so nothing is lost) and Forget.
 /// </summary>
@@ -128,7 +128,7 @@ public sealed class ServerSettingsView : Border
         if (!ServerLink.Configured) status.Text = T("Not set up");
         else if (ServerLink.Connected)
             status.Text = ServerLink.SignedIn ? F("Connected to {0} as {1}", ServerLink.Name, s.User)
-                : F("Connected to {0} (not signed in: Share Session only)", ServerLink.Name);
+                : F("Connected to {0} (not signed in)", ServerLink.Name);
         else if (ServerLink.Problem.Length > 0) { status.Text = ServerLink.Problem; bad = true; }
         else status.Text = ServerLink.SignedIn ? F("Set up: {0} as {1}", s.Host, s.User) : F("Set up: {0}", s.Host);
         status.SetResourceReference(TextBlock.ForegroundProperty, bad ? "ErrorTextBrush" : "TextSecondaryBrush");

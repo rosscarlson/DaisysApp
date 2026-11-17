@@ -27,7 +27,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// shared), what's compared (or imported from a file) going into that slot. Since 4.17.16 the sessions to share ticked
 /// in a drop-down (Shift ticks those between), shared one after the other as their track (no title or description to
 /// type; no Export, nor Remove: Delete does), the Session Manager's Share ticking those picked there; every button at
-/// the bottom.
+/// the bottom. Since 4.18.0 on ForzaLeaderBoard (<see cref="SessionServer.Leaderboard"/>; Daisy's Server before), with
+/// <b>Account</b> (<see cref="AccountWindow"/>: signing in, or another server) and <b>View on ForzaLeaderBoard</b>.
 /// </summary>
 internal sealed class ShareWindow
 {
@@ -47,6 +48,8 @@ internal sealed class ShareWindow
     private readonly Button share = Tool("\ue72d", T("Share to Server"), new Thickness(0)),
         import = Tool("\ued25", T("Import from a file"), new Thickness(8, 0, 0, 0));
     private readonly Button auto = Tool("\uE895", T("Share each session automatically"), new Thickness(0, 0, 8, 0));
+    /// <summary>(since 4.18.0) ForzaLeaderBoard: the account signed in with (or another server).</summary>
+    private readonly Button account = Tool("\uE77B", T("Account"), new Thickness(0, 0, 8, 0));
 
     private readonly TextBox search = new() { VerticalContentAlignment = VerticalAlignment.Center, ToolTip = T("Every column") };
     private readonly TextBlock status = new() { Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
@@ -58,7 +61,8 @@ internal sealed class ShareWindow
     private readonly HeaderFilter drivers = new(T("Driver")), games = new(T("Game")), tracks = new(T("Track")), cars = new(T("Car")), classes = new(T("Class")),
         videos = new(T("Video")), sharers = new(T("Shared by"));
     private readonly Button compare = Tool("", T("Compare"), new Thickness(24, 0, 0, 0)), watch = Tool("", T("Open on YouTube"), new Thickness(8, 0, 0, 0)),
-        delete = Tool("", T("Delete from Server"), new Thickness(8, 0, 0, 0));
+        delete = Tool("", T("Delete from Server"), new Thickness(8, 0, 0, 0)),
+        page = Tool("\uE774", T("View on ForzaLeaderBoard"), new Thickness(8, 0, 0, 0));
     private Action disarmDelete = () => { };
     private readonly List<Row> rows = new();
     private ICollectionView? shown;
@@ -164,6 +168,8 @@ internal sealed class ShareWindow
         compare.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
         compare.Click += (_, _) => Compare();
         watch.Click += (_, _) => { if (Picked is { S.Video: { } url }) Ui.Open(url); };
+        page.Click += (_, _) => { if (Picked is { } r && SessionServer.PageOf(r.S.Id) is { } url) Ui.Open(url); };
+        account.Click += (_, _) => AccountWindow.Show(window, () => _ = List());
         disarmDelete = ConfirmButton.ArmIcon(delete, async () => { if (Picked is { S.Mine: true } r) await Unshare(r.S.Id); });
         var refresh = Tool("", T("Refresh"), new Thickness(8, 0, 0, 0));
         refresh.Click += (_, _) => _ = List();
@@ -181,10 +187,10 @@ internal sealed class ShareWindow
         };
         ShowAuto();
         // (since 4.17.16 Share and Import here, Refresh with them)
-        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { auto, close } };
+        var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { account, auto, close } };
         DockPanel.SetDock(right, Dock.Right);
         buttons.Children.Add(right);
-        buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { share, import, compare, watch, delete, refresh } });
+        buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { share, import, compare, watch, page, delete, refresh } });
         DockPanel.SetDock(buttons, Dock.Bottom);
         body.Children.Add(buttons);
 
@@ -195,14 +201,14 @@ internal sealed class ShareWindow
         Fill();
         view.Listed += Listed;
         ShareQueue.Changed += ShareChanged;
-        SessionServer.Pushed += Pushed;
-        ServerLink.Changed += LinkChanged;
+        SessionServer.Shared.Pushed += Pushed;
+        SessionServer.Leaderboard.Changed += LinkChanged;
         window.Closed += (_, _) =>
         {
             view.Listed -= Listed;
             ShareQueue.Changed -= ShareChanged;
-            SessionServer.Pushed -= Pushed;
-            ServerLink.Changed -= LinkChanged;
+            SessionServer.Shared.Pushed -= Pushed;
+            SessionServer.Leaderboard.Changed -= LinkChanged;
         };
         window.Loaded += (_, _) => search.Focus();
         Enable();
@@ -336,13 +342,15 @@ internal sealed class ShareWindow
     /// which and how far).</summary>
     private async Task Share()
     {
-        if (!ServerLink.Configured) { shareState.Text = T("The server isn't set up (Settings → General)"); return; }
+        if (!SessionServer.Leaderboard.Configured) { shareState.Text = T("The server isn't set up (Account)"); return; }
         var these = boxes.Where(b => ticked.Contains(b.Item.Key)).Select(b => b.Item).OrderBy(i => i.Started).ToList();
         if (these.Count == 0) return;
         pick.IsChecked = false;
         shareState.Text = "";
         var problem = await ShareQueue.ShareMany(these, view.Driver);
         if (problem != null) shareState.Text = F("Couldn't be shared: {0}", problem);
+        // (ForzaLeaderBoard's boards are made again every 5 minutes)
+        else if (SessionServer.Leaderboard.UsesBuiltIn) shareState.Text = T("Shared. It'll be on the leaderboards in a few minutes.");
         await List();
     }
 
@@ -428,9 +436,9 @@ internal sealed class ShareWindow
     /// <summary>The server's sessions, asked for again.</summary>
     private async Task List()
     {
-        if (!ServerLink.Configured)
+        if (!SessionServer.Leaderboard.Configured)
         {
-            status.Text = T("The server isn't set up (Settings → General)");
+            status.Text = T("The server isn't set up (Account)");
             rows.Clear();
             Show();
             return;
@@ -438,7 +446,7 @@ internal sealed class ShareWindow
         status.Text = T("Connecting…");
         try
         {
-            var list = await SessionServer.ListAsync();
+            var list = await SessionServer.Shared.ListAsync();
             rows.Clear();
             rows.AddRange(list.Select(s => new Row { S = s }));
             listed = true;
@@ -462,7 +470,7 @@ internal sealed class ShareWindow
         foreach (var c in grid.Columns)
             c.SortDirection = sorts.FirstOrDefault(s => s.PropertyName == c.SortMemberPath) is { PropertyName: not null } s ? s.Direction : null;
         if (keep != null) grid.SelectedItem = shown.Cast<Row>().FirstOrDefault(r => r.S.Id == keep);
-        if (ServerLink.Configured) status.Text = "";
+        if (SessionServer.Leaderboard.Configured) status.Text = "";
         ShowNone();
         Enable();
     }
@@ -470,7 +478,7 @@ internal sealed class ShareWindow
     /// <summary>(since 4.17.11) The search finding none of the sessions shared: said.</summary>
     private void ShowNone()
     {
-        if (!listed || !ServerLink.Configured) return;
+        if (!listed || !SessionServer.Leaderboard.Configured) return;
         string find = search.Text.Trim();
         if (find.Length > 0 && shown != null && shown.IsEmpty) status.Text = F("No shared sessions for {0}", find);
         else if (status.Text.StartsWith(F("No shared sessions for {0}", ""), StringComparison.Ordinal)) status.Text = "";
@@ -498,16 +506,17 @@ internal sealed class ShareWindow
         });
     }
 
-    private void LinkChanged() => window.Dispatcher.BeginInvoke(() => { if (!ServerLink.Configured) _ = List(); });
+    private void LinkChanged() => window.Dispatcher.BeginInvoke(() => { if (!SessionServer.Leaderboard.Configured) _ = List(); });
 
     private void Enable()
     {
-        share.IsEnabled = ticked.Count > 0 && ServerLink.Configured;
+        share.IsEnabled = ticked.Count > 0 && SessionServer.Leaderboard.Configured;
         pick.IsEnabled = boxes.Count > 0;
         var r = Picked;
         compare.IsEnabled = r != null && !busy;
         watch.IsEnabled = r?.S.Video != null;
         delete.IsEnabled = r?.S.Mine == true;
+        page.IsEnabled = r != null && SessionServer.PageOf(r.S.Id) != null;
     }
 
     /// <summary>The session picked put in Compare: one of this PC's straight from its log, else downloaded (once) into
@@ -519,7 +528,6 @@ internal sealed class ShareWindow
         var all = SessionShares.All;
         string? key = all.Shared.FirstOrDefault(s => s.Value.Id == r.S.Id).Key;
         if (key != null && !File.Exists(Path.Combine(SessionLog.Folder, key))) key = null;
-        if (key == null && all.Downloaded.TryGetValue(r.S.Id, out var got) && File.Exists(Path.Combine(SessionLog.Folder, got))) key = got;
         if (key == null)
         {
             busy = true;
@@ -527,20 +535,8 @@ internal sealed class ShareWindow
             try
             {
                 var progress = new Progress<double>(p => status.Text = F("Downloading {0:0}%", p * 100));
-                string text = await SessionServer.DownloadAsync(r.S.Id, progress);
-                if (!text.Split('\n').Take(12).Any(l => l.StartsWith("ms,steering", StringComparison.Ordinal))) throw new IOException(T("not a session"));
-                Directory.CreateDirectory(SessionLog.ImportedFolder);
-                // (since 4.17.21 the driver in this copy is their display name, as Session 1 and 2 show it)
-                text = string.Join('\n', text.Split('\n').Select(l => l.StartsWith("# driver,", StringComparison.Ordinal) ? "# driver," + r.S.Name : l));
-                string name = string.Join("_", $"{r.S.Name} - {r.S.Title}".Split(Path.GetInvalidFileNameChars()));
-                if (name.Length > 120) name = name[..120];
-                string target = Path.Combine(SessionLog.ImportedFolder, name + ".csv");
-                for (int k = 2; File.Exists(target); k++) target = Path.Combine(SessionLog.ImportedFolder, $"{name} ({k}).csv");
-                await File.WriteAllTextAsync(target, text, new UTF8Encoding(false));
-                key = "Imported\\" + Path.GetFileName(target);
-                all.Downloaded[r.S.Id] = key;
-                all.Save();
-                Logging.Log.Here.Info($"Analysis: downloaded {r.S.Id} from the server to {target}");
+                key = await SessionServer.Shared.FetchAsync(r.S.Id, r.S.Name, r.S.Title, progress);
+                status.Text = "";
                 Show();
             }
             catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException or InvalidDataException or FormatException)

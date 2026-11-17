@@ -80,6 +80,9 @@ internal sealed class AnalysisView : UserControl
     private int heldQuiet;
     private readonly System.Windows.Threading.DispatcherTimer holdTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly Sessions.SessionsView raceAnalysis;
+
+    /// <summary>(since 4.18.0) Session Analysis' cards (a link from ForzaLeaderBoard's website opened there).</summary>
+    internal Sessions.SessionsView RaceAnalysis => raceAnalysis;
     private string? gameFilter;
     private int car = -1;
     private string? carGame;

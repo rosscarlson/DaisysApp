@@ -44,8 +44,9 @@
          0.62 (4.15.0): Shared/Network/YouTube (one YouTube account: sign-in, upload, delete, links) and YouTubeAccountView;
          0.63 (4.15.1): YouTube's app client (built in from the YOUTUBE_CLIENT secret), Upload's progress in bytes;
          0.64 (4.16.0): Shared/Video/VideoProfiles (Video → Recording's profiles, shared with Plex → Scanner's transcodes);
-         0.65 (4.17.28): Shared/Network/RetryGuard (waits after failures, a warning, a limit on tries: every reconnecting module) -->
-    <AssemblyVersion>0.65.0.0</AssemblyVersion>
+         0.65 (4.17.28): Shared/Network/RetryGuard (waits after failures, a warning, a limit on tries: every reconnecting module);
+         0.66 (4.18.0): Server/ServerConnection (a second server: ForzaLeaderBoard), Shell/OpenFiles.Links (daisysapp:// links) -->
+    <AssemblyVersion>0.66.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

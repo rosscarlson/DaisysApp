@@ -535,5 +535,10 @@
   "{0}: stopped trying after {1} tries in 10 minutes": "{0}: stopped trying after {1} tries in 10 minutes",
   "{0}: trying again in {1}": "{0}: trying again in {1}",
   "Stopped trying to connect after {0} tries in 10 minutes. Connect again in its settings once it's fixed.": "Stopped trying to connect after {0} tries in 10 minutes. Connect again in its settings once it's fixed.",
-  "Can't connect ({0}). Trying again less often.": "Can't connect ({0}). Trying again less often."
+  "Can't connect ({0}). Trying again less often.": "Can't connect ({0}). Trying again less often.",
+  "Couldn't open the link: {0}": "Couldn't open the link: {0}",
+  "A shared session can't be opened here: SimEffects → Analysis is switched off.": "A shared session can't be opened here: SimEffects → Analysis is switched off.",
+  "That link isn't one Daisy's App knows.": "That link isn't one Daisy's App knows.",
+  "{0} isn't set up (Settings → General)": "{0} isn't set up (Settings → General)",
+  "Connected to {0} (not signed in)": "Connected to {0} (not signed in)"
 }

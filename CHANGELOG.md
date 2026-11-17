@@ -3,6 +3,22 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.0**
+- **SimEffects → Analysis → Shared Session Manager** shares on **ForzaLeaderBoard** (www.forzaleaderboard.com), which
+  makes leaderboards of the sessions shared, not on Daisy's Server: a connection of its own, with the server's key built
+  in. Notepad and Process Analyzer stay on Daisy's Server. The sessions shared before were moved there and are still
+  this install's.
+- **Account** (the person icon, bottom right): sign in with a ForzaLeaderBoard account (**Sign up** opens the website)
+  so your shares are filed under it, or leave it empty to share anonymously as before; **Server** sets another address,
+  port and key (testing, or your own copy), **Default** goes back.
+- **View on ForzaLeaderBoard** (the globe): the session picked on the website. After a share: *Shared. It'll be on the
+  leaderboards in a few minutes.*
+- **Open in Daisy's App** on the website opens the session in Analysis → Compare as Session 1 (a `daisysapp://` link,
+  registered by the installer and the app; handed to the running copy). A session on a server you haven't used asks
+  first.
+- A share also sends each lap's time, the car's PI, the app's version and, in Forza, the car's number, drivetrain and
+  (Motorsport) track number, for the leaderboards.
+
 **4.17.28**
 - Nothing in the app tries to connect again for ever, fast: every module that reconnects by itself waits longer after
   each failure, warns in its log when it keeps failing, and the worst cases stop and say so (Core's `RetryGuard`).

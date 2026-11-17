@@ -39,6 +39,9 @@ public sealed class SessionShares
     /// <summary>The server's sessions downloaded: id → the session's key ("Imported\file").</summary>
     public Dictionary<string, string> Downloaded { get; set; } = new();
 
+    /// <summary>(since 4.18.0) Other servers a link was opened from, once said and allowed: "host:port key".</summary>
+    public List<string> Servers { get; set; } = new();
+
     private static SessionShares? all;
     public static SessionShares All => all ??= JsonStore.Load<SessionShares>(FileName);
 
@@ -48,33 +51,53 @@ public sealed class SessionShares
 }
 
 /// <summary>
-/// (since 4.17.0) The <c>sessions</c> module on the server (its PROTOCOL.md; from: <c>Analysis</c>): one channel,
-/// opened when first asked (the app's one connection, Core's <see cref="ServerLink"/>, encrypted end to end with the
-/// token) and again after it's lost. Questions carry a <c>rid</c> that their answer repeats; anything else the server
-/// sends (a session added, changed or removed) is <see cref="Pushed"/>. A session goes up as its export file, gzipped,
-/// in pieces (<see cref="UploadAsync"/>), and comes down the same way (<see cref="DownloadAsync"/>). Not sealed with the
-/// user's key: every user of the server sees what's shared.
+/// (since 4.17.0) The <c>sessions</c> module on a server (Daisy's Server's PROTOCOL.md; from: <c>Analysis</c>): one
+/// channel, opened when first asked and again after it's lost. Since 4.18.0 the server is ForzaLeaderBoard
+/// (<see cref="Leaderboard"/>, its own connection with its key built in, an account optional; Daisy's Server's before),
+/// or for a link to another server, a connection of its own (<see cref="SessionLinks"/>). Questions carry a <c>rid</c>
+/// that their answer repeats; anything else the server sends (a session added, changed or removed) is
+/// <see cref="Pushed"/>. A session goes up as its export file, gzipped, in pieces (<see cref="UploadAsync"/>), and comes
+/// down the same way (<see cref="DownloadAsync"/>). Not sealed with the user's key: everyone sees what's shared.
 /// </summary>
-internal static class SessionServer
+internal sealed class SessionServer
 {
     public const string Module = "sessions";
     private const int Piece = 512 * 1024;
 
-    private static readonly SemaphoreSlim gate = new(1, 1);
-    private static readonly Dictionary<int, TaskCompletionSource<JsonObject>> asks = new();
-    private static ServerChannel? channel;
-    private static int nextAsk;
+    /// <summary>(since 4.18.0) ForzaLeaderBoard: Share Session's server, its key pinned (another set up in Account's
+    /// Server is trusted on first use); signed in with an account from its website, or anonymous.</summary>
+    /// <remarks>(www.: forzaleaderboard.com alone had no address in DNS on 2026-11-17, though the website's links name it)</remarks>
+    public static readonly ServerConnection Leaderboard = new("ForzaLeaderBoard", "ForzaLeaderBoard",
+        new("www.forzaleaderboard.com", 38900, "danpz5-la2uC4DSMXrxX_PDIKCP7OQlp8-tchjcs1Ps"));
+
+    /// <summary>(since 4.18.0) The website: its session pages, and signing up.</summary>
+    public const string Website = "http://www.forzaleaderboard.com";
+
+    /// <summary>Share Session's: on <see cref="Leaderboard"/>.</summary>
+    public static SessionServer Shared { get; } = new(ct => Leaderboard.OpenAsync(Module, "Analysis", ct));
+
+    /// <summary>(since 4.18.0) A session's page on the website, while the server's the built-in one; else null.</summary>
+    public static string? PageOf(string id) => Leaderboard.UsesBuiltIn ? $"{Website}/session/{id}" : null;
+
+    private readonly Func<CancellationToken, Task<ServerChannel>> open;
+    private readonly SemaphoreSlim gate = new(1, 1);
+    private readonly Dictionary<int, TaskCompletionSource<JsonObject>> asks = new();
+    private ServerChannel? channel;
+    private int nextAsk;
+
+    /// <param name="open">Opens the channel (connecting first if need be).</param>
+    public SessionServer(Func<CancellationToken, Task<ServerChannel>> open) => this.open = open;
 
     /// <summary>The server's own news, by op ("added", "changed", "removed"), on a background thread.</summary>
-    public static event Action<string, JsonObject>? Pushed;
+    public event Action<string, JsonObject>? Pushed;
 
-    private static async Task<ServerChannel> ChannelAsync(CancellationToken ct)
+    private async Task<ServerChannel> ChannelAsync(CancellationToken ct)
     {
         await gate.WaitAsync(ct);
         try
         {
             if (channel is { Ended.Length: 0 } c) return c;
-            c = await ServerLink.OpenAsync(Module, "Analysis", ct);
+            c = await open(ct);
             channel = c;
             _ = Task.Run(() => ReadAsync(c));
             return c;
@@ -82,7 +105,7 @@ internal static class SessionServer
         finally { gate.Release(); }
     }
 
-    private static async Task ReadAsync(ServerChannel c)
+    private async Task ReadAsync(ServerChannel c)
     {
         while (await c.ReadAsync() is { } m)
         {
@@ -104,7 +127,7 @@ internal static class SessionServer
     }
 
     /// <summary>A question to the server's module; its answer (an error comes back as ServerException, worded for the user).</summary>
-    public static async Task<JsonObject> AskAsync(JsonObject request, CancellationToken ct = default)
+    public async Task<JsonObject> AskAsync(JsonObject request, CancellationToken ct = default)
     {
         var c = await ChannelAsync(ct);
         int rid = Interlocked.Increment(ref nextAsk);
@@ -135,14 +158,14 @@ internal static class SessionServer
     }
 
     /// <summary>The sessions shared on the server, everyone's.</summary>
-    public static async Task<List<ServerSession>> ListAsync(CancellationToken ct = default)
+    public async Task<List<ServerSession>> ListAsync(CancellationToken ct = default)
     {
         var r = await AskAsync(new JsonObject { ["op"] = "list" }, ct);
         return (r["sessions"] as JsonArray)?.OfType<JsonObject>().Select(ServerSession.From).ToList() ?? new();
     }
 
     /// <summary>Shares a session's export file: its details, then the file gzipped, a piece at a time. The server's id.</summary>
-    public static async Task<string> UploadAsync(JsonObject meta, string text, IProgress<double>? progress, CancellationToken ct = default)
+    public async Task<string> UploadAsync(JsonObject meta, string text, IProgress<double>? progress, CancellationToken ct = default)
     {
         byte[] data = Gzip(Encoding.UTF8.GetBytes(text));
         var share = await AskAsync(new JsonObject
@@ -167,7 +190,7 @@ internal static class SessionServer
     }
 
     /// <summary>A shared session's export file, as text.</summary>
-    public static async Task<string> DownloadAsync(string id, IProgress<double>? progress, CancellationToken ct = default)
+    public async Task<string> DownloadAsync(string id, IProgress<double>? progress, CancellationToken ct = default)
     {
         using var all = new MemoryStream();
         long offset = 0;
@@ -184,10 +207,38 @@ internal static class SessionServer
         return Encoding.UTF8.GetString(Gunzip(all.ToArray()));
     }
 
-    public static Task EditAsync(string id, string title, string description, string? video, double? videoAt, CancellationToken ct = default) =>
+    /// <summary>(since 4.18.0; the Shared Session Manager's Compare before) A shared session in Imported, downloaded the
+    /// first time (kept in <see cref="SessionShares.Downloaded"/>): its key ("Imported\file"). <paramref name="driver"/>
+    /// and <paramref name="title"/> name the file (null: the file's own). Throws ServerException, IOException…</summary>
+    public async Task<string> FetchAsync(string id, string? driver, string? title, IProgress<double>? progress, CancellationToken ct = default)
+    {
+        var all = SessionShares.All;
+        if (all.Downloaded.TryGetValue(id, out var got) && File.Exists(Path.Combine(SessionLog.Folder, got))) return got;
+        string text = await DownloadAsync(id, progress, ct);
+        var lines = text.Split('\n');
+        if (!lines.Take(12).Any(l => l.StartsWith("ms,steering", StringComparison.Ordinal))) throw new IOException(T("not a session"));
+        string Header(string name) => lines.Take(12).FirstOrDefault(l => l.StartsWith("# " + name + ",", StringComparison.Ordinal))?[(name.Length + 3)..].Trim() ?? "";
+        driver ??= Header("driver");
+        title ??= Header("name");
+        Directory.CreateDirectory(SessionLog.ImportedFolder);
+        // (since 4.17.21 the driver in this copy is their display name, as Session 1 and 2 show it)
+        if (driver.Length > 0) text = string.Join('\n', lines.Select(l => l.StartsWith("# driver,", StringComparison.Ordinal) ? "# driver," + driver : l));
+        string name = string.Join("_", $"{(driver.Length > 0 ? driver : T("Driver"))} - {(title.Length > 0 ? title : id)}".Split(Path.GetInvalidFileNameChars()));
+        if (name.Length > 120) name = name[..120];
+        string target = Path.Combine(SessionLog.ImportedFolder, name + ".csv");
+        for (int k = 2; File.Exists(target); k++) target = Path.Combine(SessionLog.ImportedFolder, $"{name} ({k}).csv");
+        await File.WriteAllTextAsync(target, text, new UTF8Encoding(false), ct);
+        string key = "Imported\\" + Path.GetFileName(target);
+        all.Downloaded[id] = key;
+        all.Save();
+        Logging.Log.Here.Info($"Analysis: downloaded {id} from the server to {target}");
+        return key;
+    }
+
+    public Task EditAsync(string id, string title, string description, string? video, double? videoAt, CancellationToken ct = default) =>
         AskAsync(new JsonObject { ["op"] = "edit", ["id"] = id, ["title"] = title, ["description"] = description, ["video"] = video, ["videoAt"] = videoAt }, ct);
 
-    public static Task DeleteAsync(string id, CancellationToken ct = default) => AskAsync(new JsonObject { ["op"] = "delete", ["id"] = id }, ct);
+    public Task DeleteAsync(string id, CancellationToken ct = default) => AskAsync(new JsonObject { ["op"] = "delete", ["id"] = id }, ct);
 
     private static byte[] Gzip(byte[] plain)
     {
@@ -326,7 +377,7 @@ internal static class ShareQueue
             double? videoAt = link?.YouTube != null ? link.VideoAt(started, 0) : null;
             if (SessionShares.Of(item.Key) is { } was)
             {
-                await SessionServer.EditAsync(was.Id, title, description, link?.YouTube, videoAt);
+                await SessionServer.Shared.EditAsync(was.Id, title, description, link?.YouTube, videoAt);
                 was.Title = title;
                 was.Description = description;
                 was.Video = link?.YouTube;
@@ -337,7 +388,7 @@ internal static class ShareQueue
             }
             // (since 4.17.21 the server's user name, not Analysis' Driver: the server names them by their display name
             // when listed, as it is then; no driver in what it keeps)
-            if (ServerLink.SignedIn) driver = ServerLink.Settings.User;
+            if (SessionServer.Leaderboard.SignedIn) driver = SessionServer.Leaderboard.Settings.User;
             string text = await Task.Run(() => SessionsView.ExportText(item.File.FullName, started, 0, long.MaxValue, driver, title, link?.YouTube, videoAt));
             var meta = new JsonObject
             {
@@ -345,6 +396,7 @@ internal static class ShareQueue
                 ["class"] = item.ClassName, ["laps"] = item.Laps, ["best"] = Math.Round(item.Best, 3), ["started"] = ServerSession.Ms(started),
                 ["video"] = link?.YouTube, ["videoAt"] = videoAt,
             };
+            Leaderboards(meta, item);
             Badge(F("Uploading {0:0}%", 0), title, Blue);
             var progress = new Progress<double>(p =>
             {
@@ -353,7 +405,7 @@ internal static class ShareQueue
                 Badge(F("Uploading {0:0}%", p * 100), title, Blue);
                 Changed?.Invoke();
             });
-            string id = await SessionServer.UploadAsync(meta, text, progress);
+            string id = await SessionServer.Shared.UploadAsync(meta, text, progress);
             SessionShares.All.Shared[item.Key] = new SharedSession { Id = id, Title = title, Description = description, Shared = DateTime.Now, Video = link?.YouTube };
             SessionShares.All.Save();
             Logging.Log.Here.Info($"Analysis: {item.Key} shared on the server ({id})");
@@ -373,6 +425,26 @@ internal static class ShareQueue
             Changed?.Invoke();
         }
     }
+
+    /// <summary>(since 4.18.0) What ForzaLeaderBoard's boards use (unknown fields are kept as they come): the game's own
+    /// time for each lap (in order), the car's PI, the app's version; Forza's car number, drivetrain and (Motorsport)
+    /// track number. No rewinds: Analysis doesn't count them.</summary>
+    private static void Leaderboards(JsonObject meta, SessionsView.Item item)
+    {
+        if (item.LapTimes is { Count: > 0 } laps)
+            meta["lapTimes"] = new JsonArray(laps.OrderBy(l => l.Key).Select(l => (JsonNode)Math.Round(l.Value, 3)).ToArray());
+        if (item.Pi > 0) meta["pi"] = item.Pi;
+        meta["appVersion"] = AppVersion;
+        // (the other games' cars are numbered by name here, not by the game)
+        if (item.Game.StartsWith("FH", StringComparison.Ordinal) || item.Game.StartsWith("FM", StringComparison.Ordinal))
+        {
+            if (item.Car > 0) meta["carOrdinal"] = item.Car;
+            if (item.Drive is >= 0 and <= 2) meta["drivetrain"] = item.Drive;
+            if (item.TrackKey?.Split(':') is [_, var n] && int.TryParse(n, out int track)) meta["trackOrdinal"] = track;
+        }
+    }
+
+    private static readonly string AppVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "";
 
     /// <summary>(since 4.17.6) The title bar's bubble, Core's <see cref="TitleBadges"/>: "Analysis: " and what a share is
     /// doing (Preparing, Uploading n%), then Share Complete (green) or Share Failed (red) for 10 seconds; between shares,
@@ -402,7 +474,7 @@ internal static class ShareQueue
     /// <summary>Takes a session off the server (the user's own). Null, or the problem.</summary>
     public static async Task<string?> Unshare(string id)
     {
-        try { await SessionServer.DeleteAsync(id); }
+        try { await SessionServer.Shared.DeleteAsync(id); }
         catch (ServerException ex) { return ex.Message.TrimEnd('.'); }
         foreach (var k in SessionShares.All.Shared.Where(s => s.Value.Id == id).Select(s => s.Key).ToList()) SessionShares.All.Shared.Remove(k);
         SessionShares.All.Save();
@@ -423,7 +495,7 @@ internal static class ShareQueue
     /// to YouTube moves on, and each minute.</summary>
     public static async void Consider(IReadOnlyList<SessionsView.Item> items, string driver)
     {
-        bool wait = SessionShares.All.Auto && ServerLink.Configured
+        bool wait = SessionShares.All.Auto && SessionServer.Leaderboard.Configured
             && items.Any(i => Wanted(i) && SessionShares.Of(i.Key) == null && Failure(i.Key) == null && WaitsForYouTube(i.Key));
         if (wait != waiting)
         {
@@ -431,7 +503,7 @@ internal static class ShareQueue
             // (not over a share going, or one just done)
             if (going.Count == 0 && !held) Idle();
         }
-        if (busy || !ServerLink.Configured) return;
+        if (busy || !SessionServer.Leaderboard.Configured) return;
         busy = true;
         try
         {

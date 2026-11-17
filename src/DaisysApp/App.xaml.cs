@@ -119,7 +119,8 @@ public partial class App : Application
             catch (AbandonedMutexException) { first = true; } // it exited without releasing: the mutex is ours now
         }
         // a file opened with the app (Tools → Notepad, when Windows has it as the default app): to the running copy, if there is one
-        string? openFile = exitRequest ? null : FileHandoff.FileIn(e.Args);
+        // (since 4.18.0) or a daisysapp:// link (a website's Open in Daisy's App), the same way
+        string? openFile = exitRequest ? null : FileHandoff.FileIn(e.Args) ?? FileHandoff.LinkIn(e.Args);
         // "--say text" (an AI session speaking to you): to the running copy, never a copy of its own
         if (Speech.TextIn(e.Args) is { } say)
         {
@@ -248,7 +249,7 @@ public partial class App : Application
         }
 
         // (a file opened with the app opens in its own window: the main one stays in the tray, if it can)
-        bool startHidden = (e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase) || openFile != null && OpenFiles.Handler != null) && settings.RunInTray;
+        bool startHidden = (e.Args.Contains("--tray", StringComparer.OrdinalIgnoreCase) || openFile != null && !OpenFiles.IsLink(openFile) && OpenFiles.Handler != null) && settings.RunInTray;
         if (!startHidden) window.Show();
         Log.App.Info(startHidden ? "Started hidden in the tray" : "Window shown");
         if (SettingsBackup.Restored is { } restored) window.ShowNotice(restored, SettingsBackup.RestoreFailed ? DaisysApp.MainWindow.NoticeKind.Problem : DaisysApp.MainWindow.NoticeKind.Info);
@@ -270,6 +271,11 @@ public partial class App : Application
 
         void Open(string path)
         {
+            if (OpenFiles.IsLink(path))
+            {
+                OpenLink(path);
+                return;
+            }
             Log.App.Info($"Opening {path}");
             if (OpenFiles.Handler is { } open)
             {
@@ -279,7 +285,21 @@ public partial class App : Application
             window.ShowFromTray();
             window.ShowNotice(F("{0} can't be opened here: Tools → Notepad is switched off.", System.IO.Path.GetFileName(path)));
         }
+        // (since 4.18.0) a daisysapp:// link: to the module for its kind ("daisysapp://session/…": SimEffects → Analysis)
+        void OpenLink(string link)
+        {
+            Log.App.Info($"Opening a link: {(link.Length > 200 ? link[..200] : link)}");
+            if (Uri.TryCreate(link, UriKind.Absolute, out var uri) && OpenFiles.Links.TryGetValue(uri.Host, out var handler))
+            {
+                try { handler(uri); return; }
+                catch (Exception ex) { ErrorLog.Write("Opening a link", ex); window.ShowFromTray(); window.ShowNotice(F("Couldn't open the link: {0}", ex.Message)); return; }
+            }
+            window.ShowFromTray();
+            window.ShowNotice(uri?.Host.Equals("session", StringComparison.OrdinalIgnoreCase) == true
+                ? T("A shared session can't be opened here: SimEffects → Analysis is switched off.") : T("That link isn't one Daisy's App knows."));
+        }
         if (openFile != null) Open(openFile);
+        FileHandoff.RegisterLinks();
         FileHandoff.Listen(path => Dispatcher.BeginInvoke(() =>
         {
             if (!path.StartsWith(SayPrefix, StringComparison.Ordinal)) Open(path);

@@ -136,6 +136,13 @@ Source: "Tasks.ps1"; DestDir: "{app}"; Flags: ignoreversion
 [Registry]
 ; "Start when I sign in" is set by the app (Settings > General); remove it on uninstall.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "{#AppShortName}"; Flags: uninsdeletevalue
+#if AppShortName == "DaisysApp"
+; (since 4.18.0) daisysapp:// links (a website's Open in Daisy's App) open in the app; the app registers them too, at
+; each start, for whoever runs it.
+Root: HKCU; Subkey: "Software\Classes\daisysapp"; ValueType: string; ValueName: ""; ValueData: "URL:Daisy's App"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\daisysapp"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCU; Subkey: "Software\Classes\daisysapp\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExe}"" ""%1"""
+#endif
 
 [UninstallRun]
 ; the quick-update tasks: removed

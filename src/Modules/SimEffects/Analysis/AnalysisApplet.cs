@@ -87,6 +87,8 @@ public sealed class AnalysisApplet : IApplet
         timer.Tick += (_, _) => Tick();
         view.IsVisibleChanged += (_, _) => Reading();
         Current = this;
+        // (since 4.18.0) "daisysapp://session/…", a website's Open in Daisy's App
+        OpenFiles.Links["session"] = uri => Sessions.SessionLinks.Open(uri, view.RaceAnalysis);
     }
 
     /// <summary>The one made (since 3.33.0 the blocks' widgets are SimEffects → Overlays', which shows them from here);
@@ -324,6 +326,7 @@ public sealed class AnalysisApplet : IApplet
         timer.Stop();
         hotkey.Dispose();
         if (Current == this) Current = null;
+        OpenFiles.Links.Remove("session");
         quit = true;
         wake.Set();
         raceVideo.Dispose();

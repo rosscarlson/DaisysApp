@@ -100,6 +100,12 @@ internal sealed class SessionsView
         public string CarName { get; init; } = "";
         /// <summary>(since 4.17.0) Its class, for sharing.</summary>
         public string ClassName { get; init; } = "";
+        /// <summary>(since 4.18.0, for ForzaLeaderBoard) The car's number (Forza's CarOrdinal), PI, drivetrain (Forza's:
+        /// 0 FWD, 1 RWD, 2 AWD; -1 not known) and the track's key in its game (Motorsport 2023's "FM8:n").</summary>
+        public int Car { get; init; }
+        public int Pi { get; init; }
+        public int Drive { get; init; } = -1;
+        public string? TrackKey { get; init; }
         public int Laps { get; init; }
         /// <summary>The best lap's (or the race's) time, seconds; 0: none.</summary>
         public float Best { get; init; }
@@ -203,6 +209,8 @@ internal sealed class SessionsView
             mine.Add(new Item
             {
                 File = file, Key = g.Key, Started = started, Track = track,
+                Car = car, Pi = race?.Pi ?? (g.Laps.Count > 0 ? g.Laps[0].Pi : 0), Drive = g.Laps.Count > 0 ? g.Laps[0].Drive : -1,
+                TrackKey = names.Tracks.FirstOrDefault(t => t.Id == track)?.Key,
                 Game = game, TrackName = names.TrackName(track), CarName = names.CarName(game, car),
                 ClassName = className,
                 Laps = laps, Best = best, Incomplete = unfinished.ContainsKey(g.Key),
@@ -281,6 +289,14 @@ internal sealed class SessionsView
             if (alone) emptyOther = item;
             Load(item);
         }
+    }
+
+    /// <summary>(since 4.18.0) A session opened from a link (ForzaLeaderBoard's Open in Daisy's App): Session 1, Session 2
+    /// emptied, the cards brought into view.</summary>
+    internal async Task ShowLinked(string key)
+    {
+        await CompareDownloaded(key, 1, alone: true);
+        headCard.BringIntoView();
     }
 
     /// <summary>(since 4.17.21) Once this is Session 1, Session 2 is emptied, not kept.</summary>

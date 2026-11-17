@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 4.17.28** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 4.18.0** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -251,6 +251,7 @@ used); with other languages' files present it also reports what each is missing 
 | `--software` | Draw without the graphics card this time (used when the window came up blank) |
 | `--say <text>` | Speak the text with the AI's voice, in the running copy (what an AI session runs to talk to you) |
 | `--open <file>` | Open the file in the module that opens files (Tools → Notepad), in the running copy if there is one |
+| `daisysapp://…` | (since 4.18.0) A link, as a web page's Open in Daisy's App starts it (`daisysapp://session/…`: SimEffects → Analysis), in the running copy if there is one. Registered for the user by the installer and at each start (`HKCU\Software\Classes\daisysapp`, Daisy's App only) |
 | `--install-update` | The Update task: install the newest release from GitHub, with no window (a quick update) |
 | `--module-task <module> <class> …` | Run a module's job in a second copy, e.g. as administrator (Core's `ModuleTasks`) |
 

@@ -2,6 +2,22 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.18.0: Share Session on ForzaLeaderBoard (2026-11-17)
+
+- The user's brief (from the ForzaLeaderBoard server's agent): Share Session on its own server, key pinned, account
+  optional, `daisysapp://session/<id>?server=&key=` links. Core 0.66: `ServerLink`'s code is now `ServerConnection`
+  (an instance per server; `ServerLink.Connection` is Daisy's Server's; one device id, `ServerLink.Device()`), and
+  `OpenFiles.Links` (the shell hands `daisysapp:` args over FileHandoff's pipe). Module: `SessionServer.Leaderboard`,
+  `SessionServer.Shared` (an instance now), `FetchAsync`, `AccountWindow`, `SessionLinks`.
+- **Host is `www.forzaleaderboard.com`**: on 2026-11-17 the bare domain had no A record (pi.hole and 1.1.1.1), and the
+  public IP's 38900 reached Daisy's Server on PLEX (key `DXjD02…`), not ForzaLeaderBoard (192.168.1.5); the pinned key
+  refuses it. Links name `forzaleaderboard.com`: a link is "ours" by its key, whatever the host. Told the user.
+- Tested: DaisysDev with `ForzaLeaderBoard.json` pointing at 192.168.1.5 (same key): links at start and handed to the
+  running copy (downloaded, Session 1, Session 2 emptied), a missing id (*isn't on the server any more*), a bad link,
+  the manager's list (52 sessions), Account rendered; harness (`D:\Temp\flb-harness`): wrong password, wrong key,
+  anonymous, built-in key refused at www. Not tested: signing in with a real account; share/edit/delete on the public
+  server (unchanged code); the website's button in a browser; another server's question.
+
 ## 4.17.23: the readout on the mouse's left (not run: the user gaming)
 
 - `CompareChart.Readout`: left of the mouse unless it would go past 0; the user: never on the right (it covers what's coming).

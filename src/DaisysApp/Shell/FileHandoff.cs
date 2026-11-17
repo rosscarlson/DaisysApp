@@ -22,6 +22,30 @@ internal static class FileHandoff
         return i >= 0 && i + 1 < args.Length && args[i + 1].Trim().Length > 0 ? Path.GetFullPath(args[i + 1].Trim()) : null;
     }
 
+    /// <summary>(since 4.18.0) A daisysapp:// link given (Windows starts the app with it alone), if there is one.</summary>
+    public static string? LinkIn(string[] args) => args.Select(a => a.Trim()).FirstOrDefault(OpenFiles.IsLink);
+
+    /// <summary>(since 4.18.0) daisysapp:// links registered for this user, to this program (Daisy's App only, not a
+    /// copy under another name), if they aren't already.</summary>
+    public static void RegisterLinks()
+    {
+        if (!AppPaths.IsDaisysApp) return;
+        try
+        {
+            string exe = Environment.ProcessPath ?? "";
+            if (exe.Length == 0) return;
+            string command = $"\"{exe}\" \"%1\"";
+            using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Classes\" + OpenFiles.Scheme);
+            using var open = key.CreateSubKey(@"shell\open\command");
+            if (open.GetValue("") as string == command && key.GetValue("URL Protocol") != null) return;
+            key.SetValue("", "URL:Daisy's App");
+            key.SetValue("URL Protocol", "");
+            open.SetValue("", command);
+            Log.App.Info($"Links: {OpenFiles.Scheme}:// registered to {exe}");
+        }
+        catch (Exception ex) { Log.App.Warn("Links: couldn't register " + OpenFiles.Scheme + "://", ex); }
+    }
+
     /// <summary>Sends the path to the running copy (waiting while it starts); false if it can't be reached.</summary>
     public static bool Send(string path)
     {
