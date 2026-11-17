@@ -2,10 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
-- **4.18.0 (Share Session on ForzaLeaderBoard, Account, Open in Daisy's App):** on the LAN (4.18.2): Account →
-  Server `192.168.1.5`, Sign in. Off the LAN, needs first: `forzaleaderboard.com`
-  and `www.` reaching ForzaLeaderBoard (192.168.1.5) on port 38900 (on 2026-11-17 the bare name had no DNS record and
-  the router sent 38900 to Daisy's Server on PLEX). To try: the Shared Session Manager lists, shares, edits and deletes;
+- **4.18.0 (Share Session on ForzaLeaderBoard, Account, Open in Daisy's App):** 4.18.3: off the LAN, Account →
+  Sign in on www.forzaleaderboard.com port 38901 (on the LAN: Server `192.168.1.5`, Port 38901). To try: the Shared Session Manager lists, shares, edits and deletes;
   Account → Sign in with a website account (the Driver becomes its display name); the website's Open in Daisy's App
   opens the session in Compare (also with the app closed); View on ForzaLeaderBoard.
 - **4.17.28 (no retry for ever: Core's RetryGuard in ServerLink, KeptChannel, Process Analyzer's sync, Zabbix, HA,

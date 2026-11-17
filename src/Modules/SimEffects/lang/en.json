@@ -1069,5 +1069,5 @@
   "Signed in as {0}": "Signed in as {0}",
   "Not signed in": "Not signed in",
   "Signing in…": "Signing in…",
-  "That server isn't right": "That server isn't right"
+  "That port isn't right": "That port isn't right"
 }

@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.3**
+- **SimEffects → Analysis → Shared Session Manager → Account** has a **Port** box beside the Server, filled with
+  38901, ForzaLeaderBoard's port now (38900 reached another server from outside, so sign-in failed with *Can't reach
+  ForzaLeaderBoard*).
+
 **4.18.2**
 - **SimEffects → Analysis → Shared Session Manager → Account** has a **Server** box, filled with
   www.forzaleaderboard.com: another address (such as the server's LAN address) for testing, `host:port` for another

@@ -4,8 +4,10 @@ Read only when working in this folder. Current state and lessons; history is in 
 
 ## 4.18.0: Share Session on ForzaLeaderBoard (2026-11-17)
 
-- **4.18.2, the user (on the LAN, www's public address fails there):** Account's **Server** box back, address
-  only (`host[:port]`), filled with `Link.Host`; `SetUpAsync` is given the built-in key, so any address is pinned to
+- **4.18.3, the user (a remote client got *Can't reach*; ping and the ports were fine):** www's 38900 is
+  Daisy's Server on PLEX (key mismatch); ForzaLeaderBoard is on 38901 (192.168.1.5 now listens only there).
+  Built-in port 38901; Account's **Port** box beside Server. Tested in DaisysDev: www:38901 connected anonymously.
+- **4.18.2, the user (on the LAN, www's public address fails there):** Account's **Server** box back, filled with `Link.Host`; `SetUpAsync` is given the built-in key, so any address is pinned to
   ForzaLeaderBoard's key; no user/password allowed only when the address changed (anonymous). Tested in DaisysDev:
   www failed (*Can't reach*), 192.168.1.5 anonymous connected, `ForzaLeaderBoard.json` Host 192.168.1.5 + the key.
 - **4.18.1, the user:** users deal only with a user and password, never a server key: Account's Server section

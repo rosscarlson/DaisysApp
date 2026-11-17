@@ -10,8 +10,8 @@ namespace DaisysApp.Applets.SimEffects.Analysis.Sessions;
 /// (<see cref="SessionServer.Leaderboard"/>). A user and password from the website (Sign up opens it) to sign in with,
 /// so shares are filed under the account; none, anonymous (shares are this install's, by its device id, claimable on
 /// the website once signed in). The user and password, and (since 4.18.2) the Server's address, filled with the built-in
-/// one (another, such as its LAN address, for testing; <c>host:port</c> for another port). Never a key: the built-in
-/// one is pinned whatever the address (4.18.0's key and Default went in 4.18.1).
+/// one (another, such as its LAN address, for testing), and (since 4.18.3) its Port beside it. Never a key: the
+/// built-in one is pinned whatever the address (4.18.0's key and Default went in 4.18.1).
 /// </summary>
 internal sealed class AccountWindow
 {
@@ -19,7 +19,8 @@ internal sealed class AccountWindow
 
     private readonly Window window;
     private readonly Action changed;
-    private readonly TextBox server = new() { Width = 240 };
+    private readonly TextBox server = new() { Width = 170 };
+    private readonly TextBox port = new() { Width = 62, Margin = new Thickness(8, 0, 0, 0) };
     private readonly TextBox user = new() { Width = 240 };
     private readonly PasswordBox password = new() { Width = 240 };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 14) };
@@ -48,14 +49,17 @@ internal sealed class AccountWindow
         window = Ui.Dialog(T("ForzaLeaderBoard Account"), owner, 480);
         window.ResizeMode = ResizeMode.NoResize;
         var s = Link.Settings;
-        server.Text = Address(Link.Host, Link.Port);
+        server.Text = Link.Host;
+        port.Text = Link.Port.ToString();
         user.Text = s.User;
         password.Password = s.Password;
 
         var panel = new StackPanel { Margin = new Thickness(22, 18, 22, 18) };
         status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         panel.Children.Add(status);
-        panel.Children.Add(Row(T("Server"), server));
+        System.Windows.Automation.AutomationProperties.SetName(port, T("Port"));
+        port.ToolTip = T("Port");
+        panel.Children.Add(Row(T("Server"), server, port));
         panel.Children.Add(Row(T("User"), user));
         panel.Children.Add(Row(T("Password"), password));
         signIn.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
@@ -83,17 +87,15 @@ internal sealed class AccountWindow
         ShowState();
     }
 
-    private static StackPanel Row(string label, Control box)
+    private static StackPanel Row(string label, Control box, params Control[] more)
     {
         System.Windows.Automation.AutomationProperties.SetName(box, label);
         var p = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
         p.Children.Add(new TextBlock { Text = label, Width = 100, VerticalAlignment = VerticalAlignment.Center });
         p.Children.Add(box);
+        foreach (var c in more) p.Children.Add(c);
         return p;
     }
-
-    private static string Address(string host, int port) =>
-        port == SessionServer.Leaderboard.Default!.Port ? host : $"{host}:{port}";
 
     private void LinkChanged() => window.Dispatcher.BeginInvoke(ShowState);
 
@@ -111,19 +113,18 @@ internal sealed class AccountWindow
 
     private async Task SignIn()
     {
-        // (the server: host, or host:port; the built-in address back if it's emptied)
+        // (the built-in server and port back if they're emptied)
         var builtIn = Link.Default!;
-        string address = server.Text.Trim();
-        string host = address.Length == 0 ? builtIn.Host : address;
-        int port = builtIn.Port;
-        int colon = address.LastIndexOf(':');
-        if (colon > 0 && address.IndexOf(':') == colon)
+        string host = server.Text.Trim();
+        if (host.Length == 0) host = builtIn.Host;
+        int number = builtIn.Port;
+        if (port.Text.Trim().Length > 0 && (!int.TryParse(port.Text.Trim(), out number) || number is < 1 or > 65535))
         {
-            if (!int.TryParse(address[(colon + 1)..], out port) || port is < 1 or > 65535) { Problem(T("That server isn't right")); return; }
-            host = address[..colon];
+            Problem(T("That port isn't right"));
+            return;
         }
         // (another server with no user: anonymous there)
-        bool moved = !host.Equals(Link.Host, StringComparison.OrdinalIgnoreCase) || port != Link.Port;
+        bool moved = !host.Equals(Link.Host, StringComparison.OrdinalIgnoreCase) || number != Link.Port;
         if (!(moved && user.Text.Trim().Length == 0 && password.Password.Length == 0)
             && (user.Text.Trim().Length == 0 || password.Password.Length == 0)) { Problem(T("Give a user and a password")); return; }
         signIn.IsEnabled = false;
@@ -132,7 +133,7 @@ internal sealed class AccountWindow
         status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
         string? result;
         // (the built-in key, whatever the address: the LAN address is the same server)
-        try { result = await Link.SetUpAsync(host, port, user.Text, password.Password, builtIn.Key); }
+        try { result = await Link.SetUpAsync(host, number, user.Text, password.Password, builtIn.Key); }
         finally { signIn.IsEnabled = true; }
         if (result != null)
         {
@@ -140,7 +141,8 @@ internal sealed class AccountWindow
             Problem(result.Contains("key", StringComparison.OrdinalIgnoreCase) ? T("Can't reach ForzaLeaderBoard") : result.TrimEnd('.'));
             return;
         }
-        server.Text = Address(Link.Host, Link.Port);
+        server.Text = Link.Host;
+        port.Text = Link.Port.ToString();
         Done();
     }
 
