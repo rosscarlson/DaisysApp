@@ -11,8 +11,8 @@ colours.) Since 3.0.6 it has tabs, draws `---` as a line, and can be Windows' ap
 
 ## Using it
 
-- **Daisy's Server** (since 3.26.4): set it up in **Settings → General → Daisy's Server** (address, port, the token
-  the server gave, user, password; **Connect**; since 3.26.5 there, for every module that uses the server). It keeps
+- **Daisy's Server** (since 3.26.4): set it up in **Settings → General → Daisy's Server** (address, port, user and
+  password: the Notepad needs you signed in; a token too before 4.17.27; **Connect**; since 3.26.5 there, for every module that uses the server). It keeps
   each user's notes, sealed on their PCs and phones with a key from their password, so the server can't read them.
   **Change password** there changes it on the server (the notes stay); **Forget** forgets it here. The tabs you have
   go up to the server the first time (a user with no notes there yet, or tabs last in step with another server or,

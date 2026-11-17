@@ -4,28 +4,36 @@ using DaisysServer.Protocol;
 
 namespace DaisysApp.Server;
 
-/// <summary>Saved in %APPDATA%\DaisysApp\DaisysServer.json: where Daisy's Server is and who signs in there (the token
-/// and password kept encrypted for this Windows user).</summary>
+/// <summary>Saved in %APPDATA%\DaisysApp\DaisysServer.json: where Daisy's Server is, its key's fingerprint (kept from the
+/// first connection), who signs in there (the password kept encrypted for this Windows user), and this install's
+/// device id (never shown: what it shares anonymously is its own by it).</summary>
 public sealed class ServerLinkSettings
 {
     public const int DefaultPort = 38900;
+
     public string Host { get; set; } = "";
     public int Port { get; set; } = DefaultPort;
+    public string ServerKey { get; set; } = "";
     public string User { get; set; } = "";
-    public string TokenProtected { get; set; } = "";
     public string PasswordProtected { get; set; } = "";
+    public string Device { get; set; } = "";
 
-    [System.Text.Json.Serialization.JsonIgnore]
-    public string Token { get => Dpapi.Unprotect(TokenProtected); set => TokenProtected = Dpapi.Protect(value); }
     [System.Text.Json.Serialization.JsonIgnore]
     public string Password { get => Dpapi.Unprotect(PasswordProtected); set => PasswordProtected = Dpapi.Protect(value); }
 
-    public bool Complete => Host.Length > 0 && TokenProtected.Length > 0 && User.Length > 0 && PasswordProtected.Length > 0;
+    /// <summary>Has a server (an address).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool Complete => Host.Length > 0;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool SignedIn => User.Length > 0 && PasswordProtected.Length > 0;
 }
 
 /// <summary>
 /// Daisy's App's one connection to Daisy's Server (D:\OneDrive\Code\Windows\DaisysServer), shared by every module
-/// that uses it (set up in Settings → General): made when a module first opens a channel, signed in as the user set up here, and made again by the
+/// that uses it (set up in Settings → General): made when a module first opens a channel, to the server with the key
+/// kept from the first connection, signed in as the
+/// user set up here or anonymous (only modules that allow it: sessions), and made again by the
 /// next channel opened after it's lost. A module opens a channel to its counterpart on the server
 /// (<see cref="Keep"/>, or <see cref="OpenAsync"/> for one try) and seals what it stores there with the user's key (<c>ServerChannel.DataKey</c>), so the
 /// server keeps it without being able to read it. The protocol is the server's PROTOCOL.md.
@@ -38,8 +46,11 @@ public static class ServerLink
 
     public static ServerLinkSettings Settings => settings ??= JsonStore.Load<ServerLinkSettings>("DaisysServer");
 
-    /// <summary>Set up (an address, a token, a user and a password).</summary>
+    /// <summary>Has a server (an address).</summary>
     public static bool Configured => Settings.Complete;
+
+    /// <summary>Signs in as a user (set up with a user and password): for the modules that need one.</summary>
+    public static bool SignedIn => Settings.SignedIn;
 
     /// <summary>Connected now.</summary>
     public static bool Connected => client is { IsClosed: false };
@@ -50,14 +61,19 @@ public static class ServerLink
     /// <summary>Why the last try failed, or "".</summary>
     public static string Problem { get; private set; } = "";
 
-    /// <summary>Connected, lost, or set up again (on any thread).</summary>
+    /// <summary>Connected, lost, a try failed, or set up again (on any thread): for showing the state.</summary>
     public static event Action? Changed;
 
+    /// <summary>Connected, set up again or forgotten (on any thread): when a module waiting to try again should. Not
+    /// raised by a failed try, so modules' tries don't wake each other in a loop (4.17.26 did, through Changed).</summary>
+    public static event Action? Retry;
+
     /// <summary>A channel to one of the server's modules, kept open (see <see cref="KeptChannel"/>): hook up its events,
-    /// then <see cref="KeptChannel.Start"/> is called here once they can be. Dispose it to close it.</summary>
-    public static KeptChannel Keep(string module, string from, Action<KeptChannel> hookUp)
+    /// then <see cref="KeptChannel.Start"/> is called here once they can be. Dispose it to close it. Opened only while
+    /// signed in, unless the server's module allows <paramref name="anonymous"/> ones.</summary>
+    public static KeptChannel Keep(string module, string from, Action<KeptChannel> hookUp, bool anonymous = false)
     {
-        var k = new KeptChannel(module, from);
+        var k = new KeptChannel(module, from, anonymous);
         hookUp(k);
         k.Start();
         return k;
@@ -81,13 +97,20 @@ public static class ServerLink
             if (!s.Complete) throw new ServerException(T("Daisy's Server isn't set up (Settings → General)"));
             try
             {
-                c = await ServerClient.ConnectAsync(s.Host, s.Port, s.Token, s.User, s.Password, Environment.MachineName, $"{AppPaths.ShortName}", ct);
+                c = await ServerClient.ConnectAsync(s.Host, s.Port, s.ServerKey,
+                    s.SignedIn ? s.User : null, s.SignedIn ? s.Password : null, Environment.MachineName, AppPaths.ShortName, Device(), ct);
             }
             catch (ServerException ex)
             {
                 Problem = ex.Message;
                 Changed?.Invoke();
                 throw;
+            }
+            if (s.ServerKey.Length == 0)
+            {
+                // trusted on first use: only this server's let in from now on
+                s.ServerKey = c.ServerKey;
+                JsonStore.Save("DaisysServer", s);
             }
             c.Closed += why =>
             {
@@ -97,31 +120,64 @@ public static class ServerLink
             };
             client = c;
             Problem = "";
-            Logging.Log.App.Info($"Daisy's Server: connected to {c.Server} ({s.Host}:{s.Port}) as {c.User}");
+            Logging.Log.App.Info($"Daisy's Server: connected to {c.Server} ({s.Host}:{s.Port}) {(c.Anonymous ? "anonymously" : $"as {c.User}")}");
             Changed?.Invoke();
+            Retry?.Invoke();
             return c;
         }
         finally { gate.Release(); }
     }
 
-    /// <summary>Tries the given details; kept (and the connection made again with them) if they work. A problem, or null.</summary>
-    public static async Task<string?> SetUpAsync(string host, int port, string token, string user, string password, CancellationToken ct = default)
+    /// <summary>This install's id, made once and kept (never shown or logged).</summary>
+    private static string Device()
     {
+        var s = Settings;
+        if (s.Device.Length == 0)
+        {
+            s.Device = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
+            JsonStore.Save("DaisysServer", s);
+        }
+        return s.Device;
+    }
+
+    /// <summary>Tries the given details (no user and password: anonymous); kept (and the
+    /// connection made again with them) if they work. A problem, or null.</summary>
+    public static async Task<string?> SetUpAsync(string host, int port, string user, string password, CancellationToken ct = default)
+    {
+        host = host.Trim();
+        user = user.Trim();
+        if ((user.Length == 0) != (password.Length == 0)) return T("Give a user and a password, or neither");
+        if (host.Length == 0) return T("Give the server's address");
+        var s = Settings;
+        // a new server is trusted on first use; the same one has to have the key it had
+        string key = host == s.Host && port == s.Port ? s.ServerKey : "";
         ServerClient test;
-        try { test = await ServerClient.ConnectAsync(host.Trim(), port, token.Trim(), user.Trim(), password, Environment.MachineName, AppPaths.ShortName, ct); }
+        try
+        {
+            test = await ServerClient.ConnectAsync(host, port, key, user.Length > 0 ? user : null, password, Environment.MachineName, AppPaths.ShortName, Device(), ct);
+        }
         catch (ServerException ex) { return ex.Message; }
         catch (Exception ex) when (ex is not OperationCanceledException) { return ex.Message; }
+        string seen = test.ServerKey;
         test.Dispose();
-        var s = Settings;
-        s.Host = host.Trim();
+        s.Host = host;
         s.Port = port;
-        s.Token = token.Trim();
-        s.User = user.Trim();
+        s.ServerKey = seen;
+        s.User = user;
         s.Password = password;
         JsonStore.Save("DaisysServer", s);
         Disconnect();
-        Logging.Log.App.Info($"Daisy's Server: set up {s.Host}:{s.Port} as {s.User}");
+        Logging.Log.App.Info($"Daisy's Server: set up {s.Host}:{s.Port} {(user.Length > 0 ? $"as {user}" : "anonymously")}");
         return null;
+    }
+
+    /// <summary>Forgets the server's key (after it was reinstalled): the next connection trusts the one it has.</summary>
+    public static void ForgetKey()
+    {
+        Settings.ServerKey = "";
+        JsonStore.Save("DaisysServer", Settings);
+        Disconnect();
+        Logging.Log.App.Info("Daisy's Server: its key forgotten");
     }
 
     /// <summary>Changes the user's password there (their data key wrapped again: nothing else changes). A problem, or null.</summary>
@@ -140,10 +196,10 @@ public static class ServerLink
         return null;
     }
 
-    /// <summary>Forgets the details here (the server keeps the user's data).</summary>
+    /// <summary>Forgets the details here (the server keeps the user's data; this install's id stays).</summary>
     public static void Forget()
     {
-        settings = new ServerLinkSettings();
+        settings = new ServerLinkSettings { Device = Settings.Device };
         JsonStore.Save("DaisysServer", settings);
         Disconnect();
     }
@@ -156,6 +212,7 @@ public static class ServerLink
         c?.Dispose();
         Problem = "";
         Changed?.Invoke();
+        Retry?.Invoke();
     }
 }
 

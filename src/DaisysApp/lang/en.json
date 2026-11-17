@@ -380,7 +380,6 @@
   "Daisy's Server": "Daisy's Server",
   "Address": "Address",
   "Port": "Port",
-  "Token": "Token",
   "User": "User",
   "Password": "Password",
   "Connect": "Connect",
@@ -525,5 +524,11 @@
   "Back (the tab before)": "Back (the tab before)",
   "Forward (the tab after)": "Forward (the tab after)",
   "Running programs": "Running programs",
-  "Right-click to filter": "Right-click to filter"
+  "Right-click to filter": "Right-click to filter",
+  "Give a user and a password, or neither": "Give a user and a password, or neither",
+  "Give the server's address": "Give the server's address",
+  "Forget the server's key (after it's reinstalled)": "Forget the server's key (after it's reinstalled)",
+  "Server key": "Server key",
+  "Connected to {0} (not signed in: Share Session only)": "Connected to {0} (not signed in: Share Session only)",
+  "Set up: {0}": "Set up: {0}"
 }

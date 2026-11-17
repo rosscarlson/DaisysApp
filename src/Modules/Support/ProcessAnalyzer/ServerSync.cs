@@ -35,7 +35,7 @@ internal sealed class ServerSync : IDisposable
     public ServerSync()
     {
         sendSoon = new Debounce(2000, () => { if (channel != null && ProcessDb.Db.DirtyCount > 0) Send(); });
-        ServerLink.Changed += Wake;
+        ServerLink.Retry += Wake;
         ProcessDb.Db.Changed += SendSoon;
         _ = Task.Run(RunAsync);
     }
@@ -57,9 +57,9 @@ internal sealed class ServerSync : IDisposable
         while (!ct.IsCancellationRequested)
         {
             var next = wake.Task;
-            if (!ServerLink.Configured)
+            if (!ServerLink.SignedIn)
             {
-                Set(T("Daisy's Server isn't set up: local only"));
+                Set(T("Not signed in to Daisy's Server: local only"));
                 await Task.WhenAny(next, Task.Delay(Timeout.Infinite, ct));
                 continue;
             }
@@ -157,7 +157,7 @@ internal sealed class ServerSync : IDisposable
 
     public void Dispose()
     {
-        ServerLink.Changed -= Wake;
+        ServerLink.Retry -= Wake;
         ProcessDb.Db.Changed -= SendSoon;
         stop.Cancel();
         sendSoon.Dispose();

@@ -73,7 +73,7 @@ internal sealed class ShareWindow
         public DateTime Date => S.Started;
         public string DateText => S.Started == DateTime.MinValue ? "" : SessionsView.When(S.Started);
         /// <summary>(since 4.17.21) Their display name on the server (what the share was sent with before).</summary>
-        public string Driver => S.Name;
+        public string Driver => S.Anonymous ? F("{0} (anonymous)", S.Name) : S.Name;
         public string Game => S.Game;
         public string Track => S.Track;
         public string Car => S.Car;

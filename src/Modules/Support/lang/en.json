@@ -1306,7 +1306,6 @@
   "your Run key": "your Run key",
   "every user's Run key": "every user's Run key",
   "Starts at sign-in: {0} (Startup folder)": "Starts at sign-in: {0} (Startup folder)",
-  "Daisy's Server isn't set up: local only": "Daisy's Server isn't set up: local only",
   "Connecting…": "Connecting…",
   "Connected to {0}": "Connected to {0}",
   "Daisy's Server: {0}": "Daisy's Server: {0}",
@@ -1358,5 +1357,6 @@
   "Rows": "Rows",
   "0 = as many as fit": "0 = as many as fit",
   "Rows to fit the window's height; 0 = as tall as they need": "Rows to fit the window's height; 0 = as tall as they need",
-  "answering": "answering"
+  "answering": "answering",
+  "Not signed in to Daisy's Server: local only": "Not signed in to Daisy's Server: local only"
 }

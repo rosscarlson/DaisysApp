@@ -3,6 +3,16 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.27**
+- **Daisy's Server 0.3.0**: no more tokens. Settings → General → Daisy's Server has no Token row: the app keeps the
+  server's key from the first connection (the **Server key** row, with **Forget** for a reinstalled server) and
+  connects only to the server that has it. User and password are optional: without them the app connects without
+  signing in, which **Share Session** (SimEffects → Analysis) can use; your shares are still yours to edit and delete,
+  shown by your PC's name, and others' anonymous shares say *(anonymous)*. Notepad and Process Analyzer need you signed
+  in. Needs Daisy's Server 0.3.0 (an older one says to update it).
+- When the server couldn't be reached (or turned the app away), Notepad and Process Analyzer tried again at once,
+  waking each other, hundreds of times a second, until the PC ran out of network ports; now each waits as it should.
+
 **4.17.26**
 - **Gaming → Devices**: the device's picture stays at its full size, the axes beside it taking the rest of the width.
 - **Device Widget**: much larger text, the button numbers largest; buttons held together have a dot between them (3 · 12,

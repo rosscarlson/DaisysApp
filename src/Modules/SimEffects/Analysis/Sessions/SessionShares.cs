@@ -230,8 +230,10 @@ internal sealed class ServerSession
     public DateTime SharedAt { get; init; }
     public long Size { get; init; }
     public string? Video { get; set; }
-    /// <summary>Shared by this user (theirs to edit and delete).</summary>
+    /// <summary>Shared by this user (theirs to edit and delete); anonymous, by this install.</summary>
     public bool Mine { get; init; }
+    /// <summary>(Daisy's Server 0.3.0) Shared without signing in: <see cref="DisplayName"/> is the sharer's PC.</summary>
+    public bool Anonymous { get; init; }
 
     public static ServerSession From(JsonObject m) => new()
     {
@@ -241,6 +243,7 @@ internal sealed class ServerSession
         Laps = (int?)Num(m, "laps") ?? 0, Best = (float)(Num(m, "best") ?? 0),
         Started = Time(m, "started"), SharedAt = Time(m, "shared"), Size = (long)(Num(m, "size") ?? 0),
         Video = ServerClient.Str(m, "video") is { Length: > 0 } v ? v : null, Mine = m["mine"] is JsonValue b && b.TryGetValue<bool>(out bool mine) && mine,
+        Anonymous = m["anonymous"] is JsonValue a && a.TryGetValue<bool>(out bool anonymous) && anonymous,
     };
 
     private static double? Num(JsonObject m, string name) => m[name] is JsonValue v && v.TryGetValue<double>(out double d) ? d : null;
@@ -334,7 +337,7 @@ internal static class ShareQueue
             }
             // (since 4.17.21 the server's user name, not Analysis' Driver: the server names them by their display name
             // when listed, as it is then; no driver in what it keeps)
-            if (ServerLink.Settings.User is { Length: > 0 } user) driver = user;
+            if (ServerLink.SignedIn) driver = ServerLink.Settings.User;
             string text = await Task.Run(() => SessionsView.ExportText(item.File.FullName, started, 0, long.MaxValue, driver, title, link?.YouTube, videoAt));
             var meta = new JsonObject
             {

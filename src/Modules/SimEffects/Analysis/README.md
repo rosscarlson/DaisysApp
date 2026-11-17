@@ -375,7 +375,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
     where in the video it starts (`# video,link,seconds`), so whoever imports it watches it in step.
   - Speeds are in mph where the region isn't metric, km/h elsewhere.
 - **Shared Session Manager** (Share Session 4.17.0–4.17.15; the share icon at the top right of the Analysis card, where Import was): sessions
-  shared on [the server](../../../../README.md#settings--general) (set up in Settings → General), everyone's.
+  shared on [the server](../../../../README.md#settings--general) (set up in Settings → General), everyone's. Since
+  4.17.27 (Daisy's Server 0.3.0) without signing in too: those shares are this install's (edited and deleted only from
+  it), the Driver its PC's name and *(anonymous)*.
   - **Sessions to share** (since 4.17.16; one picked 4.17.4–4.17.15, Session 1 only 4.17.0–4.17.3): a drop-down of
     your own sessions (not imported ones), a box each (Session 1 ticked from the Analysis card, those picked from the
     Session Manager's Share); a click with **Shift** ticks (or unticks) every one between it and the last; **Clear** at
@@ -404,8 +406,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
     follows what anyone shares or deletes while it's open.
   - The Session Manager's **Server** column says each session's share: Shared, Sharing n%, Waiting for YouTube or
     Failed (why, in its tooltip). Shared sessions are kept in `AnalysisShares.json`.
-  - On the way: the app's one connection to the server, encrypted with its token (AES-256-GCM, keys from an ECDH
-    exchange salted with the token's secret, which is never sent). Shared sessions aren't sealed with your key (every
+  - On the way: the app's one connection to the server, encrypted (AES-256-GCM, keys from two ECDH exchanges, one
+    with the server's own key, so only the server whose key the app knows can make them; since 4.17.27, with a token
+    before). Shared sessions aren't sealed with your key (every
     user of the server can read them), so the server keeps them as they are. The protocol is the server's PROTOCOL.md
     (its `sessions` module).
 - **Track Map** (since 4.6.3; a card a third of Compare's row until 4.6.9, now in Compare, right of the Video, a quarter of the row): the lines Session 1 and Session 2 took, from where the game says the

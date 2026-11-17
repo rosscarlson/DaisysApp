@@ -389,7 +389,6 @@
   "{0} is bigger than 1 MB": "{0} is bigger than 1 MB",
   "{0} isn't a text file": "{0} isn't a text file",
   "Not saved: {0}": "Not saved: {0}",
-  "Daisy's Server isn't set up": "Daisy's Server isn't set up",
   "Connected to {0}": "Connected to {0}",
   "Connected to {0} · {1}": "Connected to {0} · {1}",
   "Connecting…": "Connecting…",
@@ -582,5 +581,6 @@
   "New {0} session": "New {0} session",
   "New session": "New session",
   "Close this session": "Close this session",
-  "Unbound": "Unbound"
+  "Unbound": "Unbound",
+  "Sign in to Daisy's Server (Settings → General)": "Sign in to Daisy's Server (Settings → General)"
 }

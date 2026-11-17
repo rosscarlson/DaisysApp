@@ -866,7 +866,7 @@ internal sealed class NotepadView : DockPanel
         string text;
         bool bad = false;
         if (fileProblem.Length > 0) { text = fileProblem; bad = true; }
-        else if (!ServerLink.Configured) text = T("Daisy's Server isn't set up");
+        else if (!ServerLink.SignedIn) text = T("Sign in to Daisy's Server (Settings → General)");
         else if (connected) text = others.Count == 0 ? F("Connected to {0}", ServerLink.Name) : F("Connected to {0} · {1}", ServerLink.Name, string.Join(", ", others));
         else if (linkProblem.Length > 0) { text = linkProblem; bad = true; }
         else text = T("Connecting…");

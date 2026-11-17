@@ -4,16 +4,17 @@ using DaisysServer.Protocol;
 namespace DaisysApp.Server;
 
 /// <summary>
-/// A module's channel to its counterpart on Daisy's Server, kept open: opened once the server is set up (Settings →
-/// General), and again 5 seconds after it's lost (or at once when it's set up again). Its events come on a background
+/// A module's channel to its counterpart on Daisy's Server, kept open: opened once a user signs in there (Settings →
+/// General; a module that allows anonymous ones: once there's a server), and again 5 seconds after it's lost (or at once when it's set up again). Its events come on a background
 /// thread, in order: <see cref="Opened"/> (send the module's first message there), each <see cref="Message"/>, then
 /// <see cref="Lost"/>. <see cref="ServerLink.Keep"/> makes one; Dispose closes it.
 /// </summary>
 public sealed class KeptChannel : IDisposable
 {
     private readonly string module, from;
+    private readonly bool anonymous;
     private readonly CancellationTokenSource stop = new();
-    /// <summary>Ends when the server's set up again, forgotten, connected or lost (ServerLink.Changed).</summary>
+    /// <summary>Ends when the server's set up again, forgotten or connected (ServerLink.Retry).</summary>
     private TaskCompletionSource changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private volatile ServerChannel? channel;
 
@@ -27,15 +28,16 @@ public sealed class KeptChannel : IDisposable
     /// <summary>Open now.</summary>
     public bool IsOpen => channel != null;
 
-    internal KeptChannel(string module, string from)
+    internal KeptChannel(string module, string from, bool anonymous)
     {
         this.module = module;
         this.from = from;
+        this.anonymous = anonymous;
     }
 
     internal void Start()
     {
-        ServerLink.Changed += Wake;
+        ServerLink.Retry += Wake;
         _ = Task.Run(RunAsync);
     }
 
@@ -47,7 +49,7 @@ public sealed class KeptChannel : IDisposable
         while (!ct.IsCancellationRequested)
         {
             var next = changed.Task;
-            if (!ServerLink.Configured)
+            if (!(anonymous ? ServerLink.Configured : ServerLink.SignedIn))
             {
                 await Task.WhenAny(next, Task.Delay(Timeout.Infinite, ct));
                 continue;
@@ -78,7 +80,7 @@ public sealed class KeptChannel : IDisposable
 
     public void Dispose()
     {
-        ServerLink.Changed -= Wake;
+        ServerLink.Retry -= Wake;
         stop.Cancel();
         channel?.Dispose();
     }

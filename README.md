@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 4.17.26** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 4.17.27** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -162,10 +162,15 @@ Wizard's: only while it's open, and only then registered). **Show Unbound** list
   default), or never.
 - **Language** — English, plus any language someone has added (see [Translations](#translations)). Takes effect
   after **Restart now**.
-- **Daisy's Server** (since 3.26.5 here; 3.26.4 had it in Settings → Tools → Notepad) — the address, port, token, user
-  and password of your [Daisy's Server](https://github.com/rosscarlson/DaisysServer); **Connect** tries them and keeps
-  them if they work. Then **Change password** (current, new; your data on the server stays) and **Forget** (Confirm?).
-  Every module that uses the server (Tools → Notepad) uses this one connection (Core's `Server/`).
+- **Daisy's Server** (since 3.26.5 here; 3.26.4 had it in Settings → Tools → Notepad) — the address and port of your
+  [Daisy's Server](https://github.com/rosscarlson/DaisysServer) (blank on a new install), and your user and password
+  there (both empty: not signed in, which only SimEffects → Analysis' Share Session can use);
+  **Connect** tries them and keeps them if they work. **Server key** (since 4.17.27, for Daisy's Server 0.3.0; tokens
+  went) is the server's key's fingerprint, kept from the first connection: the app connects only to the server with
+  that key, and says so when one doesn't have it; **Forget** beside it (Confirm?) is for a server that was reinstalled.
+  Signed in: **Change password** (current, new; your data on the server stays) and **Forget** (Confirm?). Every module
+  that uses the server (Tools → Notepad, Support → Process Analyzer and Share Session) uses this one connection
+  (Core's `Server/`); the first two need you signed in.
 - **Audio** (since 3.26.8; right of Daisy's Server) — the app's own **Output** and **Input**: where it plays (the AI's
   voice and question sound) and what it records from (the AI's 🎤, Video's recording microphone). **Windows default**
   unless you pick one; a device picked that's unplugged counts as the default until it's back. The Audio tools that

@@ -5,28 +5,29 @@ using DaisysApp.Shared;
 namespace DaisysApp.Server;
 
 /// <summary>
-/// The Daisy's Server card, on Settings → General: the server's address and port,
-/// the token it gave, the user and password; <b>Connect</b> tries them and keeps them if they work. Once set up:
-/// Change password (the user's data key wrapped again there, so nothing is lost) and Forget.
+/// The Daisy's Server card, on Settings → General: the server's address and port, the
+/// user and password (empty: not signed in, Share Session only); <b>Connect</b> tries them and keeps them if they work.
+/// The server's key (its fingerprint, kept from the first connection) with Forget, for a reinstalled server. Once
+/// signed in: Change password (the user's data key wrapped again there, so nothing is lost) and Forget.
 /// </summary>
 public sealed class ServerSettingsView : Border
 {
     private readonly TextBox host = new() { Width = 240 };
     private readonly TextBox port = new() { Width = 80 };
-    private readonly TextBox token = new() { Width = 420, FontFamily = new System.Windows.Media.FontFamily("Consolas") };
     private readonly TextBox user = new() { Width = 200 };
     private readonly PasswordBox password = new() { Width = 200 };
+    private readonly TextBox key = new() { Width = 420, IsReadOnly = true, FontFamily = new System.Windows.Media.FontFamily("Consolas") };
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextWrapping = TextWrapping.Wrap, MaxWidth = 520 };
     private readonly StackPanel signedIn = new() { Margin = new Thickness(0, 12, 0, 0) };
     private readonly Button connect;
+    private readonly Button forgetKey;
 
     public ServerSettingsView()
     {
         SetResourceReference(StyleProperty, "Card");
         var s = ServerLink.Settings;
         host.Text = s.Host;
-        port.Text = s.Port.ToString();
-        token.Text = s.Token;
+        port.Text = s.Host.Length > 0 ? s.Port.ToString() : "";
         user.Text = s.User;
         password.Password = s.Password;
 
@@ -34,10 +35,19 @@ public sealed class ServerSettingsView : Border
         var header = new TextBlock { Text = T("Daisy's Server") };
         header.SetResourceReference(StyleProperty, "CardHeader");
         panel.Children.Add(header);
-        panel.Children.Add(Row(T("Address"), host, new TextBlock { Text = T("Port"), Margin = new Thickness(16, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center }, port));
-        panel.Children.Add(Row(T("Token"), token));
+        panel.Children.Add(Row(T("Address"), host,
+            new TextBlock { Text = T("Port"), Margin = new Thickness(16, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center },
+            Placeholder(port, ServerLinkSettings.DefaultPort.ToString())));
         panel.Children.Add(Row(T("User"), user));
         panel.Children.Add(Row(T("Password"), password));
+        forgetKey = ConfirmButton.Make(T("Forget"), () =>
+        {
+            ServerLink.ForgetKey();
+            Refresh();
+        });
+        forgetKey.Margin = new Thickness(8, 0, 0, 0);
+        forgetKey.ToolTip = T("Forget the server's key (after it's reinstalled)");
+        panel.Children.Add(Row(T("Server key"), key, forgetKey));
         connect = new Button { Content = T("Connect"), Padding = new Thickness(16, 4, 16, 4) };
         connect.SetResourceReference(StyleProperty, "AccentButton");
         connect.Click += async (_, _) => await ConnectAsync();
@@ -70,10 +80,9 @@ public sealed class ServerSettingsView : Border
         {
             ServerLink.Forget();
             host.Clear();
-            token.Clear();
+            port.Clear();
             user.Clear();
             password.Clear();
-            port.Text = ServerLinkSettings.DefaultPort.ToString();
             Refresh();
         });
         forget.Margin = new Thickness(16, 0, 0, 0);
@@ -97,20 +106,38 @@ public sealed class ServerSettingsView : Border
         return p;
     }
 
+    /// <summary>The box with <paramref name="text"/> greyed in it while it's empty.</summary>
+    private static UIElement Placeholder(TextBox box, string text)
+    {
+        if (text.Length == 0) return box;
+        var hint = new TextBlock { Text = text, IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
+        hint.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+        void Show() => hint.Visibility = box.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        box.TextChanged += (_, _) => Show();
+        Show();
+        return new Grid { Children = { box, hint } };
+    }
+
     private void Refresh()
     {
-        signedIn.Visibility = ServerLink.Configured ? Visibility.Visible : Visibility.Collapsed;
+        var s = ServerLink.Settings;
+        signedIn.Visibility = ServerLink.SignedIn ? Visibility.Visible : Visibility.Collapsed;
+        key.Text = s.ServerKey;
+        forgetKey.IsEnabled = s.ServerKey.Length > 0;
         bool bad = false;
         if (!ServerLink.Configured) status.Text = T("Not set up");
-        else if (ServerLink.Connected) status.Text = F("Connected to {0} as {1}", ServerLink.Name, ServerLink.Settings.User);
+        else if (ServerLink.Connected)
+            status.Text = ServerLink.SignedIn ? F("Connected to {0} as {1}", ServerLink.Name, s.User)
+                : F("Connected to {0} (not signed in: Share Session only)", ServerLink.Name);
         else if (ServerLink.Problem.Length > 0) { status.Text = ServerLink.Problem; bad = true; }
-        else status.Text = F("Set up: {0} as {1}", ServerLink.Settings.Host, ServerLink.Settings.User);
+        else status.Text = ServerLink.SignedIn ? F("Set up: {0} as {1}", s.Host, s.User) : F("Set up: {0}", s.Host);
         status.SetResourceReference(TextBlock.ForegroundProperty, bad ? "ErrorTextBrush" : "TextSecondaryBrush");
     }
 
     private async Task ConnectAsync()
     {
-        if (!int.TryParse(port.Text.Trim(), out int p) || p is < 1 or > 65535)
+        int p = ServerLinkSettings.DefaultPort;
+        if (port.Text.Trim().Length > 0 && (!int.TryParse(port.Text.Trim(), out p) || p is < 1 or > 65535))
         {
             Show(T("A port is 1 to 65535"));
             return;
@@ -118,7 +145,7 @@ public sealed class ServerSettingsView : Border
         connect.IsEnabled = false;
         status.Text = T("Connecting…");
         status.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-        var problem = await ServerLink.SetUpAsync(host.Text, p, token.Text, user.Text, password.Password);
+        var problem = await ServerLink.SetUpAsync(host.Text, p, user.Text, password.Password);
         connect.IsEnabled = true;
         if (problem != null) { Show(problem); return; }
         Refresh();
