@@ -62,7 +62,7 @@ internal static class SessionLinks
             bool ours = port == leaderboard.Port && (key == leaderboard.Key || host.Equals(leaderboard.Host, StringComparison.OrdinalIgnoreCase));
             if (ours && leaderboard.Key.Length > 0 && leaderboard.Key != key)
             {
-                Say(F("The link's key for {0} isn't that server's: not opened", $"{host}:{port}"));
+                Say(T("That link's server isn't right"));
                 return;
             }
             if (ours) from = SessionServer.Shared;
@@ -92,7 +92,7 @@ internal static class SessionLinks
         catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException or InvalidDataException or FormatException)
         {
             Logging.Log.Here.Warn($"Analysis: session {id} from a link ({host}:{port}): {ex.Message}");
-            Say(ex.Message.TrimEnd('.'));
+            Say(SessionServer.Friendly(ex));
         }
         finally
         {

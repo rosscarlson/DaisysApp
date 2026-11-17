@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.1**
+- **SimEffects → Analysis → Shared Session Manager → Account** asks only for your ForzaLeaderBoard user and password:
+  the Server section (address, port and server key) is gone, and a problem with the server's key reads *Can't reach
+  ForzaLeaderBoard*.
+
 **4.18.0**
 - **SimEffects → Analysis → Shared Session Manager** shares on **ForzaLeaderBoard** (www.forzaleaderboard.com), which
   makes leaderboards of the sessions shared, not on Daisy's Server: a connection of its own, with the server's key built

@@ -76,6 +76,11 @@ internal sealed class SessionServer
     /// <summary>Share Session's: on <see cref="Leaderboard"/>.</summary>
     public static SessionServer Shared { get; } = new(ct => Leaderboard.OpenAsync(Module, "Analysis", ct));
 
+    /// <summary>(since 4.18.1) A problem as the user sees it: one about the server's key (the wrong server answering)
+    /// is "Can't reach ForzaLeaderBoard" (the user deals only with a user and password); the log keeps the real one.</summary>
+    public static string Friendly(Exception ex) =>
+        ex.Message.Contains("key", StringComparison.OrdinalIgnoreCase) ? T("Can't reach ForzaLeaderBoard") : ex.Message.TrimEnd('.');
+
     /// <summary>(since 4.18.0) A session's page on the website, while the server's the built-in one; else null.</summary>
     public static string? PageOf(string id) => Leaderboard.UsesBuiltIn ? $"{Website}/session/{id}" : null;
 
@@ -414,10 +419,10 @@ internal static class ShareQueue
         }
         catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException or InvalidOperationException)
         {
-            failed[item.Key] = (ex.Message.TrimEnd('.'), DateTime.Now);
+            failed[item.Key] = (SessionServer.Friendly(ex), DateTime.Now);
             Logging.Log.Here.Warn($"Analysis: {item.Key} couldn't be shared: {ex.Message}");
-            Done(T("Share Failed"), ex.Message.TrimEnd('.'), TitleBadges.Red);
-            return ex.Message.TrimEnd('.');
+            Done(T("Share Failed"), SessionServer.Friendly(ex), TitleBadges.Red);
+            return SessionServer.Friendly(ex);
         }
         finally
         {
@@ -475,7 +480,7 @@ internal static class ShareQueue
     public static async Task<string?> Unshare(string id)
     {
         try { await SessionServer.Shared.DeleteAsync(id); }
-        catch (ServerException ex) { return ex.Message.TrimEnd('.'); }
+        catch (ServerException ex) { return SessionServer.Friendly(ex); }
         foreach (var k in SessionShares.All.Shared.Where(s => s.Value.Id == id).Select(s => s.Key).ToList()) SessionShares.All.Shared.Remove(k);
         SessionShares.All.Save();
         Changed?.Invoke();

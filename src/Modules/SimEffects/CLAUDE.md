@@ -4,6 +4,11 @@ Read only when working in this folder. Current state and lessons; history is in 
 
 ## 4.18.0: Share Session on ForzaLeaderBoard (2026-11-17)
 
+- **4.18.1, the user:** users deal only with a user and password, never a server key: Account's Server section
+  (address, port, key) removed; key problems shown as *Can't reach ForzaLeaderBoard* (`SessionServer.Friendly`). Testing
+  another server: write `Host`/`Port`/`ServerKey` into `ForzaLeaderBoard.json` by hand. Settings → General's Daisy's
+  Server card still shows its Server key row (4.17.27): not asked about; offered.
+
 - The user's brief (from the ForzaLeaderBoard server's agent): Share Session on its own server, key pinned, account
   optional, `daisysapp://session/<id>?server=&key=` links. Core 0.66: `ServerLink`'s code is now `ServerConnection`
   (an instance per server; `ServerLink.Connection` is Daisy's Server's; one device id, `ServerLink.Device()`), and

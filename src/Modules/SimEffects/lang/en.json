@@ -1064,5 +1064,9 @@
   "Shared session": "Shared session",
   "View on ForzaLeaderBoard": "View on ForzaLeaderBoard",
   "The server isn't set up (Account)": "The server isn't set up (Account)",
-  "Shared. It'll be on the leaderboards in a few minutes.": "Shared. It'll be on the leaderboards in a few minutes."
+  "Shared. It'll be on the leaderboards in a few minutes.": "Shared. It'll be on the leaderboards in a few minutes.",
+  "Can't reach ForzaLeaderBoard": "Can't reach ForzaLeaderBoard",
+  "Signed in as {0}": "Signed in as {0}",
+  "Not signed in": "Not signed in",
+  "Signing in…": "Signing in…"
 }

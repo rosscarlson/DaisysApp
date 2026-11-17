@@ -454,7 +454,7 @@ internal sealed class ShareWindow
         }
         catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException)
         {
-            status.Text = F("Server: {0}", ex.Message.TrimEnd('.'));
+            status.Text = F("Server: {0}", SessionServer.Friendly(ex));
         }
     }
 
@@ -541,7 +541,7 @@ internal sealed class ShareWindow
             }
             catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException or InvalidDataException or FormatException)
             {
-                status.Text = F("It couldn't be downloaded: {0}", ex.Message.TrimEnd('.'));
+                status.Text = F("It couldn't be downloaded: {0}", SessionServer.Friendly(ex));
                 return;
             }
             finally
