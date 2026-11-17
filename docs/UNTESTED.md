@@ -2,7 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
-- **4.18.0 (Share Session on ForzaLeaderBoard, Account, Open in Daisy's App):** needs first: `forzaleaderboard.com`
+- **4.18.0 (Share Session on ForzaLeaderBoard, Account, Open in Daisy's App):** on the LAN (4.18.2): Account →
+  Server `192.168.1.5`, Sign in. Off the LAN, needs first: `forzaleaderboard.com`
   and `www.` reaching ForzaLeaderBoard (192.168.1.5) on port 38900 (on 2026-11-17 the bare name had no DNS record and
   the router sent 38900 to Daisy's Server on PLEX). To try: the Shared Session Manager lists, shares, edits and deletes;
   Account → Sign in with a website account (the Driver becomes its display name); the website's Open in Daisy's App

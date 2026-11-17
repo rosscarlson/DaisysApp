@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.2**
+- **SimEffects → Analysis → Shared Session Manager → Account** has a **Server** box, filled with
+  www.forzaleaderboard.com: another address (such as the server's LAN address) for testing, `host:port` for another
+  port; ForzaLeaderBoard's key is still checked whatever the address. Signing in with no user and password connects to
+  another server anonymously.
+
 **4.18.1**
 - **SimEffects → Analysis → Shared Session Manager → Account** asks only for your ForzaLeaderBoard user and password:
   the Server section (address, port and server key) is gone, and a problem with the server's key reads *Can't reach

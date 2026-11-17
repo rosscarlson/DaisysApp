@@ -4,6 +4,10 @@ Read only when working in this folder. Current state and lessons; history is in 
 
 ## 4.18.0: Share Session on ForzaLeaderBoard (2026-11-17)
 
+- **4.18.2, the user (on the LAN, www's public address fails there):** Account's **Server** box back, address
+  only (`host[:port]`), filled with `Link.Host`; `SetUpAsync` is given the built-in key, so any address is pinned to
+  ForzaLeaderBoard's key; no user/password allowed only when the address changed (anonymous). Tested in DaisysDev:
+  www failed (*Can't reach*), 192.168.1.5 anonymous connected, `ForzaLeaderBoard.json` Host 192.168.1.5 + the key.
 - **4.18.1, the user:** users deal only with a user and password, never a server key: Account's Server section
   (address, port, key) removed; key problems shown as *Can't reach ForzaLeaderBoard* (`SessionServer.Friendly`). Testing
   another server: write `Host`/`Port`/`ServerKey` into `ForzaLeaderBoard.json` by hand. Settings → General's Daisy's
