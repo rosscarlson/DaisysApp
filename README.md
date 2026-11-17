@@ -1,6 +1,6 @@
 # Daisy's App
 
-**Version 4.17.27** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
+**Version 4.17.28** · [Download the latest release](https://github.com/rosscarlson/DaisysApp/releases/latest) · [What's new](CHANGELOG.md)
 
 A multitool app for Windows: one window of small tools, each on its own tab: hardware monitoring, audio levels and
 EQ, window and screen tools, recording, network monitoring, file tools, controller mapping and racing, and AI coding
@@ -346,7 +346,8 @@ src/
                           (games starting and ending, one timer for all), Shared/Network/Http and Frames, Shared/Audio/CoreAudio,
                           Shared/Hotkeys/Joystick; since 4.3.0 (Core 0.56) Shell/DeviceLookups (what Zabbix and HA know of a device
                           another module found); since 4.8.0 (Core 0.60) Shell/ScreenRecordings (Video → Recording's recorder, for
-                          other modules: Analysis' race videos)
+                          other modules: Analysis' race videos); since 4.17.28 (Core 0.65) Shared/Network/RetryGuard (waits
+                          after failures, a warning, a limit on tries: every module that reconnects by itself)
   DaisysApp.Shared/       shared code that needs more (only the modules using it bring it, in their folders):
                           Audio (devices, speaker layouts, mic volume, a device's volume: EndpointVolume; NAudio), Voicemeeter, Hardware (NVIDIA's GPU
                           library, Windows' counters, HDR monitors' SDR brightness, the LibreHardwareMonitor connection)

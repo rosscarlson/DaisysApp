@@ -3,6 +3,22 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.17.28**
+- Nothing in the app tries to connect again for ever, fast: every module that reconnects by itself waits longer after
+  each failure, warns in its log when it keeps failing, and the worst cases stop and say so (Core's `RetryGuard`).
+- **Daisy's Server**: every connection try, from any module, goes through one limit: after a failure (or a connection
+  the server closes at once) 5 s, doubled each time up to 5 minutes; after 30 tries in 10 minutes the app stops
+  trying, with a notification, until **Connect** in Settings → General. Notepad's and Process Analyzer's
+  channels wait longer each time a channel is lost too (5 s up to 5 minutes).
+- **Zabbix**: while it can't be read, its refreshes wait 30 s, doubled up to 10 minutes (not a new sign-in every
+  refresh); **Refresh** tries at once.
+- **Home Assistant**: tries again up to every 5 minutes (was every minute, for ever); a connection it closes at once
+  waits longer each time.
+- **Plex → Now Playing**: while Plex doesn't answer, asked again after 10 s, doubled up to 2 minutes (was every 5 s).
+- **AI** (its own agent): a rate limit or busy server is waited for 8 times at most (about an hour), then it stops
+  with the error.
+- **Button2Key Remote**: its listener for phones finding the PC no longer loops without a pause on a network error.
+
 **4.17.27**
 - **Daisy's Server 0.3.0**: no more tokens. Settings → General → Daisy's Server has no Token row: the app keeps the
   server's key from the first connection (the **Server key** row, with **Forget** for a reinstalled server) and

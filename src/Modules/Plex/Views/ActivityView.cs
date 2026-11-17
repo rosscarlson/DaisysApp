@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Windows.Controls;
 using System.Windows;
 using DaisysApp.Logging;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.Plex.Views;
 
@@ -22,6 +23,9 @@ internal sealed class ActivityView : Border
     private readonly Dictionary<string, SessionCard> cards = new();
     private DateTime historyAt;
     private bool asking;
+    /// <summary>(since 4.17.28) While Plex doesn't answer, asked again after 10 s, doubled each time up to 2 minutes (not
+    /// every 5 s for as long as the tab shows); the server connected again starts again at once.</summary>
+    private readonly RetryGuard guard = new("Plex", Log.Here, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(2));
 
     public ActivityView(PlexService service)
     {
@@ -46,7 +50,7 @@ internal sealed class ActivityView : Border
         Child = Ui.Page(page);
 
         Ui.Every(this, 5000, () => _ = Refresh());
-        service.Changed += () => Dispatcher.BeginInvoke(() => { if (IsVisible) { historyAt = default; _ = Refresh(); } });
+        service.Changed += () => Dispatcher.BeginInvoke(() => { guard.Reset(); if (IsVisible) { historyAt = default; _ = Refresh(); } });
     }
 
     private async Task Refresh()
@@ -63,22 +67,26 @@ internal sealed class ActivityView : Border
                 busy.Text = T("Plex isn't set up: Settings → Plex.");
                 return;
             }
-            try
-            {
-                var mc = await c.GetAsync("/status/sessions");
-                var list = PlexClient.List(mc, "Metadata").ToList();
-                Show(list);
-                long kbps = list.Sum(m => PlexClient.Num(PlexClient.Obj(m, "Session"), "bandwidth"));
-                int transcodes = list.Count(m => PlexClient.Obj(m, "TranscodeSession") is { ValueKind: JsonValueKind.Object } ts && PlexClient.Str(ts, "videoDecision") == "transcode");
-                summary.Text = list.Count == 0 ? T("Nothing playing")
-                    : P(list.Count, "{0} stream", "{0} streams") + (transcodes > 0 ? " · " + P(transcodes, "{0} transcoding", "{0} transcoding") : "") + " · " + Kbps(kbps);
-                busy.Text = await Activities(c);
-            }
-            catch (Exception ex)
-            {
-                summary.Text = "";
-                busy.Text = ex is PlexException ? ex.Message : ex.Message;
-            }
+            // (Tautulli's history below is asked for anyway)
+            if (guard.Begin())
+                try
+                {
+                    var mc = await c.GetAsync("/status/sessions");
+                    var list = PlexClient.List(mc, "Metadata").ToList();
+                    Show(list);
+                    long kbps = list.Sum(m => PlexClient.Num(PlexClient.Obj(m, "Session"), "bandwidth"));
+                    int transcodes = list.Count(m => PlexClient.Obj(m, "TranscodeSession") is { ValueKind: JsonValueKind.Object } ts && PlexClient.Str(ts, "videoDecision") == "transcode");
+                    summary.Text = list.Count == 0 ? T("Nothing playing")
+                        : P(list.Count, "{0} stream", "{0} streams") + (transcodes > 0 ? " · " + P(transcodes, "{0} transcoding", "{0} transcoding") : "") + " · " + Kbps(kbps);
+                    busy.Text = await Activities(c);
+                    guard.Succeeded();
+                }
+                catch (Exception ex)
+                {
+                    summary.Text = "";
+                    busy.Text = ex.Message;
+                    guard.Failed(ex.Message);
+                }
             if (service.Tautulli is { } t && DateTime.Now - historyAt > TimeSpan.FromSeconds(60))
             {
                 historyAt = DateTime.Now;

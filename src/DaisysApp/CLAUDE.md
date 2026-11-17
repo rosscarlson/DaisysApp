@@ -6,6 +6,17 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **4.17.28 (asked 2026-11-17 after 4.17.26's flood killed Plex: audit everything that retries for ever, add limits
+  with a log line or a popup by severity):** Core 0.65 `Shared/Network/RetryGuard` (waits doubled to a cap; Warn after
+  N in a row, a notification if `notify`; `budget` tries in 10 min → Paused until Reset). ServerLink: one guard for
+  every connect (5 s→5 min, budget 30, notify; a connection closed within 30 s counts as a failure; Succeeded after
+  30 s up; Reset on SetUp/ForgetKey/Forget). KeptChannel and ServerSync back off to 5 min, reset after a channel
+  lasted 60 s. Zabbix (30 s→10 min; Refresh = `now`), HA (5 s→5 min, reset after 60 s up), Plex Now Playing
+  (10 s→2 min), ApiAgent (8 limit waits), ButtServer's UDP finder (no spin). Left as they were (bounded, local or
+  by hand): iRacing (4 tries), updates (Attempts), YouTube uploads (5), LibreHardwareMonitor (15 s, localhost),
+  Arduino (15 s, COM), Govee (200 ms on a socket error, UDP), AI remote (by hand), Support's pings (the user's rate),
+  ShareQueue (a minute; through ServerLink's guard). Harness `D:\Tempetryguard-test`.
+
 - **4.17.10, 4.17.13 (asked 2026-11-14: browser-like back / forward, mouse buttons + Core Hotkeys; then "not the 2nd
   level ones": the installed app was still 4.17.2):** `Shell/TabHistory.cs`. A place = every checked, visible
   RadioButton styled "TabButton" (visual-tree walk, collapsed branches skipped), outer first, so modules' `SubTabs`,

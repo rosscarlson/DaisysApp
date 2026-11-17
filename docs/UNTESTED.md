@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.17.28 (no retry for ever: Core's RetryGuard in ServerLink, KeptChannel, Process Analyzer's sync, Zabbix, HA,
+  Plex's Now Playing, the AI agent, Button2Key Remote's finder):** the guard and ServerLink tested with a harness
+  (`D:\Tempetryguard-test`: 2,862 tries in 45 s against a port that hangs up made 4 connections; the budget paused
+  at 30 with the notification). To try: Daisy's Server stopped for a while, the logs show tries 5 s, 10 s, 20 s… apart
+  (and `netstat -an | find /c "38900"` stays small); Zabbix or HA unreachable, the same; Connect brings it back.
 - **4.17.27 (Daisy's Server 0.3.0: no token, the server's key, signing in optional):** tested with a harness on
   ServerLink against a test server, the card rendered offscreen. To try: update the server to 0.3.0, then Settings →
   General → Daisy's Server: Connect (the Server key fills in), Notepad and Process Analyzer still connected, Share

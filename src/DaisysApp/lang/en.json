@@ -530,5 +530,10 @@
   "Forget the server's key (after it's reinstalled)": "Forget the server's key (after it's reinstalled)",
   "Server key": "Server key",
   "Connected to {0} (not signed in: Share Session only)": "Connected to {0} (not signed in: Share Session only)",
-  "Set up: {0}": "Set up: {0}"
+  "Set up: {0}": "Set up: {0}",
+  "waiting": "waiting",
+  "{0}: stopped trying after {1} tries in 10 minutes": "{0}: stopped trying after {1} tries in 10 minutes",
+  "{0}: trying again in {1}": "{0}: trying again in {1}",
+  "Stopped trying to connect after {0} tries in 10 minutes. Connect again in its settings once it's fixed.": "Stopped trying to connect after {0} tries in 10 minutes. Connect again in its settings once it's fixed.",
+  "Can't connect ({0}). Trying again less often.": "Can't connect ({0}). Trying again less often."
 }

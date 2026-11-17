@@ -5,7 +5,9 @@ namespace DaisysApp.Server;
 
 /// <summary>
 /// A module's channel to its counterpart on Daisy's Server, kept open: opened once a user signs in there (Settings →
-/// General; a module that allows anonymous ones: once there's a server), and again 5 seconds after it's lost (or at once when it's set up again). Its events come on a background
+/// General; a module that allows anonymous ones: once there's a server), and again 5 seconds after it's lost, doubled
+/// each time it's lost again up to 5 minutes (since 4.17.28; back to 5 s once one stayed open a minute), or at once
+/// when it's set up again. Its events come on a background
 /// thread, in order: <see cref="Opened"/> (send the module's first message there), each <see cref="Message"/>, then
 /// <see cref="Lost"/>. <see cref="ServerLink.Keep"/> makes one; Dispose closes it.
 /// </summary>
@@ -46,6 +48,7 @@ public sealed class KeptChannel : IDisposable
     private async Task RunAsync()
     {
         var ct = stop.Token;
+        int wait = 5;
         while (!ct.IsCancellationRequested)
         {
             var next = changed.Task;
@@ -55,9 +58,11 @@ public sealed class KeptChannel : IDisposable
                 continue;
             }
             string why;
+            long opened = long.MaxValue;
             try
             {
                 var c = await ServerLink.OpenAsync(module, from, ct);
+                opened = Environment.TickCount64;
                 channel = c;
                 Opened?.Invoke(c);
                 while (await c.ReadAsync(ct) is { } m) Message?.Invoke(c, m);
@@ -68,10 +73,12 @@ public sealed class KeptChannel : IDisposable
             channel?.Dispose();
             channel = null;
             if (ct.IsCancellationRequested) return;
-            Logging.Log.App.Info($"Daisy's Server: {module} channel: {why}");
+            if (Environment.TickCount64 - opened > 60_000) wait = 5;
+            Logging.Log.App.Info($"Daisy's Server: {module} channel: {why} (again in {wait} s at most)");
             Lost?.Invoke(why);
             next = changed.Task;
-            await Task.WhenAny(next, Task.Delay(5000, ct));
+            await Task.WhenAny(next, Task.Delay(TimeSpan.FromSeconds(wait), ct));
+            wait = Math.Min(wait * 2, 300);
         }
     }
 

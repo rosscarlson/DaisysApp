@@ -43,6 +43,11 @@ public static class ServerLink
     private static readonly SemaphoreSlim gate = new(1, 1);
     private static ServerClient? client;
     private static ServerLinkSettings? settings;
+    /// <summary>(since 4.17.28) Every connection try, whichever module asks: after a failure (or a connection the server
+    /// closed within 30 s) the next waits 5 s, doubled each time up to 5 minutes; 30 tries in 10 minutes stop them until
+    /// Connect, Forget or a new key (4.17.26's modules tried ~1,000 times a second and used up the PC's ports).</summary>
+    private static readonly Shared.Network.RetryGuard guard = new("Daisy's Server", Logging.Log.App,
+        TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(5), alertAfter: 10, budget: 30, notify: true);
 
     public static ServerLinkSettings Settings => settings ??= JsonStore.Load<ServerLinkSettings>("DaisysServer");
 
@@ -95,13 +100,21 @@ public static class ServerLink
             if (client is { IsClosed: false } c) return c;
             var s = Settings;
             if (!s.Complete) throw new ServerException(T("Daisy's Server isn't set up (Settings → General)"));
+            if (!guard.Begin())
+            {
+                // (nothing goes out: too soon after a failure, or stopped)
+                string held = guard.Holding ?? T("waiting");
+                if (guard.Paused && Problem != held) { Problem = held; Changed?.Invoke(); }
+                throw new ServerException(Problem.Length > 0 && !guard.Paused ? Problem : held);
+            }
             try
             {
                 c = await ServerClient.ConnectAsync(s.Host, s.Port, s.ServerKey,
                     s.SignedIn ? s.User : null, s.SignedIn ? s.Password : null, Environment.MachineName, AppPaths.ShortName, Device(), ct);
             }
-            catch (ServerException ex)
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {
+                guard.Failed(ex.Message);
                 Problem = ex.Message;
                 Changed?.Invoke();
                 throw;
@@ -112,9 +125,12 @@ public static class ServerLink
                 s.ServerKey = c.ServerKey;
                 JsonStore.Save("DaisysServer", s);
             }
+            long opened = Environment.TickCount64;
             c.Closed += why =>
             {
                 Logging.Log.App.Info($"Daisy's Server: disconnected ({why})");
+                // (a server that lets the app in and closes it again at once counts as a failure, so it isn't connected to in a loop)
+                if (Environment.TickCount64 - opened < 30_000) guard.Failed(why);
                 Problem = why;
                 Changed?.Invoke();
             };
@@ -123,6 +139,8 @@ public static class ServerLink
             Logging.Log.App.Info($"Daisy's Server: connected to {c.Server} ({s.Host}:{s.Port}) {(c.Anonymous ? "anonymously" : $"as {c.User}")}");
             Changed?.Invoke();
             Retry?.Invoke();
+            // (the waits start again once it's stayed connected 30 s)
+            _ = Task.Delay(30_000).ContinueWith(_ => { if (!c.IsClosed) guard.Succeeded(); }, TaskScheduler.Default);
             return c;
         }
         finally { gate.Release(); }
@@ -166,6 +184,7 @@ public static class ServerLink
         s.User = user;
         s.Password = password;
         JsonStore.Save("DaisysServer", s);
+        guard.Reset();
         Disconnect();
         Logging.Log.App.Info($"Daisy's Server: set up {s.Host}:{s.Port} {(user.Length > 0 ? $"as {user}" : "anonymously")}");
         return null;
@@ -176,6 +195,7 @@ public static class ServerLink
     {
         Settings.ServerKey = "";
         JsonStore.Save("DaisysServer", Settings);
+        guard.Reset();
         Disconnect();
         Logging.Log.App.Info("Daisy's Server: its key forgotten");
     }
@@ -201,6 +221,7 @@ public static class ServerLink
     {
         settings = new ServerLinkSettings { Device = Settings.Device };
         JsonStore.Save("DaisysServer", settings);
+        guard.Reset();
         Disconnect();
     }
 

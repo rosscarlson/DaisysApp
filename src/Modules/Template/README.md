@@ -166,7 +166,8 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   timer that runs only while the view shows; `new Debounce(ms, action).Poke()` for "once it's quiet" (a search box);
   `JsonStore.SaveSoon(name, settings)` for settings changed often (a slider); `Ui.Open(path)` and `Ui.Copy(text)`;
   `Ui.Brush("#hex")`, `Ui.Pen`, `Ui.Typeface` in drawing code (made once); `Http.Client(seconds)` for web requests;
-  `DailyLog` for a history kept a file a day; Windows' calls from `Shared.Win32.Native` (`HighResTimer.Hold()` for a
+  `RetryGuard` for anything that connects again by itself after a failure (longer waits each time, a warning, a limit:
+  nothing may retry for ever, fast; since 4.17.28); `DailyLog` for a history kept a file a day; Windows' calls from `Shared.Win32.Native` (`HighResTimer.Hold()` for a
   1 ms timer).
 - **Watching for a game**: `RunningPrograms.Watch(changed)` (told only when a program starts or ends), `GameSwitch`
   for "on when the game starts, off only if the game switched it on", `Ui.ProgramList(list, save)` for the list to

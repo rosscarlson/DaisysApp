@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Windows.Threading;
 using DaisysApp.Logging;
+using DaisysApp.Shared.Network;
 
 namespace DaisysApp.Applets.HomeAssistant;
 
@@ -84,12 +85,17 @@ public sealed class HaService : IDisposable
         _ = RunAsync(run.Token);
     }
 
+    /// <summary>(since 4.17.28) Waits after failures: 5 s, doubled each time, up to 5 minutes (60 s before), with a
+    /// warning in the log after 10 in a row.</summary>
+    private readonly RetryGuard guard = new("Home Assistant", Log.Here, TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(5));
+
     private async Task RunAsync(CancellationToken stop)
     {
-        int failures = 0;
+        guard.Reset();
         while (!stop.IsCancellationRequested)
         {
             HaClient? c = null;
+            long connected = long.MaxValue;
             try
             {
                 Connecting = true;
@@ -109,7 +115,7 @@ public sealed class HaService : IDisposable
                 Version = c.Version;
                 Error = null;
                 Connecting = false;
-                failures = 0;
+                connected = Environment.TickCount64;
                 Updated = DateTime.Now;
                 if (!Settings.Configured || Settings.SetupSkipped) { Settings.Configured = true; Settings.SetupSkipped = false; Settings.Save(); }
                 Log.Here.Info($"Connected to Home Assistant {c.Version} at {Settings.BaseUri()}: {states.Count} entities, {devices.Count} devices, {areas.Count} areas; {Things.Count} shown");
@@ -138,8 +144,9 @@ public sealed class HaService : IDisposable
             {
                 if (c != null) { c.Event -= OnEvent; if (client == c) client = null; c.Dispose(); }
             }
-            failures++;
-            try { await Task.Delay(TimeSpan.FromSeconds(Math.Min(60, 5 << Math.Min(failures - 1, 4))), stop); }
+            // (the waits start again after a connection that lasted a minute; one closed at once waits longer each time)
+            if (Environment.TickCount64 - connected > 60_000) guard.Succeeded();
+            try { await Task.Delay(guard.Failed(Error ?? "closed"), stop); }
             catch (OperationCanceledException) { break; }
         }
     }

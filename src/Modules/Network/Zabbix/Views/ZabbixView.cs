@@ -55,7 +55,7 @@ internal sealed class ZabbixView : ContentControl
         filters.Children.Add(groupBox);
         problemsOnly.SetResourceReference(StyleProperty, "ChipToggle");
         filters.Children.Add(problemsOnly);
-        filters.Children.Add(Ui.Spaced(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync())));
+        filters.Children.Add(Ui.Spaced(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync(now: true))));
         search.ToolTip = T("Show only hosts whose name, address or group contains this");
         problemsOnly.ToolTip = T("Show only hosts that have a problem or can't be reached");
         var bar = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };

@@ -57,6 +57,7 @@ internal sealed class ServerSync : IDisposable
         while (!ct.IsCancellationRequested)
         {
             var next = wake.Task;
+            long opened = long.MaxValue;
             if (!ServerLink.SignedIn)
             {
                 Set(T("Not signed in to Daisy's Server: local only"));
@@ -68,7 +69,7 @@ internal sealed class ServerSync : IDisposable
                 Set(T("Connecting…"));
                 var c = await ServerLink.OpenAsync(Module, "ProcessAnalyzer", ct);
                 channel = c;
-                wait = 5;
+                opened = Environment.TickCount64;
                 if (ProcessDb.Db.Server != Identity) ProcessDb.Db.SetVersion(Identity, 0);
                 c.Post(new JsonObject { ["op"] = "join", ["version"] = ProcessDb.Db.Version, ["app"] = typeof(ServerSync).Assembly.GetName().Version?.ToString() });
                 Set(F("Connected to {0}", c.Server));
@@ -85,6 +86,8 @@ internal sealed class ServerSync : IDisposable
             channel = null;
             lock (inFlight) { ProcessDb.Db.MarkDirty(inFlight); inFlight.Clear(); }
             Changed?.Invoke();
+            // (back to 5 s only once a channel stayed open a minute: one the server closes at once waits longer each time)
+            if (Environment.TickCount64 - opened > 60_000) wait = 5;
             await Task.WhenAny(wake.Task, Task.Delay(TimeSpan.FromSeconds(wait), ct));
             wait = Math.Min(wait * 3, 300);
         }

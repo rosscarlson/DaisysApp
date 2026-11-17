@@ -1,6 +1,7 @@
 using System.Windows.Threading;
 using DaisysApp.Applets.Network.Zabbix.Api;
 using DaisysApp.Logging;
+using DaisysApp.Shared.Network;
 using Point = DaisysApp.Applets.Network.Zabbix.Api.ZabbixClient.Point;
 
 namespace DaisysApp.Applets.Network.Zabbix;
@@ -21,6 +22,9 @@ public sealed class ZabbixService : IDisposable
     private ZabbixClient? client;
     private bool busy, disposed;
     private int failures;
+    /// <summary>(since 4.17.28) While it can't read, the timer's refreshes wait longer each time (30 s doubled, up to
+    /// 10 minutes), so a server that's down isn't signed in to (a session each) every few seconds for ever.</summary>
+    private readonly RetryGuard guard = new("Zabbix", Log.Here, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(10));
 
     public ZabbixService(ZabbixSettings settings)
     {
@@ -177,6 +181,7 @@ public sealed class ZabbixService : IDisposable
     /// <summary>Signs in again with the settings as they are now (they changed).</summary>
     public void Reconnect()
     {
+        guard.Reset();
         var old = client;
         client = null;
         _ = old?.LogoutAsync(!Settings.UseToken);
@@ -192,10 +197,13 @@ public sealed class ZabbixService : IDisposable
         if (watchers.Count > 0) _ = RefreshAsync();
     }
 
-    /// <summary>Reads everything that's showing: the hosts, the problems, the boxes' items, and the watched hosts' items and history.</summary>
-    public async Task RefreshAsync()
+    /// <summary>Reads everything that's showing: the hosts, the problems, the boxes' items, and the watched hosts' items
+    /// and history. After a failure, not until the wait's over, unless <paramref name="now"/> (the Refresh button).</summary>
+    public async Task RefreshAsync(bool now = false)
     {
         if (busy || disposed || !Settings.HasServer) return;
+        if (now) guard.Reset();
+        if (!guard.Begin()) return;
         busy = true;
         try
         {
@@ -216,6 +224,7 @@ public sealed class ZabbixService : IDisposable
                     if (Error != null) Log.Here.Info("Zabbix: reading again");
                     Error = null;
                     failures = 0;
+                    guard.Succeeded();
                     Updated = DateTime.Now;
                     if (!Settings.Configured) { Settings.Configured = true; Settings.SetupSkipped = false; Settings.Save(); }
                     break;
@@ -234,6 +243,7 @@ public sealed class ZabbixService : IDisposable
             string message = ex is ZabbixException ? ex.Message : F("Couldn't read from Zabbix: {0}", ex.Message);
             if (message != Error) Log.Here.Warn($"Zabbix: {message}", ex is ZabbixException ? null : ex);
             Error = message;
+            guard.Failed(message);
             // a client that can't sign in is made again next time (the settings may have been fixed)
             if (++failures >= 2 && client != null) { client.Dispose(); client = null; }
         }

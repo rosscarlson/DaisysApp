@@ -64,7 +64,7 @@ internal sealed class HostPage : DockPanel
         buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("New graph"), T("Draw several of this host's values together on one graph"), (_, _) => NewGraph(null))));
         buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Widget"), T("Put this host's box in its own small window you can place anywhere"), (_, _) => widgets.CreateHost(HostId, HostName, Window.GetWindow(this)))));
         buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Open in Zabbix"), T("This host's latest data in Zabbix's web interface"), (_, _) => OpenInZabbix())));
-        buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync())));
+        buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Refresh"), T("Read everything again now"), (_, _) => _ = service.RefreshAsync(now: true))));
         buttons.Children.Add(Ui.Spaced(Ui.IconButton("", T("Hide Device"), T("Hide this host from the grid (Settings → Network → Zabbix shows it again)"), (_, _) => Hide())));
         var names = new StackPanel { Children = { title, subtitle } };
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };

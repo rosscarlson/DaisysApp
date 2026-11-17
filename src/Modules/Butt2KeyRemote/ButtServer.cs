@@ -451,12 +451,24 @@ internal sealed class ButtServer : IDisposable
             finder = u;
             _ = Task.Run(async () =>
             {
+                int errors = 0;
                 while (!ct.IsCancellationRequested)
                 {
                     UdpReceiveResult r;
-                    try { r = await u.ReceiveAsync(ct); }
+                    try { r = await u.ReceiveAsync(ct); errors = 0; }
                     catch (OperationCanceledException) { break; }
-                    catch (SocketException) { continue; } // (a device that went: Windows reports it on the next receive)
+                    catch (SocketException ex)
+                    {
+                        // (a device that went: Windows reports it on the next receive; since 4.17.28 one that keeps
+                        // failing isn't asked again in a tight loop for ever)
+                        if (++errors >= 100)
+                        {
+                            Logging.Log.Here.Warn($"Button2Key Remote: UDP port {port} (for being found) keeps failing ({ex.Message}): stopped listening for devices");
+                            break;
+                        }
+                        if (errors > 5) try { await Task.Delay(200, ct); } catch (OperationCanceledException) { break; }
+                        continue;
+                    }
                     catch { break; }
                     try
                     {

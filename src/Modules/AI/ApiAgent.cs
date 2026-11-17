@@ -260,10 +260,12 @@ internal sealed class ApiAgent : IAgent
     private sealed record Call(string Id, string Name, string Arguments);
     private sealed record Reply(string Text, List<Call> Calls, long Prompt, long Output);
 
-    /// <summary>One request, streamed: its text and tool calls drawn as they come. A rate limit waits and tries again.</summary>
+    /// <summary>One request, streamed: its text and tool calls drawn as they come. A rate limit waits and tries again
+    /// (since 4.17.28, <see cref="LimitWaits"/> times at most: it doesn't wait for ever).</summary>
     private async Task<Reply> CompleteAsync(CancellationToken ct, bool tools = true)
     {
         var wait = TimeSpan.FromSeconds(20);
+        int limited = 0;
         for (int attempt = 1; ; attempt++)
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, provider.BaseUrl.TrimEnd('/') + "/chat/completions");
@@ -293,7 +295,7 @@ internal sealed class ApiAgent : IAgent
                 string detail = await response.Content.ReadAsStringAsync(ct);
                 int code = (int)response.StatusCode;
                 if (code == 400 && !noStreamOptions && detail.Contains("stream_options", StringComparison.OrdinalIgnoreCase)) { noStreamOptions = true; continue; }
-                if (code is 429 or 503 or 529 or 502)
+                if (code is 429 or 503 or 529 or 502 && ++limited <= LimitWaits)
                 {
                     // the limit: wait as long as the server says (Retry-After, or Gemini's retryDelay), or longer each time
                     var delay = RetryAfter(response, detail) ?? wait;
@@ -305,10 +307,14 @@ internal sealed class ApiAgent : IAgent
                     Emit(new JsonObject { ["type"] = "system", ["subtype"] = "status", ["status"] = "requesting" });
                     continue;
                 }
+                if (limited > LimitWaits) Logging.Log.Here.Warn($"AI ({provider.Name}): {code} after {LimitWaits} waits; given up");
                 throw new InvalidOperationException($"{code} {response.ReasonPhrase}: {Short(detail)}");
             }
         }
     }
+
+    /// <summary>The most waits for a rate limit (or a busy server) in one request: 20 s doubled each time up to 15 minutes, so about an hour.</summary>
+    private const int LimitWaits = 8;
 
     private static string Short(string s)
     {

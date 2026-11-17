@@ -53,7 +53,7 @@ request are in `REQUESTS.md` (since 3.14.1 the app appends each one itself: don'
   (move it to Core, or `DaisysApp.Controllers` for controller/Button2Key code): `Shared/Ui` (`Ui.Card`…, `Ui.Every`,
   `Ui.Brush/Pen/Typeface`, `Ui.Open/Copy`, `Ui.ProgramList`), `Sizes`, `HotkeyWindow.Button` for every shortcut
   button, `RunningPrograms` (+ `Watch`, `GameSwitch`), `DeviceChanges`, `Debounce`, `JsonStore.SaveSoon`, `DailyLog`,
-  `Win32/Native`, `Network/Http`/`Pings`, `Audio/AppAudio`/`CoreAudio`, `Hotkeys/Joystick`, `Server/` (the list: the
+  `Win32/Native`, `Network/Http`/`Pings`/`RetryGuard` (every retry loop), `Audio/AppAudio`/`CoreAudio`, `Hotkeys/Joystick`, `Server/` (the list: the
   Template's README). A module's own pieces go in `SimUi`, `NetUi`, `HaUi` or `ZabbixUi`, which must call `Ui.`.
 - **Binder** left DA in 3.37.4: now **Game Tether** (`C:\Users\ross\OneDrive\Code\Windows\GameTether`, own CLAUDE.md).
 - **State:** 4.10.0 and earlier released (4.10.0: Analysis in every game, Assetto Corsa and AC EVO added: SimEffects'; 4.8.0–4.9.0: race videos; 4.7.0: Analysis' Trace in Compare, Session 1 / 2, pop-outs, Shifting in rpm: SimEffects'; 4.6.10: Analysis → Shifting, Core 0.59; 4.6.3–4.6.9: SimEffects', Tools', Devices', `src/DaisysApp/CLAUDE.md`; versions stay 3 parts: the updater drops a 4th; 4.1.0: Process Analyzer, server side briefed, not written:
