@@ -5,7 +5,8 @@ The full list of what is waiting on the user to try or report, newest first, mov
 - **4.17.27 (Daisy's Server 0.3.0: no token, the server's key, signing in optional):** tested with a harness on
   ServerLink against a test server, the card rendered offscreen. To try: update the server to 0.3.0, then Settings →
   General → Daisy's Server: Connect (the Server key fills in), Notepad and Process Analyzer still connected, Share
-  Session; on another PC with no user, Share Session's own shares editable and deletable, others' marked (anonymous).
+  Session; on another PC with no user, Share Session's own shares editable and deletable, others' marked (anonymous);
+  no retry flood in the logs when the server's off (that fix wasn't run).
 - **4.17.26 (Devices: picture at full size, Device Widget's larger text, a dot between buttons, no Make Widget):**
   tried on DaisysDev's fakes (they press one button at a time). To try: a Device Widget on a real device, two or more
   buttons held together (a dot between the numbers), the text easy to read at the size you keep it.
