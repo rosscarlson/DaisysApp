@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.18.4 (the friend's Mini Mirror and recording, Video):** for the friend: Record → Monitor 1 (main) with mirrors
+  of it showing records (the mirrors carry on); the monitors numbered as in Windows' Display settings; mirrors with
+  SimEffects' overlays over Forza at full speed. If still slow, his Video log's "is slow" lines (WPF … frames/s,
+  captured … ms each) and the "high priority" line.
 - **4.18.0 (Share Session on ForzaLeaderBoard, Account, Open in Daisy's App):** 4.18.3: off the LAN, Account →
   Sign in on www.forzaleaderboard.com port 38901 (on the LAN: Server `192.168.1.5`, Port 38901). To try: the Shared Session Manager lists, shares, edits and deletes;
   Account → Sign in with a website account (the Driver becomes its display name); the website's Open in Daisy's App

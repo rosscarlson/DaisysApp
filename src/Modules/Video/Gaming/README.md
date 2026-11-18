@@ -101,7 +101,7 @@ the picture fitted inside 1920×1080 keeping its shape (a 5120×1440 monitor com
 DirectShow filter (softcam, MIT, built by `tools/build-softcam.ps1`), 64- and 32-bit, which the installer registers
 with Windows; if it isn't registered, starting it does (Windows asks for an administrator's OK, once).
 Since 4.9.1 a recording of the monitor the webcam shows shares its capture (Windows lets a program capture a
-monitor only once), so recording works while the webcam runs.
+monitor only once), so recording works while the webcam runs; since 4.18.4 Mini Mirror's mirrors of it share it too.
 
 **Sound for Discord:** a webcam carries no sound, and Discord takes sound only from a microphone. Starting the webcam
 asks whether to send the game's sound: pick the playback device the game plays on, and a virtual cable to send it to
@@ -120,7 +120,7 @@ title bar while it's running** in the shortcuts window (below) to leave it out.
 
 ## Recording
 
-Record a **monitor**, a **region** of one (**Select…**, then drag around it on one monitor; Esc cancels) or a **game or program**
+Record a **monitor** (numbered as Windows numbers them, since 4.18.4), a **region** of one (**Select…**, then drag around it on one monitor; Esc cancels) or a **game or program**
 (the game in front when the recording starts, or one you pick; the recording follows its window). Start and stop with
 **Record** on the tab (it reads **Stop** while recording), the tray menu, or the shortcut (Ctrl+Alt+F9 at first), which
 record what's chosen; or with a shortcut each for the monitor, the region and the game or program (since 3.37.0, none

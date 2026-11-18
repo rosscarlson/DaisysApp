@@ -4,6 +4,18 @@ Past work on this part of Daisy's App (Claude Code reads this file only when it 
 
 ## Latest
 
+- **4.18.4 (2026-11-18: the friend's logs, DESKTOP-QTNJDH2, two 5120×1440, DISPLAY1 main at 0,0, DISPLAY2 above
+  at 0,-1440):** (1) recording DISPLAY1 failed 0x80070057 at `Hub.Join` → `DuplicateOutput`: Mini Mirror's own
+  duplication of it. Now `Hub.Join` claims the monitor (`claimed`, lock-free `Running`), calls
+  `MiniMirror.MonitorCapture.Yield` (sets `yieldRequested` under `dupLock`, waits ≤1.5 s for `duplication` null), and
+  Mini Mirror's `TryInitialize` joins the hub (`Join`, `JoinedFrame` via `ScreenCapture.NextPicture`) and goes back to
+  its own when `Alone`. (2) Record's monitor list sorted by place, so "Monitor 1" was DISPLAY2: now the DISPLAYn
+  number. (3) Slow mirrors with FH5 + overlays: captures 40 ms–3 s each and "WPF behind" 5/s; now see-through windows
+  (mirrors, Core widgets, FPS overlay, title badges) in software (Core 0.67 `RenderPace.Software`) and capture
+  devices `SetGPUThreadPriority(7)` (`GpuPriority`; succeeds without admin here). (4) A monitor off overnight (1024×768,
+  stuck) put DISPLAY1 on GDI until restart: a display change now clears GDI. Tested in DaisysDev (one monitor, HDR):
+  mirror on DISPLAY1 + Record → recording 21 s 60 fps, mirror 64/s from Video's capture, own capture back after;
+  mirror drawn right in software. Not tested: a game loading the GPU, the GDI reset, two monitors' numbering.
 - **4.17.7 (2026-11-14: the friend again, after 4.16.3: lags only while mirrors and SimEffects' overlays show together;
   logging, no fix):** suspect: WPF's one render thread per process; mirrors (`AllowsTransparency`) and Core widgets
   (overlays) are layered windows, each change read back from the GPU (slow with the game loading the GPU); the overlay's

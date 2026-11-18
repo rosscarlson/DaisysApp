@@ -75,6 +75,7 @@ internal sealed class OverlayWindow : Window
         root.MouseLeftButtonDown += (_, e) => BeginDrag(-1, root, e);
         SourceInitialized += (_, _) =>
         {
+            DaisysApp.Shared.Widgets.RenderPace.Software(this);
             Native.MakeOverlay(this);
             ApplySettings();
         };

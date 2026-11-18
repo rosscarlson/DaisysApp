@@ -72,6 +72,7 @@ internal sealed class MirrorWindow : Window
 
         SourceInitialized += (_, _) =>
         {
+            DaisysApp.Shared.Widgets.RenderPace.Software(this);
             WindowTools.SetBounds(this, Definition.WindowBounds, silent: true);
             WindowTools.SetClickThrough(this, Definition.ClickThrough);
             WindowTools.MakeToolWindow(this);
@@ -202,7 +203,7 @@ internal sealed class MirrorWindow : Window
         try
         {
             bool software = RenderOptions.ProcessRenderMode == System.Windows.Interop.RenderMode.SoftwareOnly;
-            return $"WPF {(software ? "drawing in software" : "on the graphics card")} (tier {RenderCapability.Tier >> 16})";
+            return $"WPF {(software ? "drawing in software" : "on the graphics card")} (tier {RenderCapability.Tier >> 16}), mirrors in software";
         }
         catch { return "WPF ?"; }
     }

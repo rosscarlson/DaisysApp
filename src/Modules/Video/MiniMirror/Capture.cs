@@ -145,6 +145,13 @@ internal sealed class MonitorCapture : IDisposable
     private int statFrames, statTimeouts, statRebuilds;
     private ScreenGrab? grab;
     private bool gdi, grabFailed;
+    // (since 4.18.4) Windows gives a program one duplication of a monitor: while Video records it (or its webcam or a
+    // race video shows it), the mirrors take their pictures from that one (Gaming.ScreenCapture), and their own comes
+    // back when it's done. A recording starting asks for the monitor with Yield.
+    private Gaming.ScreenCapture? joined;
+    private volatile bool yieldRequested;
+    private readonly object dupLock = new();
+    private static readonly List<MonitorCapture> live = new();
     private PixelRect gdiBounds;
     private long nextBounds, statGdiMs;
     private int gdiFps = 60;
@@ -172,6 +179,7 @@ internal sealed class MonitorCapture : IDisposable
     public void Start()
     {
         if (thread != null) return;
+        lock (live) live.Add(this);
         running = true;
         thread = new Thread(CaptureLoop) { IsBackground = true, Name = "MiniMirror-Capture-" + DeviceName };
         thread.SetApartmentState(ApartmentState.MTA);
@@ -180,6 +188,26 @@ internal sealed class MonitorCapture : IDisposable
 
     /// <summary>Tears down and recreates the duplication on the next frame (monitor layout or resolution changed).</summary>
     public void RequestRebuild() => rebuildRequested = true;
+
+    /// <summary>
+    /// (Video's recording, webcam or race video, about to capture the monitor) Mini Mirror's captures of it let their
+    /// own duplication go, to take their pictures from that one; returns once they have (or after 1.5 s).
+    /// </summary>
+    public static void Yield(string deviceName)
+    {
+        MonitorCapture[] these;
+        lock (live) these = live.Where(c => string.Equals(c.DeviceName, deviceName, StringComparison.OrdinalIgnoreCase)).ToArray();
+        foreach (var c in these)
+        {
+            lock (c.dupLock)
+            {
+                if (c.duplication == null) continue;
+                c.yieldRequested = true;
+            }
+            long until = Environment.TickCount64 + 1500;
+            while (Volatile.Read(ref c.duplication) != null && Environment.TickCount64 < until) Thread.Sleep(5);
+        }
+    }
 
     private void CaptureLoop()
     {
@@ -193,10 +221,31 @@ internal sealed class MonitorCapture : IDisposable
                     log.Debug($"Capture of {DeviceName}: rebuilding");
                     ReleaseDxgi();
                     nextBounds = 0;
+                    // a monitor switched off (seen as a 1024x768 picture that never changes) made it give up on
+                    // duplication until a restart: the mirrors stayed at GDI's few frames a second once it was back (4.18.3)
+                    if (gdi)
+                    {
+                        gdi = false;
+                        stalls = stuckSetups = 0;
+                        stallMs = StallStartMs;
+                        lock (HdrStuck) GdiOnly.Remove(DeviceName);
+                        log.Info($"Capture of {DeviceName}: the displays changed; desktop duplication again, not GDI");
+                    }
+                }
+                if (yieldRequested)
+                {
+                    yieldRequested = false;
+                    ReleaseDuplication();
+                    log.Info($"Capture of {DeviceName}: Video is capturing this monitor; the mirrors take their pictures from its capture meanwhile");
                 }
                 if (gdi)
                 {
                     GdiFrame();
+                    continue;
+                }
+                if (joined != null)
+                {
+                    JoinedFrame();
                     continue;
                 }
                 if (duplication == null && !TryInitialize())
@@ -205,6 +254,7 @@ internal sealed class MonitorCapture : IDisposable
                     retryMs = Math.Min(RetryMaxMs, retryMs * 2);
                     continue;
                 }
+                if (joined != null) continue; // set up on Video's capture
 
                 Result result = duplication!.AcquireNextFrame(250, out var info, out IDXGIResource? desktop);
                 if (result.Failure)
@@ -232,26 +282,8 @@ internal sealed class MonitorCapture : IDisposable
                 {
                     using (desktop)
                     using (var frame = desktop!.QueryInterface<ID3D11Texture2D>())
-                    {
-                        Prepare(frame.Description);
-                        if (hdr != null)
-                        {
-                            // the user can change the SDR brightness slider at any time; it's cheap to look again
-                            if (Environment.TickCount64 >= nextWhiteCheck)
-                            {
-                                whiteScale = SdrWhiteLevel.ScaleFor(DeviceName);
-                                nextWhiteCheck = Environment.TickCount64 + 2000;
-                            }
-                            hdr.Convert(context!, frame, whiteScale, staging!);
-                        }
-                        else context!.CopyResource(staging!, frame);
-                    }
-
-                    var map = context!.Map(staging!, 0, MapMode.Read);
-                    try { FrameBuffer.Update(map.DataPointer, (int)map.RowPitch, width, height); }
-                    finally { context.Unmap(staging!, 0); }
-                    FrameBuffer.AddCost(System.Diagnostics.Stopwatch.GetTimestamp() - pictureStart);
-                    FrameBuffer.Path = hdr != null ? "HDR to SDR" : "8-bit";
+                        CopyPicture(frame);
+                    TakePicture(pictureStart);
                     OnFrame(info);
                 }
                 finally
@@ -270,6 +302,76 @@ internal sealed class MonitorCapture : IDisposable
         ReleaseDxgi();
         grab?.Dispose();
         grab = null;
+    }
+
+    /// <summary>A picture into the staging texture (converted to SDR when it's 16-bit).</summary>
+    private void CopyPicture(ID3D11Texture2D frame)
+    {
+        Prepare(frame.Description);
+        if (hdr != null)
+        {
+            // the user can change the SDR brightness slider at any time; it's cheap to look again
+            if (Environment.TickCount64 >= nextWhiteCheck)
+            {
+                whiteScale = SdrWhiteLevel.ScaleFor(DeviceName);
+                nextWhiteCheck = Environment.TickCount64 + 2000;
+            }
+            hdr.Convert(context!, frame, whiteScale, staging!);
+        }
+        else context!.CopyResource(staging!, frame);
+    }
+
+    /// <summary>The staging texture read back into <see cref="FrameBuffer"/>.</summary>
+    private void TakePicture(long pictureStart)
+    {
+        var map = context!.Map(staging!, 0, MapMode.Read);
+        try { FrameBuffer.Update(map.DataPointer, (int)map.RowPitch, width, height); }
+        finally { context.Unmap(staging!, 0); }
+        FrameBuffer.AddCost(System.Diagnostics.Stopwatch.GetTimestamp() - pictureStart);
+        FrameBuffer.Path = (hdr != null ? "HDR to SDR" : "8-bit") + (joined != null ? ", Video's capture" : "");
+    }
+
+    /// <summary>A picture from Video's capture of the monitor; its own capture again once nothing else uses that.</summary>
+    private void JoinedFrame()
+    {
+        if (joined!.Alone)
+        {
+            ReleaseDuplication();
+            log.Info($"Capture of {DeviceName}: Video's done with this monitor; the mirrors capture it themselves again");
+            return;
+        }
+        long pictureStart = 0;
+        bool got = joined.NextPicture(250, device!, frame =>
+        {
+            pictureStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            CopyPicture(frame);
+        });
+        if (got)
+        {
+            TakePicture(pictureStart);
+            statFrames++;
+            lastFrameAt = Environment.TickCount64;
+        }
+        Stats();
+    }
+
+    /// <summary>Joins Video's capture of the monitor (opened on this device, on the same graphics card).</summary>
+    private bool Join()
+    {
+        try { joined = Gaming.ScreenCapture.Open(DeviceName); }
+        catch (Exception ex)
+        {
+            LogOnce(ex);
+            return false; // the device stays for the next try
+        }
+        refused = false;
+        retryMs = RetryStartMs;
+        frameFormat = Format.Unknown;
+        width = height = 0;
+        lastError = null;
+        lastFrameAt = Environment.TickCount64;
+        log.Info($"Capture of {DeviceName}: taking the pictures from Video's capture of this monitor (Windows allows a program only one)");
+        return true;
     }
 
     private bool TryInitialize()
@@ -294,20 +396,29 @@ internal sealed class MonitorCapture : IDisposable
                     D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport, FeatureLevels,
                         out device, out context).CheckError();
                     deviceLuid = luid;
+                    GpuPriority.Raise(device!, "Mini Mirror's capture of " + DeviceName);
                 }
-                try { duplication = Duplicate(output!, device!); }
-                catch (SharpGenException ex) when (NotNow(ex))
+                bool join;
+                lock (dupLock)
                 {
-                    // expected (secure desktop, a full-screen game taking the screen): one line, not an error with
-                    // its stack each time it comes back between frames (a friend's PC logged dozens an evening, 3.24.4)
-                    if (!refused)
-                    {
-                        refused = true;
-                        if (++refusals <= 3 || refusals % 50 == 0)
-                            log.Info($"Capture of {DeviceName}: Windows won't let it capture the screen just now (0x{(uint)ex.ResultCode.Code:X8}); asking again (time {refusals})");
-                    }
-                    return false; // the device stays for the next try
+                    // Video captures this monitor (or is about to): the mirrors share that one
+                    join = Gaming.ScreenCapture.Running(DeviceName);
+                    if (!join)
+                        try { duplication = Duplicate(output!, device!); }
+                        catch (SharpGenException ex) when (NotNow(ex))
+                        {
+                            // expected (secure desktop, a full-screen game taking the screen): one line, not an error with
+                            // its stack each time it comes back between frames (a friend's PC logged dozens an evening, 3.24.4)
+                            if (!refused)
+                            {
+                                refused = true;
+                                if (++refusals <= 3 || refusals % 50 == 0)
+                                    log.Info($"Capture of {DeviceName}: Windows won't let it capture the screen just now (0x{(uint)ex.ResultCode.Code:X8}); asking again (time {refusals})");
+                            }
+                            return false; // the device stays for the next try
+                        }
                 }
+                if (join) return Join();
                 if (refused) log.Debug($"Capture of {DeviceName}: Windows lets it capture again");
                 refused = false;
                 retryMs = RetryStartMs;
@@ -334,8 +445,8 @@ internal sealed class MonitorCapture : IDisposable
             }
             catch (Exception ex)
             {
-                // Windows gives a program one duplication per monitor: Video's recording, webcam or SimEffects →
-                // Analysis' race video holding this one leaves Mini Mirror without it (0x80070057)
+                // Windows gives a program one duplication per monitor: Video's capture (recording, webcam, race
+                // video) taking it between the look above and this one leaves Mini Mirror without it (0x80070057)
                 if (ex.Message != lastError && Gaming.ScreenCapture.Running(DeviceName))
                     log.Warn($"Capture of {DeviceName}: Video's recording or virtual webcam is capturing this monitor, and Windows allows a program only one capture of it");
                 LogOnce(ex);
@@ -609,13 +720,15 @@ internal sealed class MonitorCapture : IDisposable
 
     private void Wait(int ms) => stopping.Wait(ms);
 
-    /// <summary>The duplication and what's made for its pictures; the device stays.</summary>
+    /// <summary>The duplication (or Video's capture joined) and what's made for its pictures; the device stays.</summary>
     private void ReleaseDuplication()
     {
         hdr?.Dispose();
         hdr = null;
         staging?.Dispose();
         staging = null;
+        joined?.Dispose();
+        joined = null;
         duplication?.Dispose();
         duplication = null;
     }
@@ -631,6 +744,7 @@ internal sealed class MonitorCapture : IDisposable
 
     public void Dispose()
     {
+        lock (live) live.Remove(this);
         running = false;
         stopping.Set();
         if (thread != null && !thread.Join(2000)) return; // stuck in the driver: let the thread release its own resources

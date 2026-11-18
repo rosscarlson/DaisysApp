@@ -116,10 +116,11 @@ full-screen *exclusive* game can't be captured — use borderless / windowed ful
 |---|---|
 | `MiniMirrorApplet.cs`, `MiniMirrorView.xaml(.cs)` | The sub-tab: the mirrors and groups list |
 | `MiniMirrorService.cs` | The mirrors (`MiniMirror.json`), their windows, choosing a region, the shortcuts and tray menu; on / off (`SetEnabled`, `OnOffHotkey`) and the programs that switch it (`CheckPrograms`) |
-| `Capture.cs`, `HdrCapture.cs` | One shared screen capture per monitor (desktop duplication), HDR turned back to SDR; while Windows refuses it (secure desktop) the device is kept and the duplication asked for again, 0.5 s doubling to 5 s |
+| `Capture.cs`, `HdrCapture.cs` | One shared screen capture per monitor (desktop duplication), HDR turned back to SDR; while Windows refuses it (secure desktop) the device is kept and the duplication asked for again, 0.5 s doubling to 5 s; while Video captures the monitor (recording, webcam, race video) its pictures come from that capture (`Gaming/ScreenCapture`; `Yield` hands it over, since 4.18.4); GDI only until the displays change |
+| `GpuPriority.cs` | Mini Mirror's and Video's capture devices at high priority on the graphics card (since 4.18.4) |
 | `ScreenGrab.cs`, `CaptureDiagnostics.cs` | A monitor through GDI (to check a quiet capture, and instead of a stuck one); what the log says about the PC |
 | `MirrorCompositor.cs` | One mirror's picture from the monitors its region covers, at a capped frame rate |
-| `MirrorWindow.cs`, `ChromeInteraction.cs` | A mirror's always-on-top window (it keeps the newest picture and draws it when the UI thread gets to it), and moving / resizing it |
+| `MirrorWindow.cs`, `ChromeInteraction.cs` | A mirror's always-on-top window (it keeps the newest picture and draws it when the UI thread gets to it; drawn in software, Core's `RenderPace.Software`, since 4.18.4), and moving / resizing it |
 | `Selection.cs` | Picking a region (dim, drag, then adjust) |
 | `MirrorData.cs`, `Native.cs` | Mirrors and monitors (rectangles and exact window placement on mixed-DPI setups: Core's `Shared/Win32`) |
 | `MiniMirrorSettingsView.xaml(.cs)` | Settings → Video → Mini Mirror |

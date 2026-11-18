@@ -58,6 +58,18 @@ public sealed class RenderPace
         timer.Start();
     }
 
+    /// <summary>
+    /// (since 4.18.4, Core 0.67) Draws a see-through window in software. On the graphics card WPF copies each change
+    /// of one back from it, waiting behind a game that keeps the card busy, while its one render thread holds every
+    /// window up (a friend's mirrors and overlays at 5 frames a second with Forza running); in software there's
+    /// nothing to wait for. Call it from SourceInitialized.
+    /// </summary>
+    public static void Software(Window window)
+    {
+        if (System.Windows.Interop.HwndSource.FromVisual(window) is System.Windows.Interop.HwndSource { CompositionTarget: { } target })
+            target.RenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+    }
+
     /// <summary>The app's see-through windows showing, with their sizes in physical pixels.</summary>
     public static string SeeThrough()
     {

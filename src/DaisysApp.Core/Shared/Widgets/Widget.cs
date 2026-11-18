@@ -188,7 +188,7 @@ public class Widget : Window
         this.place = place;
         this.save = save;
         this.delete = delete;
-        SourceInitialized += (_, _) => { open.Add(this); OpenChanged?.Invoke(); };
+        SourceInitialized += (_, _) => { RenderPace.Software(this); open.Add(this); OpenChanged?.Invoke(); };
         // (closed: its body is let go, so the module can show it again in a new widget)
         Closed += (_, _) =>
         {

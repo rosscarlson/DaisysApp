@@ -82,6 +82,7 @@ internal sealed class TitleBadgeStrip
             };
             strip.SourceInitialized += (_, _) =>
             {
+                DaisysApp.Shared.Widgets.RenderPace.Software(strip);
                 var h = new WindowInteropHelper(strip).Handle;
                 long ex = GetWindowLongPtr(h, GWL_EXSTYLE).ToInt64() | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED;
                 SetWindowLongPtr(h, GWL_EXSTYLE, new IntPtr(ex));

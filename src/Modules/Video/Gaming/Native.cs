@@ -142,8 +142,22 @@ internal static class Native
             }
         }
         catch { }
-        list.Sort((x, y) => x.Bounds.X != y.Bounds.X ? x.Bounds.X.CompareTo(y.Bounds.X) : x.Bounds.Y.CompareTo(y.Bounds.Y));
-        return list.Select((m, i) => m with { Label = F("Monitor {0} ({1}×{2}){3}", i + 1, m.Bounds.Width, m.Bounds.Height, m.Primary ? " · " + T("main") : "") }).ToList();
+        // numbered as Windows numbers them (\\.\DISPLAY2 is Windows' 2), not by place: two monitors stacked came out
+        // the other way round from Windows' Display settings (4.18.4)
+        list.Sort((x, y) => DisplayNumber(x.DeviceName).CompareTo(DisplayNumber(y.DeviceName)));
+        return list.Select((m, i) =>
+        {
+            int n = DisplayNumber(m.DeviceName);
+            return m with { Label = F("Monitor {0} ({1}×{2}){3}", n < int.MaxValue ? n : i + 1, m.Bounds.Width, m.Bounds.Height, m.Primary ? " · " + T("main") : "") };
+        }).ToList();
+    }
+
+    /// <summary>The number in a monitor's name (\\.\DISPLAY2 → 2), or int.MaxValue.</summary>
+    private static int DisplayNumber(string deviceName)
+    {
+        int i = deviceName.Length;
+        while (i > 0 && char.IsDigit(deviceName[i - 1])) i--;
+        return int.TryParse(deviceName.AsSpan(i), out int n) ? n : int.MaxValue;
     }
 
     /// <summary>The monitor that holds most of the rectangle.</summary>

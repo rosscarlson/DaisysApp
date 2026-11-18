@@ -24,8 +24,11 @@ internal sealed class ScreenCapture : IDisposable
     /// <summary>Whether the pictures are Windows' 16-bit HDR picture, not its 8-bit one.</summary>
     public bool Hdr => hub.Hdr;
 
-    /// <summary>Whether the monitor is being captured here (Mini Mirror can't have its own capture of it then).</summary>
+    /// <summary>Whether the monitor is being captured here, or about to be (Mini Mirror joins it then, since 4.18.4).</summary>
     public static bool Running(string deviceName) => Hub.Running(deviceName);
+
+    /// <summary>Whether nothing else uses this capture now (Mini Mirror then goes back to its own).</summary>
+    public bool Alone => hub.Users <= 1;
 
     /// <summary>Starts capturing the monitor, or joins its capture (throws when it can't be had).</summary>
     public static ScreenCapture Open(string deviceName) => new(Hub.Join(deviceName));
@@ -68,30 +71,56 @@ internal sealed class ScreenCapture : IDisposable
             var (bgra, w, h) = cursorShape.Convert(shape, shapeInfo);
             converter.SetCursor(bgra, w, h);
         }
-        if (!picture) return;
-        if (texture == null || version != textureVersion)
-        {
-            mutex?.Dispose();
-            texture?.Dispose();
-            mutex = null;
-            texture = null;
-            try
-            {
-                texture = device.OpenSharedResource<ID3D11Texture2D>(handle);
-                mutex = texture.QueryInterface<IDXGIKeyedMutex>();
-                textureVersion = version;
-            }
-            catch (Exception ex)
-            {
-                texture?.Dispose();
-                texture = null;
-                Log.Here.Warn($"Screen capture: the shared picture couldn't be opened: {ex.Message}");
-                return;
-            }
-        }
+        if (!picture || !OpenTexture(device, handle, version)) return;
         if (!Acquire(mutex!)) return;
-        try { converter.SetSource(context, texture); }
-        finally { mutex.ReleaseSync(0); }
+        try { converter.SetSource(context, texture!); }
+        finally { mutex!.ReleaseSync(0); }
+    }
+
+    /// <summary>
+    /// (Mini Mirror, since 4.18.4) Waits up to <paramref name="wait"/> ms for a new picture and hands it to
+    /// <paramref name="use"/>, opened on <paramref name="device"/>; false if none came.
+    /// </summary>
+    public bool NextPicture(int wait, ID3D11Device device, Action<ID3D11Texture2D> use)
+    {
+        IntPtr handle;
+        long version;
+        lock (hub.Gate)
+        {
+            if (hub.Frame == seenFrame) Monitor.Wait(hub.Gate, wait);
+            if (hub.Frame == seenFrame || hub.Handle == IntPtr.Zero) return false;
+            seenFrame = hub.Frame;
+            handle = hub.Handle;
+            version = hub.TextureVersion;
+        }
+        if (!OpenTexture(device, handle, version) || !Acquire(mutex!)) return false;
+        try { use(texture!); }
+        finally { mutex!.ReleaseSync(0); }
+        return true;
+    }
+
+    /// <summary>The shared picture opened on this user's device (again when the hub made a new one).</summary>
+    private bool OpenTexture(ID3D11Device device, IntPtr handle, long version)
+    {
+        if (texture != null && version == textureVersion) return true;
+        mutex?.Dispose();
+        texture?.Dispose();
+        mutex = null;
+        texture = null;
+        try
+        {
+            texture = device.OpenSharedResource<ID3D11Texture2D>(handle);
+            mutex = texture.QueryInterface<IDXGIKeyedMutex>();
+            textureVersion = version;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            texture?.Dispose();
+            texture = null;
+            Log.Here.Warn($"Screen capture: the shared picture couldn't be opened: {ex.Message}");
+            return false;
+        }
     }
 
     /// <summary>IDXGIKeyedMutex::AcquireSync called directly: Vortice's throws away its result, and a time-out
@@ -115,6 +144,9 @@ internal sealed class ScreenCapture : IDisposable
     private sealed class Hub
     {
         private static readonly Dictionary<string, Hub> hubs = new(StringComparer.OrdinalIgnoreCase);
+        // monitors captured or being set up, read without the lock: Mini Mirror's capture thread looks while Join
+        // holds it (waiting for that thread to let its own duplication go)
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> claimed = new(StringComparer.OrdinalIgnoreCase);
 
         public readonly object Gate = new();
         private readonly string deviceName;
@@ -142,9 +174,11 @@ internal sealed class ScreenCapture : IDisposable
             this.context = context;
         }
 
-        public static bool Running(string deviceName)
+        public static bool Running(string deviceName) => claimed.ContainsKey(deviceName);
+
+        public int Users
         {
-            lock (hubs) return hubs.ContainsKey(deviceName);
+            get { lock (hubs) return users; }
         }
 
         public static Hub Join(string deviceName)
@@ -153,13 +187,23 @@ internal sealed class ScreenCapture : IDisposable
             {
                 if (!hubs.TryGetValue(deviceName, out var hub))
                 {
-                    var (device, context) = Recorder.CreateDevice(deviceName);
-                    hub = new Hub(deviceName, device, context);
-                    try { hub.duplication = Recorder.Duplicate(deviceName, device, out hub.Hdr); }
+                    // Mini Mirror's own duplication of this monitor made this one fail (0x80070057: a friend's main
+                    // monitor, 4.18.3): it lets it go and takes its pictures from this one
+                    claimed[deviceName] = true;
+                    ID3D11Device? device = null;
+                    ID3D11DeviceContext? context = null;
+                    try
+                    {
+                        MiniMirror.MonitorCapture.Yield(deviceName);
+                        (device, context) = Recorder.CreateDevice(deviceName);
+                        hub = new Hub(deviceName, device, context);
+                        hub.duplication = Recorder.Duplicate(deviceName, device, out hub.Hdr);
+                    }
                     catch
                     {
-                        context.Dispose();
-                        device.Dispose();
+                        claimed.TryRemove(deviceName, out _);
+                        context?.Dispose();
+                        device?.Dispose();
                         throw;
                     }
                     hub.thread = new Thread(hub.Run) { IsBackground = true, Name = $"Screen capture {deviceName}" };
@@ -182,6 +226,8 @@ internal sealed class ScreenCapture : IDisposable
             lock (Gate) Monitor.PulseAll(Gate);
             thread?.Join(2000);
             duplication?.Dispose();
+            // after the duplication's gone, so Mini Mirror's own (taken back when it was the last here) can be had
+            lock (hubs) if (!hubs.ContainsKey(deviceName)) claimed.TryRemove(deviceName, out _);
             sharedMutex?.Dispose();
             shared?.Dispose();
             context.Dispose();

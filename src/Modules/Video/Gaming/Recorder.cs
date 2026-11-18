@@ -505,6 +505,7 @@ internal sealed class Recorder : IDisposable
             D3D11.D3D11CreateDevice(adapter, DriverType.Unknown, DeviceCreationFlags.BgraSupport | DeviceCreationFlags.VideoSupport,
                 new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 }, out ID3D11Device device, out ID3D11DeviceContext context).CheckError();
             using (var mt = device.QueryInterface<ID3D11Multithread>()) mt.SetMultithreadProtected(true); // the encoder uses it too
+            MiniMirror.GpuPriority.Raise(device, "Video's capture of " + deviceName);
             return (device, context);
         }
     }

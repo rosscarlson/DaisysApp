@@ -3,6 +3,20 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.4**
+- **Video → Recording** records a monitor Mini Mirror is mirroring (it failed with *The parameter is incorrect*,
+  0x80070057: Windows gives a program one capture of a monitor, and the mirrors had it). The mirrors now take their
+  pictures from the recording's capture while it runs, and their own again after; the same for the virtual webcam and
+  SimEffects → Analysis' race videos.
+- **Video → Recording**'s monitors are numbered as Windows numbers them (Monitor 1 is Windows' 1); they were numbered
+  left to right, top to bottom, so two stacked monitors came out the other way round.
+- **Mini Mirror with overlays over a game:** the mirrors, widgets (SimEffects' overlays…), the FPS overlay and the
+  title bar's bubbles are drawn in software. On the graphics card each change of a see-through window was copied back
+  from it behind the game, holding every one of the app's windows up (mirrors and overlays at a few frames a second
+  with Forza running). Mini Mirror's and Video's captures ask the graphics card for high priority.
+- **Mini Mirror** tries the monitor's fast capture again when the displays change: a monitor switched off overnight
+  left it on its slow fallback (GDI, a few frames a second) until the app restarted.
+
 **4.18.3**
 - **SimEffects → Analysis → Shared Session Manager → Account** has a **Port** box beside the Server, filled with
   38901, ForzaLeaderBoard's port now (38900 reached another server from outside, so sign-in failed with *Can't reach
