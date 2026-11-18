@@ -80,11 +80,15 @@ public static class YouTube
             string? packed = typeof(YouTube).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
                 .Cast<System.Reflection.AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "YouTubeClient")?.Value;
             if (string.IsNullOrWhiteSpace(packed)) return ("", "");
-            var parts = Encoding.UTF8.GetString(Convert.FromBase64String(packed.Trim())).Split('\n', 2);
-            return parts.Length == 2 ? (parts[0].Trim(), parts[1].Trim()) : ("", "");
+            // (since 4.18.5) the secret was saved with a byte order mark, which Trim leaves and Base64 refused: every
+            // release since 4.15.1 asked for the user's own client
+            var parts = Encoding.UTF8.GetString(Convert.FromBase64String(Clean(packed))).Split('\n', 2);
+            return parts.Length == 2 ? (Clean(parts[0]), Clean(parts[1])) : ("", "");
         }
-        catch { return ("", ""); }
+        catch (Exception ex) { Log.App.Warn("YouTube: the app's own client unreadable", ex); return ("", ""); }
     });
+
+    private static string Clean(string s) => s.Trim().Trim('﻿', '​').Trim();
 
     /// <summary>The client signing in: the user's own if they've given one, else the app's.</summary>
     private static string ClientId => Account.ClientId.Length > 0 ? Account.ClientId : builtIn.Value.Id;

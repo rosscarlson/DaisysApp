@@ -98,7 +98,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   event intros), `Sessions/` (race logs via `RaceLog`, `SessionsView`, Compare: `CompareChart` on `LayeredChart`,
   `Playback`, pauses hidden, YouTube via Shared `YouTubePlayer` (WebView2 HwndHost), `RaceUploads`), sharing
   (`SessionShares.cs`: `SessionServer`, `ShareQueue`, `ShareWindow` with ticked sessions, "n of m" badge). The app's
-  YouTube OAuth client is the `YOUTUBE_CLIENT` GitHub secret → Core metadata; not in source. `Tracks.json` ships the
+  YouTube OAuth client is the `YOUTUBE_CLIENT` GitHub secret → Core metadata; not in source. (4.18.5: the secret has a UTF-8 BOM; Core strips it, so 4.15.1–4.18.4 had no app client. Check: the installed exe's `YouTubeClient` metadata decodes.) `Tracks.json` ships the
   user's FH4/5/6 tracks (merged once per hash, never deletes).
 - **Shaker:** effects per wheel, `ShakerOutput` (BigHz for BST-300EX resonance, 32 Hz), `DeviceVolumes`,
   `SpectrumMeter` (a marker per effect always), Highlight / Effect ± keys, Level Wizard keys only while it's open.

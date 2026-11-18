@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.5**
+- **YouTube** (SimEffects → Analysis): **Sign In** with just your Google account works again: the app's own Google
+  client wasn't read since 4.15.1 (it was stored with a hidden byte order mark), so the YouTube window asked for an
+  OAuth client ID and secret of your own. Those boxes are folded under **Your own OAuth client** again.
+
 **4.18.4**
 - **Video → Recording** records a monitor Mini Mirror is mirroring (it failed with *The parameter is incorrect*,
   0x80070057: Windows gives a program one capture of a monitor, and the mirrors had it). The mirrors now take their
