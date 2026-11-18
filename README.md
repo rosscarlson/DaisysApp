@@ -403,9 +403,6 @@ shows reuses the control the tab already has (a `LineGraph`, a `HostBox`, a `Spe
 
 Requires the .NET 8 SDK and Inno Setup 6 (`winget install JRSoftware.InnoSetup`).
 
-**Temporary files** (worktrees, test fixtures, extracted logs, scratch scripts) go only in `%LOCALAPPDATA%\Temp`,
-never `D:\Temp`, which is the user's own and gets cleared.
-
 ```powershell
 dotnet build DaisysApp.sln   # the app and every module (modules land in src\DaisysApp\bin\...\modules)
 .\build.ps1                  # -> artifacts\DaisysApp-Setup-<version>.exe
