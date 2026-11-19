@@ -56,7 +56,7 @@ jobs:
           $setup = Get-Item "artifacts/$name-Setup-$v.exe"
           # the notes: this version's section of the product's CHANGELOG.md
           $log = Get-Content "products/$name/CHANGELOG.md" -Raw
-          $m = [regex]::Match($log, "(?ms)^## $([regex]::Escape($v))\s*$(.*?)(?=^## |\z)")
+          $m = [regex]::Match($log, '(?ms)^## ' + [regex]::Escape($v) + '\s*$(.*?)(?=^## |\z)')
           $notes = if ($m.Success) { $m.Groups[1].Value.Trim() } else { "Version $v" }
           Set-Content notes.md $notes -Encoding utf8
           gh release view '${{ github.ref_name }}' *> $null
