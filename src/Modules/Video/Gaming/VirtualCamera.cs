@@ -30,6 +30,10 @@ internal sealed class VirtualCamera : IDisposable
     public static string DllPath(bool x86 = false) =>
         Path.Combine(Path.GetDirectoryName(typeof(VirtualCamera).Assembly.Location)!, "camera", x86 ? "x86" : "x64", "softcam.dll");
 
+    /// <summary>Whether the camera came with the app: SimEffects Analysis leaves it out (the camera Windows knows is Daisy's
+    /// App's, by its name and class id).</summary>
+    public static bool Shipped => File.Exists(DllPath());
+
     /// <summary>Whether Windows knows the camera (the installer registers it).</summary>
     public static bool IsRegistered
     {

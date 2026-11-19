@@ -146,7 +146,7 @@ public partial class MainWindow : Window
         {
             AfterQuickUpdate();
             // the wrapper: which tools to download (none yet), or its tools fetched again for its new version
-            if (!AppPaths.IsDaisysApp && await WrapperModulesAsync()) return;
+            if (AppPaths.IsWrapper && await WrapperModulesAsync()) return;
             var due = SetupWindow.WhenDue(settings, applets);
             if (due != SetupWindow.Due.None) RunSetup(full: due == SetupWindow.Due.Full);
             else RunOnboarding();
@@ -627,7 +627,7 @@ public partial class MainWindow : Window
     }
 
     private void UpdateNotes_Click(object sender, RoutedEventArgs e) =>
-        UpdateService.OpenInBrowser(pendingUpdate?.ReleaseUrl ?? UpdateService.RepoUrl + "/releases");
+        UpdateService.OpenInBrowser(pendingUpdate?.ReleaseUrl ?? UpdateService.ReleasesUrl);
 
     // ---------------------------------------------------------------- tray / exit
 

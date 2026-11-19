@@ -23,6 +23,7 @@ change is about the window, Settings → General or the module loader. Folder na
 | Plex → Now Playing · Server · Database · Posters · Tautulli · Scanner | `src/Modules/Plex/` (one README; database work: `Database/`, banners: `Posters/`, Scanner: `Scanner/`, views: `Views/`) |
 | Remote API (other devices: remote control ops, module channels, Button2Key Remote) | `API.md` (the only description of the protocol; clients: AI `Remote.cs`, Core `RemoteChannels`, `clients/android`, Daisy's App Mobile `D:\OneDrive\Code\Android\DaisysApp`) |
 | Template (writing a module) | `src/Modules/Template/` |
+| Products: **SimEffects Analysis** (SimEffects + Video as an app of its own) | `products/` (README: build, release; its version, notes and icon in `products/SimEffectsAnalysis/`). Released only when the user asks for *that product*: raise its `product.json` Version, its CHANGELOG, tag `sea-vX.Y.Z` (not `v*`). A Daisy's App release never touches it |
 | Settings → General, the window, tabs, updates | `src/DaisysApp/` (main `README.md`: Settings → General, Project layout) |
 
 A release also touches `CHANGELOG.md`, the version line at the top of `README.md`, `src/Directory.Build.props`, and the

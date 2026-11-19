@@ -2,7 +2,8 @@
 ; modules: it downloads the ones picked, and it's framework-dependent, so NeedsDotNet gets Microsoft's .NET 8 Desktop
 ; Runtime first if it isn't installed).
 ; Built by build.ps1 (locally and by the GitHub release workflow), which passes AppVersion and PublishDir, and for the
-; wrapper AppName, AppShortName (the program's name), AppGuid, AppDir and NeedsDotNet.
+; wrapper AppName, AppShortName (the program's name), AppGuid, AppDir and NeedsDotNet; for a product (products\<Name>,
+; SimEffects Analysis) AppName, AppShortName, AppGuid, AppDir, SetupIcon and NoLinks (no address naming Daisy's App).
 ; The in-app updater downloads this installer from GitHub Releases and runs it with /SILENT, or /VERYSILENT for a
 ; quick update (the Update button), which the Update task (Tasks.ps1) starts elevated with /FROMTASK.
 
@@ -26,6 +27,9 @@
 #ifndef AppDir
   #define AppDir "Daisys App"
 #endif
+#ifndef SetupIcon
+  #define SetupIcon "..\src\DaisysApp\Assets\DaisysApp.ico"
+#endif
 #define AppExe AppShortName + ".exe"
 #define RepoUrl "https://github.com/rosscarlson/DaisysApp"
 ; the virtual webcam comes with the Video module
@@ -37,16 +41,18 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher=rosscarlson
+#ifndef NoLinks
 AppPublisherURL={#RepoUrl}
 AppSupportURL={#RepoUrl}/issues
 AppUpdatesURL={#RepoUrl}/releases
+#endif
 VersionInfoVersion={#AppVersion}
 DefaultDirName={autopf}\{#AppDir}
 DisableProgramGroupPage=yes
 DisableDirPage=auto
 PrivilegesRequired=admin
 OutputBaseFilename={#AppShortName}-Setup-{#AppVersion}
-SetupIconFile=..\src\DaisysApp\Assets\DaisysApp.ico
+SetupIconFile={#SetupIcon}
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 Compression=lzma2/ultra64

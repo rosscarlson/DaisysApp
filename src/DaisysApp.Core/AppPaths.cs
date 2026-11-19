@@ -16,11 +16,41 @@ public static class AppPaths
     /// and log folders, the single-instance lock, the sign-in entry, the update tasks and the release's installer.</summary>
     public static string ShortName { get; } = ProgramName();
 
-    /// <summary>The name people see: "Daisy's App", or the wrapper's own ("Wrapper").</summary>
-    public static string DisplayName { get; } = IsDaisysApp ? "Daisy's App" : ShortName;
+    /// <summary>
+    /// An app of its own made from this program with some modules (build.ps1 -Product, from products\&lt;Name&gt;):
+    /// app.json beside the program gives its title and its releases' tag prefix (SimEffects Analysis: "sea-v"). Null
+    /// for Daisy's App and the wrapper.
+    /// </summary>
+    public static ProductInfo? Product { get; } = ReadProduct();
 
-    /// <summary>True for Daisy's App itself, false for the wrapper (or any copy under another name).</summary>
+    /// <summary>The name people see: "Daisy's App", a product's title, or the wrapper's own name ("Wrapper").</summary>
+    public static string DisplayName { get; } = IsDaisysApp ? "Daisy's App" : Product?.Title ?? ShortName;
+
+    /// <summary>True for Daisy's App itself, false for the wrapper or a product (or any copy under another name).</summary>
     public static bool IsDaisysApp => ShortName.Equals(DaisysAppName, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>True for the wrapper, which downloads the modules picked; false for Daisy's App and a product (theirs are
+    /// installed beside the program).</summary>
+    public static bool IsWrapper => !IsDaisysApp && Product == null;
+
+    /// <summary>A product's app.json: its title, its releases' tag prefix, and its icon (beside the program).</summary>
+    public sealed record ProductInfo(string Title, string TagPrefix)
+    {
+        /// <summary>The product's icon file beside the program (app.ico), for the tray.</summary>
+        public string Icon => Path.Combine(AppContext.BaseDirectory, "app.ico");
+    }
+
+    private static ProductInfo? ReadProduct()
+    {
+        try
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "app.json");
+            if (IsDaisysApp || !File.Exists(path)) return null;
+            var p = System.Text.Json.JsonSerializer.Deserialize<ProductInfo>(File.ReadAllText(path));
+            return string.IsNullOrWhiteSpace(p?.Title) || string.IsNullOrWhiteSpace(p.TagPrefix) ? null : p;
+        }
+        catch { return null; }
+    }
 
     private static string ProgramName()
     {
@@ -46,7 +76,7 @@ public static class AppPaths
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ShortName, "modules");
 
     /// <summary>Where modules are loaded from: modules\ beside the program and, for the wrapper, <see cref="UserModulesFolder"/>.</summary>
-    public static IReadOnlyList<string> ModuleFolders { get; } = IsDaisysApp
+    public static IReadOnlyList<string> ModuleFolders { get; } = !IsWrapper
         ? new[] { Path.Combine(AppContext.BaseDirectory, "modules") }
         : new[] { Path.Combine(AppContext.BaseDirectory, "modules"), UserModulesFolder };
 

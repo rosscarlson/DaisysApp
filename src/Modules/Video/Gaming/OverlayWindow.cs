@@ -52,7 +52,7 @@ internal sealed class OverlayWindow : Window
     public OverlayWindow(GamingSettings settings)
     {
         this.settings = settings;
-        Title = "Daisy's App – FPS";
+        Title = AppPaths.DisplayName + " – FPS";
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;

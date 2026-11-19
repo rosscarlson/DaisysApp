@@ -89,7 +89,7 @@ internal sealed class GamingService : IDisposable
         uiTimer.Tick += (_, _) => UiTick();
         Wake();
         // running when the app closed (or restarted): started again, without sound
-        if (Settings.WebcamOn && VirtualCamera.IsRegistered)
+        if (Settings.WebcamOn && VirtualCamera.Shipped && VirtualCamera.IsRegistered)
             dispatcher.BeginInvoke(() =>
             {
                 if (disposed) return;
@@ -1014,16 +1014,24 @@ internal sealed class GamingService : IDisposable
     // ---------------------------------------------------------------- tray
 
     /// <summary>The Recording sub-tab's tray items: recording and benchmarks.</summary>
-    public IReadOnlyList<AppletMenuItem> RecordingTrayMenu() => new[]
+    public IReadOnlyList<AppletMenuItem> RecordingTrayMenu()
     {
-        new AppletMenuItem(Recorder.IsRecording ? T("Stop recording") : T("Start recording"), ToggleRecording) { Hint = Settings.RecordHotkey },
-        new AppletMenuItem(BenchmarkRunning ? T("Stop the benchmark") : armed ? T("Cancel the benchmark") : T("Start a benchmark (when a game is in front)"),
-            () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
-            { Hint = Settings.BenchmarkHotkey },
-        new AppletMenuItem(Webcam.IsRunning ? T("Stop the virtual webcam") : T("Start the virtual webcam"), ToggleWebcam) { Enabled = Webcam.IsRunning || VirtualCamera.IsRegistered, Hint = Settings.WebcamHotkey },
-        new AppletMenuItem(T("Mute the virtual webcam"), ToggleWebcamMute) { Checked = Webcam.Muted, Hint = Settings.WebcamMuteHotkey },
-        new AppletMenuItem(T("Cameras off (just the screen)"), ToggleCamerasOff) { Checked = camerasOff, Hint = Settings.CamerasOffHotkey },
-    };
+        var items = new List<AppletMenuItem>
+        {
+            new(Recorder.IsRecording ? T("Stop recording") : T("Start recording"), ToggleRecording) { Hint = Settings.RecordHotkey },
+            new(BenchmarkRunning ? T("Stop the benchmark") : armed ? T("Cancel the benchmark") : T("Start a benchmark (when a game is in front)"),
+                () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
+                { Hint = Settings.BenchmarkHotkey },
+        };
+        // (no virtual webcam in SimEffects Analysis)
+        if (VirtualCamera.Shipped || Webcam.IsRunning)
+        {
+            items.Add(new(Webcam.IsRunning ? T("Stop the virtual webcam") : T("Start the virtual webcam"), ToggleWebcam) { Enabled = Webcam.IsRunning || VirtualCamera.IsRegistered, Hint = Settings.WebcamHotkey });
+            items.Add(new(T("Mute the virtual webcam"), ToggleWebcamMute) { Checked = Webcam.Muted, Hint = Settings.WebcamMuteHotkey });
+        }
+        items.Add(new(T("Cameras off (just the screen)"), ToggleCamerasOff) { Checked = camerasOff, Hint = Settings.CamerasOffHotkey });
+        return items;
+    }
 
     /// <summary>The Overlay sub-tab's tray items: the FPS overlay and its mode.</summary>
     public IReadOnlyList<AppletMenuItem> OverlayTrayMenu() => new[]

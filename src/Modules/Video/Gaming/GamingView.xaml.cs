@@ -543,6 +543,7 @@ public partial class GamingView : UserControl
         WebcamLabel.Text = service.WebcamStarting ? T("Starting…") : T("Webcam");
         WebcamIcon.Text = w.IsRunning ? "" : "";
         WebcamButton.IsEnabled = !service.WebcamStarting;
+        WebcamButton.Visibility = WebcamMuteButton.Visibility = VirtualCamera.Shipped || w.IsRunning ? Visibility.Visible : Visibility.Collapsed;
         if (w.IsRunning)
         {
             WebcamStatus.Text = F("Virtual webcam on ({0}): {1}", VirtualCamera.CameraName, w.Description) + (w.InUse ? " · " + T("a program is showing it") : "")

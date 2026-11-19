@@ -7,13 +7,17 @@
       -> <WrapperName>-Setup-<version>.exe
     - Each module modules.json offers the wrapper, zipped: Module-<name>-<version>.zip, and the list of them with
       what each is, its size and SHA-256: Modules-<version>.json (written by the app itself, from the modules' DLLs).
+    - A product (products\<Name>, e.g. SimEffects Analysis): the same program as an app of its own, with only its
+      modules, its own name, title, icon and version (products\<Name>\product.json), self-contained.
+      -> <Name>-Setup-<its version>.exe (only that: -Product builds nothing else)
   By default only Daisy's App is built (the user's wish, 2026-10-29: releases carry only its installer); -Full
   builds the wrapper and the module zips too.
   Usage:  .\build.ps1                 # version from src\Directory.Build.props
           .\build.ps1 -Version 0.2.0  # override (the release workflow passes the tag)
           .\build.ps1 -Full           # the wrapper, Module-*.zip and Modules-*.json as well
+          .\build.ps1 -Product SimEffectsAnalysis   # a product (version from its product.json)
 #>
-param([string]$Version, [switch]$Full)
+param([string]$Version, [switch]$Full, [string]$Product)
 $ErrorActionPreference = 'Stop'
 
 $root = $PSScriptRoot
@@ -25,12 +29,21 @@ $WrapperTitle = 'Wrapper'
 $WrapperGuid = '00491034-12CC-4C0A-9521-36F4FFE15972'
 
 $proj = Join-Path $root 'src\DaisysApp\DaisysApp.csproj'
+# a product: its name, title, version, icon, installer AppId and modules (products\<Name>\product.json)
+$prod = $null
+if ($Product) {
+    if ($Full) { throw '-Full and -Product: one or the other' }
+    $prodDir = Join-Path $root "products\$Product"
+    $prod = Get-Content (Join-Path $prodDir 'product.json') -Raw | ConvertFrom-Json
+    $prodIcon = Join-Path $prodDir 'icon.ico'
+    if (-not $Version) { $Version = $prod.Version }
+}
 if (-not $Version) {
     $Version = [regex]::Match((Get-Content (Join-Path $root 'src\Directory.Build.props') -Raw), '<Version>(.+?)</Version>').Groups[1].Value
 }
 
 $artifacts = Join-Path $root 'artifacts'
-$publish = Join-Path $artifacts 'publish'
+$publish = Join-Path $artifacts $(if ($prod) { "publish-$($prod.Name)" } else { 'publish' })
 $built = Join-Path $artifacts 'modules'
 $wrapperDir = Join-Path $artifacts "publish-$WrapperName"
 foreach ($d in @($publish, $built, $wrapperDir)) { if (Test-Path $d) { Remove-Item $d -Recurse -Force } }
@@ -45,11 +58,20 @@ function Listed([string]$name, [string]$what) {
     return [bool]$m.$what
 }
 
-# ---- Daisy's App: self-contained
+# ---- Daisy's App (or a product): self-contained
+# (a product's icon and name in the program's file details, which Task Manager shows)
+$named = if ($prod) { @("-p:ApplicationIcon=$prodIcon", "-p:Product=$($prod.Title)", "-p:AssemblyTitle=$($prod.Title)") } else { @() }
 dotnet publish $proj -c Release -r win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:DebugType=none -p:Version=$Version -o $publish
+    -p:DebugType=none -p:Version=$Version @named -o $publish
 if ($LASTEXITCODE) { throw 'dotnet publish failed' }
+if ($prod) {
+    # the program under the product's name (AppPaths takes its name from it), its title and tag prefix (app.json:
+    # AppPaths.Product) and its tray icon (app.ico)
+    Move-Item (Join-Path $publish 'DaisysApp.exe') (Join-Path $publish "$($prod.Name).exe")
+    [IO.File]::WriteAllText((Join-Path $publish 'app.json'), (@{ Title = $prod.Title; TagPrefix = $prod.TagPrefix } | ConvertTo-Json))
+    Copy-Item $prodIcon (Join-Path $publish 'app.ico')
+}
 
 # ---- the wrapper: the same program, framework-dependent
 if ($Full) {
@@ -68,6 +90,7 @@ $appHas = Get-ChildItem (Join-Path $root 'src\DaisysApp\bin\Release\net8.0-windo
 $names = @()
 foreach ($module in Get-ChildItem (Join-Path $root 'src\Modules') -Filter *.csproj -Recurse) {
     $name = $module.Directory.Name
+    if ($prod -and $prod.Modules -notcontains $name) { continue }
     if (-not ($list | Where-Object { $_.Name -eq $name })) { Write-Warning "$name isn't in src\Modules\modules.json: it goes in both" }
     dotnet build $module.FullName -c Release -p:Version=$Version -p:DebugType=none "-p:ModulesOut=$built"
     if ($LASTEXITCODE) { throw "dotnet build of $name failed" }
@@ -84,9 +107,11 @@ foreach ($module in Get-ChildItem (Join-Path $root 'src\Modules') -Filter *.cspr
     $names += $name
 }
 
-# Daisy's App's modules
+# Daisy's App's modules (a product's: its own)
 New-Item -ItemType Directory -Force (Join-Path $publish 'modules') | Out-Null
-foreach ($name in $names | Where-Object { Listed $_ 'DaisysApp' }) { Copy-Item (Join-Path $built $name) (Join-Path $publish 'modules') -Recurse }
+foreach ($name in $names | Where-Object { $prod -or (Listed $_ 'DaisysApp') }) { Copy-Item (Join-Path $built $name) (Join-Path $publish 'modules') -Recurse }
+# (a product leaves out Video's virtual webcam: Windows knows it as Daisy's App's, by one name and class id)
+if ($prod) { $camera = Join-Path $publish 'modules\Video\camera'; if (Test-Path $camera) { Remove-Item $camera -Recurse -Force } }
 
 # the wrapper's: a zip each, and the list
 if ($Full) {
@@ -112,6 +137,13 @@ $iscc = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $iscc) { throw 'Inno Setup 6 not found (winget install JRSoftware.InnoSetup)' }
 
+if ($prod) {
+    & $iscc /Q "/DAppVersion=$Version" "/DPublishDir=$publish" "/O$artifacts" "/DAppName=$($prod.Title)" "/DAppShortName=$($prod.Name)" `
+        "/DAppGuid=$($prod.Guid)" "/DAppDir=$($prod.Title)" "/DSetupIcon=$prodIcon" "/DNoLinks=1" (Join-Path $root 'installer\DaisysApp.iss')
+    if ($LASTEXITCODE) { throw "Inno Setup compile of $($prod.Title) failed" }
+    Get-Item (Join-Path $artifacts "$($prod.Name)-Setup-$Version.exe")
+    return
+}
 & $iscc /Q "/DAppVersion=$Version" "/DPublishDir=$publish" "/O$artifacts" (Join-Path $root 'installer\DaisysApp.iss')
 if ($LASTEXITCODE) { throw 'Inno Setup compile failed' }
 Get-Item (Join-Path $artifacts "DaisysApp-Setup-$Version.exe")

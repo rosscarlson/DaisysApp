@@ -18,13 +18,28 @@ public sealed record UpdateInfo(Version Version, string Tag, string ReleaseUrl, 
 /// Checks GitHub Releases for a newer version, downloads its installer (verifying the SHA-256 GitHub publishes for
 /// the asset) and runs it silently. The installer closes this app, upgrades in place and relaunches it. Each release
 /// carries an installer per app, named after the program: DaisysApp-Setup-1.2.3.exe, and the wrapper's
-/// (Joy2Key-Setup-1.2.3.exe); each app takes its own.
+/// (Joy2Key-Setup-1.2.3.exe); each app takes its own. A product (<see cref="AppPaths.Product"/>: SimEffects Analysis)
+/// has releases of its own in the same repository, tagged with its prefix (sea-v0.2.0) and never marked latest, so
+/// Daisy's App never sees them, and it reads only those.
 /// </summary>
 public static class UpdateService
 {
     public const string Owner = "rosscarlson";
     public const string Repo = "DaisysApp";
     public static string RepoUrl => $"https://github.com/{Owner}/{Repo}";
+
+    /// <summary>The release notes: every release, or a product's own (this version's).</summary>
+    public static string ReleasesUrl => AppPaths.Product is { } product
+        ? $"{RepoUrl}/releases/tag/{product.TagPrefix}{Display(CurrentVersion)}"
+        : RepoUrl + "/releases";
+
+    /// <summary>A release's version from its tag, if it's one of this app's: "v1.2.3" for Daisy's App and the wrapper,
+    /// the prefix and a version for a product ("sea-v0.2.0"); null for another app's.</summary>
+    private static Version? TagVersion(string? tag)
+    {
+        if (AppPaths.Product is not { } product) return ParseVersion(tag);
+        return tag != null && tag.StartsWith(product.TagPrefix, StringComparison.OrdinalIgnoreCase) ? ParseVersion(tag[product.TagPrefix.Length..]) : null;
+    }
 
     // Static initializers run in declaration order: CurrentVersion must come before Http (its User-Agent uses it).
     public static Version CurrentVersion { get; } = ParseVersion(
@@ -50,14 +65,25 @@ public static class UpdateService
     /// <summary>Returns the latest release if it is newer than this build, otherwise null.</summary>
     public static async Task<UpdateInfo?> CheckAsync(CancellationToken ct = default)
     {
-        using var response = await Http.GetAsync($"https://api.github.com/repos/{Owner}/{Repo}/releases/latest", ct);
+        // (a product's releases aren't "latest": its newest of the list)
+        bool product = AppPaths.Product != null;
+        using var response = await Http.GetAsync($"https://api.github.com/repos/{Owner}/{Repo}/releases" + (product ? "?per_page=100" : "/latest"), ct);
         if (response.StatusCode == HttpStatusCode.NotFound) return null; // no releases published yet
         response.EnsureSuccessStatusCode();
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
         var root = doc.RootElement;
+        if (product)
+        {
+            var newest = root.EnumerateArray()
+                .Where(r => !r.GetProperty("draft").GetBoolean() && !r.GetProperty("prerelease").GetBoolean() && TagVersion(r.GetProperty("tag_name").GetString()) != null)
+                .OrderByDescending(r => TagVersion(r.GetProperty("tag_name").GetString()))
+                .FirstOrDefault();
+            if (newest.ValueKind != JsonValueKind.Object) return null;
+            root = newest;
+        }
         string tag = root.GetProperty("tag_name").GetString() ?? "";
-        var version = ParseVersion(tag);
+        var version = TagVersion(tag);
         if (version == null || version <= CurrentVersion) return null;
 
         foreach (var asset in root.GetProperty("assets").EnumerateArray())
@@ -99,7 +125,7 @@ public static class UpdateService
                 {
                     any = true;
                     if (release.GetProperty("draft").GetBoolean() || release.GetProperty("prerelease").GetBoolean()) continue;
-                    var v = ParseVersion(release.GetProperty("tag_name").GetString());
+                    var v = TagVersion(release.GetProperty("tag_name").GetString());
                     if (v == null) continue;
                     if (v <= CurrentVersion) older = true;
                     else if (v <= latest) seen.Add(v);

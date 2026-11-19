@@ -28,6 +28,8 @@ internal sealed class TrayIcon : IDisposable
     /// <summary>The flower's yellow centre in the logo: where, how big, its colour (null: none found).</summary>
     private readonly (float X, float Y, float R, System.Drawing.Color C)? centre;
     private readonly IReadOnlyList<IApplet> applets;
+    /// <summary>A product's own icon: shown as it is, whatever the bubbles.</summary>
+    private readonly bool own;
 
     public event Action? OpenRequested;
     public event Action? CheckUpdatesRequested;
@@ -41,8 +43,17 @@ internal sealed class TrayIcon : IDisposable
         Rebuild(menu);
 
         // (the logo's green background in the tray's usual blue)
-        blue = LoadIcon() is { } logo ? Recolour(logo, System.Drawing.Color.FromArgb(0, 95, 184)) : null;
-        if (blue != null) centre = FindCentre(blue);
+        // (a product's own icon, SimEffects Analysis', stays as it is: nothing in it to recolour, no flower's centre)
+        if (AppPaths.Product is { } product && System.IO.File.Exists(product.Icon))
+        {
+            try { blue = new System.Drawing.Icon(product.Icon, SystemInformation.SmallIconSize); own = true; }
+            catch { blue = LoadIcon(); }
+        }
+        else
+        {
+            blue = LoadIcon() is { } logo ? Recolour(logo, System.Drawing.Color.FromArgb(0, 95, 184)) : null;
+            if (blue != null) centre = FindCentre(blue);
+        }
         icon = new NotifyIcon
         {
             Icon = blue,
@@ -85,7 +96,7 @@ internal sealed class TrayIcon : IDisposable
     {
         if (blue == null || disposed) return;
         var bg = blue;
-        if (shown != "" && TryParse(shown, out var to) && !recoloured.TryGetValue(shown, out bg)) recoloured[shown] = bg = Recolour(blue, to);
+        if (shown != "" && !own && TryParse(shown, out var to) && !recoloured.TryGetValue(shown, out bg)) recoloured[shown] = bg = Recolour(blue, to);
         if (fade == 0 || centre == null) { icon.Icon = bg; return; }
         string key = shown + "|" + fade;
         if (!centred.TryGetValue(key, out var ic)) centred[key] = ic = Centre(bg, centre.Value, fade / (double)Steps);

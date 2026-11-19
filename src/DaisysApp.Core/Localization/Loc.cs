@@ -134,7 +134,12 @@ public static class Loc
     public readonly struct End;
 
     /// <summary>The translation of <paramref name="text"/> (the English text) for the calling file's module.</summary>
-    public static string T(string text, End _ = default, [CallerFilePath] string file = "") => IsEnglish ? text : Lookup(text, ModuleOf(file));
+    public static string T(string text, End _ = default, [CallerFilePath] string file = "") => Named(IsEnglish ? text : Lookup(text, ModuleOf(file)));
+
+    /// <summary>The app's name in place of "Daisy's App" in the wrapper and in a product (SimEffects Analysis), whose
+    /// text never names Daisy's App.</summary>
+    private static string Named(string text) =>
+        AppPaths.IsDaisysApp || !text.Contains("Daisy's App", StringComparison.Ordinal) ? text : text.Replace("Daisy's App", AppPaths.DisplayName);
 
     /// <summary>
     /// The translation of a format string ({0}, {1:0.0}…), filled in. A translation can move the placeholders around
@@ -151,7 +156,7 @@ public static class Loc
 
     private static string Format(string format, string file, params object?[] args)
     {
-        string f = IsEnglish ? format : Lookup(format, ModuleOf(file));
+        string f = Named(IsEnglish ? format : Lookup(format, ModuleOf(file)));
         try { return string.Format(CultureInfo.CurrentCulture, f, args); }
         catch (FormatException) { return string.Format(CultureInfo.CurrentCulture, format, args); } // a broken translation
     }
@@ -179,7 +184,7 @@ public static class Loc
     // ---------------------------------------------------------------- XAML
 
     /// <summary>A text from any module (for XAML, where the module isn't known); unchanged if there's none.</summary>
-    public static string Any(string text) => IsEnglish || !TryTranslate(text, out var t) ? text : t;
+    public static string Any(string text) => Named(IsEnglish || !TryTranslate(text, out var t) ? text : t);
 
     /// <summary>
     /// The translation, looked up without the spaces around the text (text next to an inline element keeps the space

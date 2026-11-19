@@ -47,6 +47,7 @@ which ends with a **Code** section: its files and what each one does.
 - [Files and command line](#files-and-command-line)
 - [Updates](#updates)
 - [The wrapper](#the-wrapper)
+- [Products](#products)
 - [Project layout and modules](#project-layout-and-modules)
 - [Build and release](#build-and-release)
 - [Third-party](#third-party)
@@ -313,6 +314,16 @@ and installs the tools from there.
 
 (Joy2Key (now Button2Key) and Resizer had installers of their own in 1.1.68–1.3.0. Those copies don't update any more: install the
 wrapper and pick the tool instead.)
+
+---
+
+## Products
+
+Apps of their own made from the same program with only some modules, each with its own name, icon, installer,
+settings, version and releases, and no mention of Daisy's App: **SimEffects Analysis** (SimEffects and Video, since
+2026-11-19, from 0.2.0). Each is a folder in `products/`; how they're built and released (tags of their own, such as
+`sea-v0.2.0`, never the latest release, so Daisy's App's updates never see them) is in
+[products/README.md](products/README.md). A Daisy's App release never rebuilds one.
 
 ---
 

@@ -44,7 +44,7 @@ public partial class SettingsPage : UserControl
         // one module: nothing to switch on or off, nor a setup to run unless the tool has a step
         if (AppletCatalog.All.Count <= 1 && !applets.Any(HasSetupPage) && !ModuleList.Children.OfType<FrameworkElement>().Any(r => r.Tag is "subs")) ModulesCard.Visibility = Visibility.Collapsed;
         // the wrapper: its tools are downloaded, and more can be
-        if (!AppPaths.IsDaisysApp)
+        if (AppPaths.IsWrapper)
         {
             ModulesCard.Visibility = Visibility.Visible;
             ToolsButton.Visibility = Visibility.Visible;
@@ -53,9 +53,10 @@ public partial class SettingsPage : UserControl
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
         StorageCard.Child = new StoragePanel(settings);
         // Daisy's Server, and the app's audio devices beside it: Core's cards, for every module
-        var audio = new Shared.Audio.AudioSettingsView { Margin = new Thickness(12, 0, 0, 12), VerticalAlignment = VerticalAlignment.Top };
+        var audio = new Shared.Audio.AudioSettingsView { Margin = new Thickness(AppPaths.Product == null ? 12 : 0, 0, 0, 12), VerticalAlignment = VerticalAlignment.Top };
         var serverRow = new Grid { ColumnDefinitions = { new ColumnDefinition { Width = GridLength.Auto }, new ColumnDefinition() } };
-        serverRow.Children.Add(new Server.ServerSettingsView { VerticalAlignment = VerticalAlignment.Top });
+        // (a product, SimEffects Analysis, has no module using Daisy's Server)
+        if (AppPaths.Product == null) serverRow.Children.Add(new Server.ServerSettingsView { VerticalAlignment = VerticalAlignment.Top });
         Grid.SetColumn(audio, 1);
         serverRow.Children.Add(audio);
         GeneralPanel.Children.Insert(GeneralPanel.Children.IndexOf(StorageCard), serverRow);
@@ -237,7 +238,7 @@ public partial class SettingsPage : UserControl
 
     private async void CheckNow_Click(object sender, RoutedEventArgs e) => await window.CheckForUpdatesAsync(manual: true);
 
-    private void Releases_Click(object sender, RoutedEventArgs e) => UpdateService.OpenInBrowser(UpdateService.RepoUrl + "/releases");
+    private void Releases_Click(object sender, RoutedEventArgs e) => UpdateService.OpenInBrowser(UpdateService.ReleasesUrl);
 
     // ---------------------------------------------------------------- settings: saved to a file, loaded back
 

@@ -173,7 +173,7 @@ public partial class App : Application
         catch (Exception ex) { ErrorLog.Write("Moving Logs to the Tools tab", ex); }
 
         // the wrapper: modules downloaded (or taken off) since the last run go in place before anything loads
-        if (!AppPaths.IsDaisysApp)
+        if (AppPaths.IsWrapper)
         {
             try { Updates.ModuleStore.ApplyPending(); }
             catch (Exception ex) { ErrorLog.Write("Putting downloaded modules in place", ex); }
@@ -187,7 +187,7 @@ public partial class App : Application
         // Every applet in the modules folder, except the ones switched off in Settings → General.
         var applets = new List<IApplet>();
         // (the wrapper with none yet asks which to download, once its window shows)
-        var failed = AppletCatalog.All.Count == 0 && AppletCatalog.Failed.Count == 0 && AppPaths.IsDaisysApp
+        var failed = AppletCatalog.All.Count == 0 && AppletCatalog.Failed.Count == 0 && !AppPaths.IsWrapper
             ? new List<string> { F("No modules found: the modules folder next to {0}.exe is missing or empty. Reinstalling puts them back.", AppPaths.ShortName) }
             : AppletCatalog.Failed.Select(f => F("The {0} module couldn't load: {1}", f.Module, f.Error)).ToList();
         var folderOf = new Dictionary<IApplet, string>();
