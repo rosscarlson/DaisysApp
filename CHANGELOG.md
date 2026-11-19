@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.6**
+- **SimEffects → Analysis** comes with the developer's Forza Horizon tracks as they are now: 333 (Horizon 4's 98, 5's
+  147, 6's 88), 10 new; 15 starts and event entrances corrected (Arzate Sprint, Canyon Trail, Cordillera Trail, Lago
+  Azulado, Quarry Trail, Switchback Run, The Narrows, Villa de Pozas, Chiheisen Scramble and the Cross Country
+  races among them) and La Cantera's start moved. Tracks an earlier version added are brought up to date, their races
+  kept.
+
 **4.18.5**
 - **YouTube** (SimEffects → Analysis): **Sign In** with just your Google account works again: the app's own Google
   client wasn't read since 4.15.1 (it was stored with a hidden byte order mark), so the YouTube window asked for an

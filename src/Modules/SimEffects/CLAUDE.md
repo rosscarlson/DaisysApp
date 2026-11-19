@@ -2,6 +2,12 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.18.6: Tracks.json from GAMER11 (2026-11-18)
+
+- Regenerated from the rig's `Analysis.json` (FH4/5/6, named, no Key; `Entry` kept). The merge matches the file's own
+  tracks by `Found`: a track deleted and made again (La Cantera) keeps the old file's `Found` so friends' copies move.
+  Not decided: server-side track matching (the log lacks the entry point and map; told the user, 2026-11-18).
+
 ## 4.18.0: Share Session on ForzaLeaderBoard (2026-11-17)
 
 - **4.18.3, the user (a remote client got *Can't reach*; ping and the ports were fine):** www's 38900 is
