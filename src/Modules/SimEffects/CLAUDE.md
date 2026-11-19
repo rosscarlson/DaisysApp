@@ -107,7 +107,7 @@ Read only when working in this folder. Current state and lessons; history is in 
   YouTube OAuth client is the `YOUTUBE_CLIENT` GitHub secret → Core metadata; not in source. (4.18.5: the secret has a UTF-8 BOM; Core strips it, so 4.15.1–4.18.4 had no app client. Check: the installed exe's `YouTubeClient` metadata decodes.) `Tracks.json` ships the
   user's FH4/5/6 tracks (merged once per hash, never deletes).
 - **Shaker:** effects per wheel, `ShakerOutput` (BigHz for BST-300EX resonance, 32 Hz), `DeviceVolumes`,
-  `SpectrumMeter` (a marker per effect always), Highlight / Effect ± keys, Level Wizard keys only while it's open.
+  `SpectrumMeter` (a marker per column always, on its right; the master's red left of the first device, 4.18.7), Highlight / Effect ± keys, Level Wizard keys only while it's open.
 - Arduino: SimHub's sketch (ARQ) or DaisysSim; Wheel: Fanatec HID `01 F8 09 08 hi lo`, Moza serial (untested, no
   Moza here). AmbiLight: Govee LAN `razer` stream, DXGI duplication. Overlays: 8 boxes, Dash layouts.
 

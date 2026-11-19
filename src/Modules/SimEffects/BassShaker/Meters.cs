@@ -28,8 +28,8 @@ internal static class MeterColours
 /// <summary>
 /// The spectrum-analyser-style meter above the effects: a column of segments per effect, in the effects' order, lit
 /// from the bottom as it shakes, with the highest point held at the top for a moment and falling back. On its left,
-/// apart, a column per device: what it's playing, its volume as a small marker beside it (red while it's muted); an
-/// effect's marker shows only for a while after a shortcut turned it up or down, then fades. A muted column has a thin grey line top to bottom; a highlighted effect's (EffectPicker) is outlined.
+/// apart, a column per device: what it's playing, its volume as a small marker on its right (grey while it or the
+/// master is muted), and the master's as a red marker left of the first device. An effect's marker is on its right too. A muted column has a thin grey line top to bottom; a highlighted effect's (EffectPicker) is outlined.
 /// </summary>
 internal sealed class SpectrumMeter : FrameworkElement
 {
@@ -39,13 +39,14 @@ internal sealed class SpectrumMeter : FrameworkElement
     private const double Spacer = 14;
     private (string Label, float Level, double Volume, bool Muted)[] devices = Array.Empty<(string, float, double, bool)>();
     private (string Label, float Level, bool Muted, bool Bright, bool Highlighted, double Volume)[] items = Array.Empty<(string, float, bool, bool, bool, double)>();
+    private (double Volume, bool Muted) master;
     private float[] peaks = Array.Empty<float>();
     private double[] peakHeld = Array.Empty<double>();
 
     public SpectrumMeter() => Height = 150;
 
     /// <summary>The levels now (0..1), one per device and one per effect; called by the view's timer.</summary>
-    public void Update((string Label, float Level, double Volume, bool Muted)[] devicesNow, (string Label, float Level, bool Muted, bool Bright, bool Highlighted, double Volume)[] now, double dt)
+    public void Update((double Volume, bool Muted) masterNow, (string Label, float Level, double Volume, bool Muted)[] devicesNow, (string Label, float Level, bool Muted, bool Bright, bool Highlighted, double Volume)[] now, double dt)
     {
         int n = devicesNow.Length + now.Length;
         if (peaks.Length != n) { peaks = new float[n]; peakHeld = new double[n]; }
@@ -55,6 +56,7 @@ internal sealed class SpectrumMeter : FrameworkElement
             if (level >= peaks[i]) { peaks[i] = level; peakHeld[i] = 0.8; }
             else if ((peakHeld[i] -= dt) <= 0) peaks[i] = Math.Max(0, peaks[i] - (float)(dt * 0.6));
         }
+        master = masterNow;
         devices = devicesNow;
         items = now;
         InvalidateVisual();
@@ -91,7 +93,8 @@ internal sealed class SpectrumMeter : FrameworkElement
                 // (muted: faint, picked or not)
                 dc.DrawRectangle(on && !muted ? MeterColours.Lit(band, bright) : MeterColours.Unlit(band, bright && !muted), null, rect);
             }
-            VolumeMarker(dc, x, h, volume, muted);
+            VolumeMarker(dc, x + bar, h, volume, muted ? MeterColours.MutedLine : TryFindResource("TextBrush") as Brush ?? Brushes.White, right: true);
+            if (c == 0 && device) VolumeMarker(dc, x, h, master.Volume, master.Muted ? MeterColours.MutedLine : MeterColours.Red, right: false);
             if (muted) dc.DrawRectangle(MeterColours.MutedLine, null, new Rect(x + bar / 2 - 0.75, 0, 1.5, h));
             if (highlighted)
             {
@@ -110,19 +113,19 @@ internal sealed class SpectrumMeter : FrameworkElement
         }
     }
 
-    /// <summary>A device's or effect's volume: a small triangle left of its column pointing at the height it's set to (grey while muted).</summary>
-    private void VolumeMarker(DrawingContext dc, double x, double h, double volume, bool muted)
+    /// <summary>A volume: a small triangle beside a column's edge at <paramref name="x"/> (on its right or left), pointing at the height it's set to.</summary>
+    private static void VolumeMarker(DrawingContext dc, double x, double h, double volume, Brush brush, bool right)
     {
-        double y = h - Math.Clamp(volume, 0, 1) * h, size = 4;
+        double y = h - Math.Clamp(volume, 0, 1) * h, size = 4, d = right ? 1 : -1;
         var g = new StreamGeometry();
         using (var ctx = g.Open())
         {
-            ctx.BeginFigure(new Point(x - 1, y), true, true);
-            ctx.LineTo(new Point(x - 1 - size * 1.4, y - size), false, false);
-            ctx.LineTo(new Point(x - 1 - size * 1.4, y + size), false, false);
+            ctx.BeginFigure(new Point(x + d, y), true, true);
+            ctx.LineTo(new Point(x + d * (1 + size * 1.4), y - size), false, false);
+            ctx.LineTo(new Point(x + d * (1 + size * 1.4), y + size), false, false);
         }
         g.Freeze();
-        dc.DrawGeometry(muted ? MeterColours.MutedLine : TryFindResource("TextBrush") as Brush ?? Brushes.White, null, g);
+        dc.DrawGeometry(brush, null, g);
     }
 }
 

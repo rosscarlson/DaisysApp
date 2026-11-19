@@ -267,16 +267,17 @@ internal sealed class BassShakerView : UserControl
         var signals = engine.Signals;
         var showing = Picked;
         var levels = signals.Select(s => (s.Info.Title, s.Level, s.Effect.Muted, s.Effect == showing, picker.IsHighlighted(s.Effect), s.Effect.Volume)).ToArray();
-        // each device's output (its peak, falling back), its volume and mute: the meters' columns on the left
+        // each device's output (its peak, falling back), its volume and mute (the master's too): the meters' columns on the left
         var devices = settings.Devices.Select(d =>
         {
             float shown = Math.Max(engine.TakePeak(d.Key), deviceLevels.GetValueOrDefault(d.Key) * 0.85f);
             deviceLevels[d.Key] = shown;
-            return (MeterName(d), shown, d.Volume, d.Muted);
+            return (MeterName(d), shown, d.Volume, d.Muted || settings.Master.Muted);
         }).ToArray();
-        if (metersWidget != null) widgetMeter.Update(devices, levels, meterTimer.Interval.TotalSeconds);
+        var master = (settings.Master.Volume, settings.Master.Muted);
+        if (metersWidget != null) widgetMeter.Update(master, devices, levels, meterTimer.Interval.TotalSeconds);
         if (!IsVisible) return;
-        spectrum.Update(devices, levels, meterTimer.Interval.TotalSeconds);
+        spectrum.Update(master, devices, levels, meterTimer.Interval.TotalSeconds);
         foreach (var s in signals)
             if (effectMeters.TryGetValue(s.Effect.Key, out var m)) m.Level = s.Level;
         foreach (var (key, m) in deviceMeters) m.Level = deviceLevels.GetValueOrDefault(key);

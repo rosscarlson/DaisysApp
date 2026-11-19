@@ -37,7 +37,9 @@ more audio devices, so the rig feels the car: as SimHub's ShakeIt Bass Shakers.
   game's defaults the first time). **Reset Effects** (on the Effects card) puts the profile's effects back to its
   game's own. The devices and Master are the same in every profile.
 - **Meters** (top right): a column of segments per effect, in the effects' order, lit as it shakes, its highest point
-  held for a moment. A muted effect's column stays dark. **Pop out** (the icon at its top right; since 3.5.1), or
+  held for a moment. A muted effect's column stays dark. Left of them, a column per device; each column's volume is a
+  white marker on its right, and the Master's a red one left of the first device (since 4.18.7; grey while muted).
+  While the Master is muted every device's column shows muted. **Pop out** (the icon at its top right; since 3.5.1), or
   right-click the meters → **Make Widget** (since 3.7.0), shows them as a widget, as Hardware → Performance's are (Core's widget): drag it anywhere and stretch it, set its background, On top
   and Click through, then **Done**; right-click it to move it again, its **Delete** closes it. It stays open at the next start
   (`MetersWidget`), and moves while the tab isn't showing. Since 4.16.2 the meters start with a column per device

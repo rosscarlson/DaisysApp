@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.7**
+- **SimEffects → Shaker**'s meters (and their widget): while the Master is muted (by its button or shortcut) every
+  device's column shows muted; each column's volume marker is on its right now, and a red marker left of the first
+  device shows the Master's volume.
+
 **4.18.6**
 - **SimEffects → Analysis** comes with the developer's Forza Horizon tracks as they are now: 333 (Horizon 4's 98, 5's
   147, 6's 88), 10 new; 15 starts and event entrances corrected (Arzate Sprint, Canyon Trail, Cordillera Trail, Lago
