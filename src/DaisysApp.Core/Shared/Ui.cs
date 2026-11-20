@@ -541,19 +541,48 @@ public static class Ui
 
     /// <summary>
     /// Puts the text on the clipboard, trying again for a moment if another program has it open (Windows' clipboard
-    /// is one at a time; a bare SetText throws then); false if it never got it. (Since Core 0.55.)
+    /// is one at a time); false if it never got it. (Since Core 0.55.) Windows' own calls, not WPF's Clipboard (since
+    /// 4.18.11): WPF puts it up through OLE and then flushes it, retrying each for a second; a clipboard watcher (Phone
+    /// Link…) opening the clipboard in between made every try fail, and this loop of them froze the window 10-20 s.
     /// </summary>
     public static bool Copy(string text)
     {
+        var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? Application.Current?.MainWindow;
+        var hwnd = owner == null ? IntPtr.Zero : new System.Windows.Interop.WindowInteropHelper(owner).Handle;
         for (int i = 0; i < 10; i++)
         {
-            try { Clipboard.SetDataObject(text, true); return true; }
-            catch (System.Runtime.InteropServices.COMException) { Thread.Sleep(30); }
-            catch (System.Runtime.InteropServices.ExternalException) { Thread.Sleep(30); }
+            if (OpenClipboard(hwnd))
+            {
+                try
+                {
+                    EmptyClipboard();
+                    var mem = GlobalAlloc(0x0002 /* GMEM_MOVEABLE */, (UIntPtr)((text.Length + 1) * 2));
+                    if (mem == IntPtr.Zero) break;
+                    var at = GlobalLock(mem);
+                    System.Runtime.InteropServices.Marshal.Copy(text.ToCharArray(), 0, at, text.Length);
+                    System.Runtime.InteropServices.Marshal.WriteInt16(at, text.Length * 2, 0);
+                    GlobalUnlock(mem);
+                    // (Windows makes CF_TEXT and CF_OEMTEXT from it for programs that ask for those)
+                    if (SetClipboardData(13 /* CF_UNICODETEXT */, mem) != IntPtr.Zero) return true;
+                    GlobalFree(mem);
+                    break;
+                }
+                finally { CloseClipboard(); }
+            }
+            Thread.Sleep(30);
         }
         Log.App.Warn("Couldn't copy: another program has the clipboard");
         return false;
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)] private static extern bool OpenClipboard(IntPtr owner);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool CloseClipboard();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool EmptyClipboard();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr SetClipboardData(uint format, IntPtr mem);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] private static extern IntPtr GlobalAlloc(uint flags, UIntPtr bytes);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] private static extern IntPtr GlobalLock(IntPtr mem);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] private static extern bool GlobalUnlock(IntPtr mem);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] private static extern IntPtr GlobalFree(IntPtr mem);
 
     /// <summary>Opens Explorer with the file or folder selected.</summary>
     public static void ShowInExplorer(string path)

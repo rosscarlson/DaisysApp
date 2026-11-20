@@ -2317,7 +2317,7 @@ internal sealed class SessionView : UserControl
         var compact = new Button { Content = T("Compact"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Summarise the conversation so far to free up the context (/compact)") };
         compact.Click += (_, _) => Send("/compact", bubble: true);
         var copy = new Button { Content = IconText("\uE8C8", T("Sess ID")), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = F("{0}: claude --resume {0} opens it in a terminal", Info.Id) };
-        copy.Click += (_, _) => { try { Clipboard.SetText(Info.Id); } catch { } };
+        copy.Click += (_, _) => Ui.Copy(Info.Id);
         System.Windows.Automation.AutomationProperties.SetName(copy, T("Copy session id"));
         var export = new Button { Content = T("Export"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(0, 0, 6, 6), ToolTip = T("Save the session as a file, to carry on with it on another PC (Import a session file… in a new tab there)") };
         export.Click += (_, _) => ExportFile();
