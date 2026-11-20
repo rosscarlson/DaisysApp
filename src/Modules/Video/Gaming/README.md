@@ -90,7 +90,7 @@ cameras side by side come out the same size. For the camera picked in the list, 
 controller / button box button) takes that camera off the recording and the virtual webcam and puts it back, while
 they run. Give several cameras the same shortcut and they hide and show together; the list shows each camera's, and
 the Record card's button reads **Cameras (n, m hidden)…** while some are hidden (they're all back on when the app
-restarts). The canvas is the recorded picture in the **Shape** chosen
+restarts). The canvas is the recorded picture in the **Aspect Ratio** chosen
 under Record, so it shows what the recording will look like. A camera fills its box, cropped rather than squashed. **Save** keeps the layout:
 every recording then has the cameras over the picture, in the same places (as fractions of the picture, so they sit
 the same on a region or a game's window). Remove them all to record without.
@@ -130,7 +130,7 @@ recording starts and when it's saved, even with the overlay hidden.
 
 Recordings are MP4 files in `Videos\Daisy's App\` (**Browse** on the tab opens it; **Settings** beside it
 jumps to Settings → Video → Gaming's recording options), named after the game and the time, e.g.
-`Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded, and optionally the microphone (the app's input in Settings → General → Audio, else
+`Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded (or, with **Only the game's sound**, only the recorded program's: Windows' process loopback, so no voice chat, videos or other programs), and optionally the microphone (the app's input in Settings → General → Audio, else
 Windows' communications microphone) as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
 
@@ -152,7 +152,7 @@ recording the monitor**, **the region** and **the game or program**, **Start / s
 sound), **Mute / unmute** and **Cameras off / on**, each a key combination or a controller / button box button (×
 clears it), and the title bar bubble's setting. All of them are in Settings → Shortcuts too.
 
-**Shape** (under Quality on the Record card): **As captured**, or the middle of what's captured in **32:9**, **21:9**,
+**Aspect Ratio** (under Quality on the Record card): **As captured**, or the middle of what's captured in **32:9**, **21:9**,
 **16:9**, **4:3** or **9:16** (a phone held upright). The size follows from what's captured: 5120 × 1440 at 16:9 records
 2560 × 1440 (the middle), and the line below the box says what it comes to; the quality profile's own size then
 applies on top. The virtual webcam shows the same shape.
