@@ -85,8 +85,6 @@ public sealed class AnalysisSettings
     /// <summary>The tracks found, in the order they were.</summary>
     public List<Track> Tracks { get; set; } = new();
 
-    /// <summary>The version of the app's tracks last added (<see cref="Analysis.KnownTracks"/>, since 3.34.0).</summary>
-    public string? KnownTracks { get; set; }
 
     /// <summary>Each game's map (since 3.31.0): its image and the tracks placed on it, by the game ("FH6"…).</summary>
     public Dictionary<string, GameMap> Maps { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -170,29 +168,10 @@ public sealed class AnalysisSettings
         // (the Vehicle and Laps blocks, and their widgets, went in 3.30.2)
         s.Widgets.Remove("Vehicle");
         s.Widgets.Remove("Laps");
-        if (Analysis.KnownTracks.Merge(s) | s.AdoptPlaces()) JsonStore.Save(FileName, s);
+        // (since 4.18.9 the app's tracks, the only ones in their games: every start)
+        if (Analysis.KnownTracks.Merge(s)) JsonStore.Save(FileName, s);
         Loaded = s;
         return s;
-    }
-
-    /// <summary>(since 4.10.12) A place the user named (no race yet) whose name a track with races has, on the same
-    /// map: where that track's event is entered (<see cref="Track.Entry"/>, if it has none), the place gone. True: one was.</summary>
-    public bool AdoptPlaces()
-    {
-        bool any = false;
-        foreach (var p in Tracks.Where(p => p.Length <= 0 && p.Key == null && p.Name.Trim().Length > 0).ToList())
-        {
-            var t = Tracks.Where(t => t.Length > 0 && t.Key == null && t.Entry == null && t.Game == p.Game && t.Map == p.Map
-                    && string.Equals(t.Name.Trim(), p.Name.Trim(), StringComparison.OrdinalIgnoreCase))
-                .MinBy(t => (t.X - p.X) * (t.X - p.X) + (t.Z - p.Z) * (t.Z - p.Z));
-            if (t == null) continue;
-            t.Entry = new[] { p.X, p.Y, p.Z };
-            Tracks.Remove(p);
-            foreach (var a in Maps.Values.SelectMany(m => m.Anchors).Where(a => a.Track == p.Id)) a.Track = t.Id;
-            Logging.Log.Here.Info($"Analysis: the place \"{p.Name}\" is where {t.Name}'s event is entered");
-            any = true;
-        }
-        return any;
     }
 
     public void Save()

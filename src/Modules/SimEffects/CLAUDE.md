@@ -2,6 +2,18 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.18.9: the app's tracks only (2026-11-19)
+
+- The user: clients use the current tracks, no track editing (asked: lock app tracks vs. no editing at all → none).
+  `Tracks.json` unchanged: the rig's `Analysis.json` (copied 2026-11-19 by a remote session on GAMER11, account
+  RossCarlson: Ross's sign-in there had expired) matched it exactly. `KnownTracks.Merge` every start: file games'
+  (`Games`) tracks matched by Found, name+map, start <1 m, then <50 m with the lap; set to the file's; the rest taken
+  off (laps orphaned, "Unknown track"). `LapTracker.Add` returns null in those games (laps not kept); `NameHere`,
+  pending places, `AdoptPlaces`, `TagHere`/`Rename`, Delete, the rows' Map picker gone. Keyed games and FM7 still add.
+- Tested in DaisysDev: a renamed, a moved (map too), a deleted and a friend's own FH5 track → file's 333 exactly,
+  iRacing's kept; second start no change; Known Tracks plain text, no Delete; Current Location's box read-only.
+  To add tracks now: map them on the rig with an older build or edit `Tracks.json` (Export's format).
+
 ## 4.18.6: Tracks.json from GAMER11 (2026-11-18)
 
 - Regenerated from the rig's `Analysis.json` (FH4/5/6, named, no Key; `Entry` kept). The merge matches the file's own

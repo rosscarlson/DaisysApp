@@ -79,8 +79,7 @@ public sealed class AnalysisApplet : IApplet
         raceVideo = new RaceVideo(raceLog, settings);
         // (since 4.13.4) a track found on another map: the car's on it
         tracker.MapSeen += (g, m) => seenMap = (g, m);
-        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), AppPaths.Product?.Hides("SimEffects/Analysis/KnownTracks") == true
-            ? F("A new track: {0}", settings.TrackName(t.Id)) : F("A new track: {0} (name it in Known Tracks)", settings.TrackName(t.Id)));
+        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0}", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
         // (since 3.28.0 the units are on the Profiles tab's Profile card)
         ProfileCard.UnitBoxes = () => AnalysisSettingsView.UnitBoxes(this);
@@ -196,10 +195,6 @@ public sealed class AnalysisApplet : IApplet
         if (!byHand) DaisysApp.Shell.Notifications.Show(T("Analysis"), F("On {0}", map ?? AnalysisSettings.Worlds[game][0]));
         MapChanged?.Invoke();
     }
-
-    /// <summary>The place the car is, saved as a track with this name (the tab's Tag box, since 3.27.1; the Name button
-    /// before); null: no place from the game.</summary>
-    internal Track? NameHere(string name) => tracker.NameHere(driven ? shown : null, GameNow, name);
 
     /// <summary>The track the car is at (its race's, or the one starting nearest it) and how far from its start (null: none,
     /// or no place).</summary>

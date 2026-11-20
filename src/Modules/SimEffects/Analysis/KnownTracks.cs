@@ -1,16 +1,14 @@
-using System.IO;
-using System.Security.Cryptography;
 using System.Text.Json;
 using DaisysApp.Settings;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
 
 /// <summary>
-/// The tracks that come with the app (since 3.34.0; <c>Tracks.json</c>, embedded): every FH5 and FH6 (since 4.15.5 FH4's too)
-/// race the user mapped, as Export writes them. Added to <see cref="AnalysisSettings.Tracks"/> once per version of the file
-/// (<see cref="AnalysisSettings.KnownTracks"/>), so one deleted stays gone until the file changes; one already there
-/// (same game, and the same name or start) isn't added again; one the file added before is brought up to date. Two of
-/// the file's with one name (on two maps, or two places) are both added.
+/// The tracks that come with the app (since 3.34.0; <c>Tracks.json</c>, embedded): every FH4, FH5 and FH6 race the
+/// developer mapped, as Export writes them. Since 4.18.9 they're the only tracks in those games, the same on every PC:
+/// on each start a game's tracks are made the file's (name, map, start, entry, type), each found by its
+/// <see cref="Track.Found"/>, then its name, then its start (its id kept, so its laps and races stay on it); one the
+/// file hasn't got is taken off (its laps then on "Unknown track"). Nothing in the app adds, renames or deletes them.
 /// </summary>
 internal static class KnownTracks
 {
@@ -35,52 +33,75 @@ internal static class KnownTracks
         public float[]? Entry { get; set; }
     }
 
-    /// <summary>Adds the ones missing; true when anything changed (the settings need saving).</summary>
-    public static bool Merge(AnalysisSettings s)
+    /// <summary>The games the file has tracks for: no others are added in them.</summary>
+    public static IReadOnlySet<string> Games => games.Value;
+
+    private static readonly Lazy<List<FileTrack>> file = new(Read);
+    private static readonly Lazy<HashSet<string>> games = new(() => file.Value.Select(e => e.Game).ToHashSet());
+
+    private static List<FileTrack> Read()
     {
         try
         {
             using var stream = typeof(KnownTracks).Assembly.GetManifestResourceStream("DaisysApp.SimEffects.Tracks.json");
-            if (stream == null) return false;
-            using var copy = new MemoryStream();
-            stream.CopyTo(copy);
-            string version = Convert.ToHexString(SHA256.HashData(copy.ToArray()))[..12];
-            if (s.KnownTracks == version) return false;
-            copy.Position = 0;
-            var file = JsonSerializer.Deserialize<TrackFile>(copy, JsonStore.Options) ?? new();
-            int added = 0, updated = 0;
-            var before = s.Tracks.ToList();
-            foreach (var e in file.Tracks.Where(e => e.Game.Length > 0 && e.Name.Length > 0))
-            {
-                // (since 4.10.11) One an earlier file added (its Found, which nothing changes) takes this one's name,
-                // map and start, its id (and the races on it) kept.
-                if (e.Found != default && before.FirstOrDefault(t => t.Game == e.Game && t.Found.ToUniversalTime() == e.Found.ToUniversalTime()) is { } mine)
-                {
-                    if (mine.Name != e.Name || mine.Map != e.Map || mine.X != e.X || mine.Y != e.Y || mine.Z != e.Z) updated++;
-                    mine.Name = e.Name; mine.Map = e.Map; mine.X = e.X; mine.Y = e.Y; mine.Z = e.Z;
-                    if (e.Type != null) mine.Type = e.Type;
-                    if (e.Entry != null) mine.Entry = e.Entry;
-                    mine.Length = Math.Max(mine.Length, e.Length); mine.Laps = Math.Max(mine.Laps, e.Laps); mine.Racers = Math.Max(mine.Racers, e.Racers);
-                    continue;
-                }
-                bool known = before.Any(t => t.Game == e.Game && (string.Equals(t.Name.Trim(), e.Name.Trim(), StringComparison.OrdinalIgnoreCase)
-                    || Math.Abs(t.X - e.X) < 1 && Math.Abs(t.Y - e.Y) < 1 && Math.Abs(t.Z - e.Z) < 1));
-                if (known) continue;
-                s.Tracks.Add(new Track
-                {
-                    Game = e.Game, Map = e.Map, Name = e.Name, Type = e.Type, X = e.X, Y = e.Y, Z = e.Z, Length = e.Length, Laps = e.Laps, Racers = e.Racers, Entry = e.Entry,
-                    Found = e.Found == default ? DateTime.Now : e.Found,
-                });
-                added++;
-            }
-            s.KnownTracks = version;
-            Logging.Log.Here.Info($"Analysis: {added} of the app's {file.Tracks.Count} tracks added, {updated} updated");
-            return true;
+            if (stream == null) return new();
+            var read = JsonSerializer.Deserialize<TrackFile>(stream, JsonStore.Options) ?? new();
+            return read.Tracks.Where(e => e.Game.Length > 0 && e.Name.Length > 0).ToList();
         }
         catch (Exception ex)
         {
             Logging.Log.Here.Warn("Analysis: the app's tracks", ex);
-            return false;
+            return new();
         }
+    }
+
+    /// <summary>The file's games' tracks made the file's; true when anything changed (the settings need saving).</summary>
+    public static bool Merge(AnalysisSettings s)
+    {
+        var tracks = file.Value;
+        if (tracks.Count == 0) return false;
+        string before = JsonSerializer.Serialize(s.Tracks);
+        var mine = s.Tracks.Where(t => Games.Contains(t.Game) && t.Key == null).ToList();
+        var claimed = new Dictionary<FileTrack, Track>();
+        void Claim(Func<FileTrack, Track, bool> same)
+        {
+            foreach (var e in tracks.Where(e => !claimed.ContainsKey(e)))
+                if (mine.FirstOrDefault(t => !claimed.ContainsValue(t) && t.Game == e.Game && same(e, t)) is { } t) claimed[e] = t;
+        }
+        Claim((e, t) => e.Found != default && t.Found.ToUniversalTime() == e.Found.ToUniversalTime());
+        Claim((e, t) => string.Equals(t.Name.Trim(), e.Name.Trim(), StringComparison.OrdinalIgnoreCase) && t.Map == e.Map);
+        Claim((e, t) => Math.Abs(t.X - e.X) < 1 && Math.Abs(t.Y - e.Y) < 1 && Math.Abs(t.Z - e.Z) < 1);
+        // (one mapped on this PC where the file's is: its laps go on the file's)
+        Claim((e, t) => t.Map == e.Map && Math.Abs(t.X - e.X) < 50 && Math.Abs(t.Z - e.Z) < 50
+            && (e.Length <= 0 || t.Length <= 0 || Math.Abs(t.Length - e.Length) <= e.Length * LapTracker.LengthTolerance));
+        int added = 0, removed = 0;
+        foreach (var e in tracks)
+        {
+            if (!claimed.TryGetValue(e, out var t))
+            {
+                t = new Track { Game = e.Game };
+                s.Tracks.Add(t);
+                added++;
+            }
+            t.Name = e.Name; t.Map = e.Map; t.Type = e.Type; t.Found = e.Found == default ? t.Found : e.Found;
+            // (a place in the file, with no race yet, whose first race was driven here: its start and lap learnt here kept)
+            if (e.Length > 0 || t.Length <= 0)
+            {
+                t.X = e.X; t.Y = e.Y; t.Z = e.Z; t.Entry = e.Entry;
+                if (e.Length > 0) t.Length = e.Length;
+            }
+            else t.Entry = e.Entry ?? new[] { e.X, e.Y, e.Z };
+            t.Laps = Math.Max(t.Laps, e.Laps); t.Racers = Math.Max(t.Racers, e.Racers);
+        }
+        foreach (var t in mine.Where(t => !claimed.ContainsValue(t)))
+        {
+            s.Tracks.Remove(t);
+            foreach (var a in s.Maps.Values.SelectMany(m => m.Anchors).Where(a => a.Track == t.Id).ToList())
+                s.Maps.Values.First(m => m.Anchors.Contains(a)).Anchors.Remove(a);
+            removed++;
+        }
+        if (JsonSerializer.Serialize(s.Tracks) == before) return false;
+        Logging.Log.Here.Info($"Analysis: the app's {tracks.Count} tracks: {added} added, {removed} not in it taken off");
+        return true;
     }
 }

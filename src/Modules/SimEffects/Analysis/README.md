@@ -101,7 +101,7 @@ small window since 4.13.1, from the compass on the Session card's title row (its
   Cadcada Fuerte, and every race after was a new track); Current Location shows the nearest of another map's tracks
   when the picked map has none near.
   (Before 4.6.4 the track's name was also above the box, in large type.)
-- **Name Track** (the name box; "New track" in 3.27.1; since 4.5.1 in Current Location's card; since 4.6.3 the box,
+- **Name Track** (until 4.18.8; since 4.18.9 the box only shows the track, see [The tracks it comes with](#the-tracks-it-comes-with); the name box; "New track" in 3.27.1; since 4.5.1 in Current Location's card; since 4.6.3 the box,
   **Save** and **Export** on one row; since 4.6.4 the buttons icons): at a known track the box has its name: type over it and **Save**
   (or Enter) to rename it. Elsewhere, type a name and **Save** to tag the place the car is as a track ("Saved …", and
   it's then where you are). **Add New** (shown at a known track) tags the place as another track all the same (two
@@ -112,8 +112,8 @@ small window since 4.13.1, from the compass on the Session card's title row (its
   shown in Track from its first second; its start and lap length are learnt from that race. Known Tracks lists it
   with "no race yet" until then. If that race is a track already known, the track takes the name (if it had none) and
   the place goes. (Before 3.27.1 a **Name** button did this, and the box asked for a name for each new track.)
-- **A race on a new place** (no tag) adds "Track n" when its first lap ends or the sprint finishes, with a
-  notification; name it in Name Track while there, or in Known Tracks.
+- **A race on a new place** (no tag; since 4.18.9 not in Forza Horizon, where it stays unknown) adds "Track n" when its first lap ends or the sprint finishes, with a
+  notification (named in Name Track or Known Tracks until 4.18.8).
 - **Export** (in Name Track since 3.28.0; the top right before, since 3.24.7): saves every track and named place to a
   JSON file (game, name, start X / Y / Z, length in metres, laps, cars, when found), to share or keep. No list of the
   games' race coordinates is published, so it's built by driving.
@@ -163,10 +163,11 @@ small window since 4.13.1, from the compass on the Session card's title row (its
   Beside it (since 4.6.3) **Track**, **Car** and **Class**: one track's tile, or only that car's or class's laps (and
   only the tracks it has laps on); before them (since 4.8.0) **Game**: All games, or only one game's tracks.
 - **Known Tracks** ("Track names" before 3.28.0, Discovered Tracks until 4.13.1): a table, newest first (since 4.6.4) until sorted by any column with a click on its header: Name
-  (type over it to rename the track), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
+  (typed over to rename the track until 4.18.8), Game (its funnel filters to one game), Laps, Lap (its length), Location (the
   start's x, z; sorted, places near each other come together), Nearest (the track starting nearest it, and how far:
   sorted, the ones near each other come first; on the same map) and Found; since 4.10.8 **Map** (Horizon 4 and 5: the
-  map it's on, picked in its row). **Delete** (top right) removes the track picked and its laps and races (since 4.5.1 several, picked with Ctrl or Shift).
+  map it's on; picked in its row until 4.18.8). Since 4.18.9 it's read-only: **Delete** (top right; since 4.5.1 several
+  picked with Ctrl or Shift, with their laps and races) went with the renaming (see [The tracks it comes with](#the-tracks-it-comes-with)).
 - **Classes:** Horizon 6 added R above S2; its class 6 reads R (7 X), the other games' 6 X (since 3.24.2, until a real
   FH6 says otherwise). Motorsport's are D, C, B, A, S, R, P and X (since 4.10.0; Horizon's letters before); iRacing's
   are its car classes ("MX5 Cup"), ACC's GT3, GT4, GT2, Cup, CHL, ST and TCX (from the car's model); Assetto Corsa and
@@ -562,10 +563,19 @@ them only in the pits: "—").
 
 ## The tracks it comes with
 
-Since 3.34.0 Analysis comes with every FH5 and FH6 track (`Tracks.json`, Export's file, built in): added to your
-tracks once, at the start after an update brings them (each time the file changes); one you already have (the same
-game, and the same name or start) isn't added again, and one you delete stays gone until the file changes. Since 4.10.11 one an earlier file added is brought up to date
-(its name, map and start; its races kept), and FH5's on Sierra Nueva and Hot Wheels Park come on their maps.
+Since 4.18.9 Forza Horizon 4, 5 and 6's tracks are the app's only (`Tracks.json`, Export's file from the developer's
+rig, built in; 333: FH4 98, FH5 147, FH6 88), the same on every PC. At each start a game's tracks are made the file's
+(name, map, start, where its event is entered, type), each found by when it was found, then its name, then its start
+(within 1 m, or 50 m with a lap as long), its laps and races kept; one renamed, moved or deleted is put back; one the
+file hasn't got is taken off (its laps then "Unknown track"). A file track with no race yet keeps the start and lap
+learnt from its first race here. Nothing adds, renames or deletes them: Current Location's name box only shows the
+track (Save and Add New went), Known Tracks is read-only, and a race on none of them stays unknown, its laps not kept
+(no "Track n"). The games that name their tracks (iRacing, the Assetto Corsas, FM 2023), and Forza Motorsport 7, still
+add theirs as before, but can't be renamed either.
+
+Before: since 3.34.0 the file's FH5 and FH6 tracks (FH4's since 4.15.5) were added to yours once per version of the file
+(one you had, by name or start, wasn't added again; one deleted stayed gone until the file changed), and since 4.10.11
+one an earlier file added was brought up to date.
 
 ## How a track is known
 
@@ -610,7 +620,7 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | File | What it is |
 |---|---|
 | `AnalysisApplet.cs` | The tool and its on / off shortcut (`Analysis.OnOff`): reads the profile's game (`SimData.Open()`) on its own thread while it records, the tab shows or Overlays wants it (`Wanted`); a 10/s tick feeds the tracker, the tab and Overlays' block widgets (`Ticked`; the last frame driving held while the game's paused, and the `PerfHistory`); `Current` for Overlays (the widgets and their `Analysis.Widget.<block>` shortcuts are `InputOverlay/InputOverlayApplet.cs`'s since 3.33.0); its Settings page; registered with `SimProfiles` (Enabled per profile, `OnAtFirst`: Forza Horizon's); feeds the race log (`RaceLog`) every frame, which the tracker's `Claim` keeps |
-| `AnalysisView.cs` | The tab (since 4.13.0 one table, `TableColumns` and `RenderTable`, Game, Track, Car and Class with `HeaderFilter`s; Races since 3.28.1: `RenderRaces`; since 4.7.0 `RowFold`, a row's blue chevron over the cards' `Fold`s): on / off and its shortcut button, status, Name Track (`TagHere`: rename the track the car's at, or `NameHere`), Current Location (`Here`), the blocks, Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest; `tileSearch`), Best Laps, Laps (filters, gaps; `Foldable`'s `fill`), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`); each card `Foldable` (`AnalysisSettings.Folded`); since 4.5.0 the Widgets card (`Foldable(…, foldedAtFirst)`), the race analysis' cards, and `ClickToOpen` (a row's lap or race opened there, right-click Compare With); since 4.6.3 `Filters` (Track, Car and Class, one set per card) and the three tables on one row |
+| `AnalysisView.cs` | The tab (since 4.13.0 one table, `TableColumns` and `RenderTable`, Game, Track, Car and Class with `HeaderFilter`s; Races since 3.28.1: `RenderRaces`; since 4.7.0 `RowFold`, a row's blue chevron over the cards' `Fold`s): on / off and its shortcut button, status, Name Track (the track the car's at, shown; `TagHere` and `NameHere` until 4.18.8), Current Location (`Here`), the blocks, Best Times tiles (`RenderTiles`, a Grid: rows as tall as their tallest; `tileSearch`), Best Laps, Laps (filters, gaps; `Foldable`'s `fill`), Discovered Tracks (`RenderTracks`, `TrackRow`, Game's filter, Location's Z-order `Cell`); each card `Foldable` (`AnalysisSettings.Folded`); since 4.5.0 the Widgets card (`Foldable(…, foldedAtFirst)`), the race analysis' cards, and `ClickToOpen` (a row's lap or race opened there, right-click Compare With); since 4.6.3 `Filters` (Track, Car and Class, one set per card) and the three tables on one row |
 | `Blocks.cs` | The blocks, their rows and layout (`Block` and its `BlockKind`, `BlockRow`, `BlockCell` of `CellPart`s, `Reading`), the Leaderboard's cars around yours (`Around`) and gaps (`GapText`), units, lap times, class names; `PerfHistory` (power, torque and boost, the last 600 samples, peaks) |
 | `BlockView.cs` | A block's cells in columns (label and value, rows joined, empty ones left out), the car drawing with a temperature at each wheel, Performance's graphs (`Graph`, drawn in `OnRender`), Timing's times, tyre colours, Position's and Lap's "3 / 8"s, or the Leaderboard (`BoardBody`: a column a row, its lines filled every update) (the driving ones in a `Viewbox`, `RaceFont`); in a widget being edited, a checkbox per row (the widget's `Hidden`) |
 | `AnalysisSettingsView.cs` | Settings → SimEffects → Analysis, and the Units and °F / °C boxes it shares with the Profile card (`ProfileCard.UnitBoxes`, since 3.28.0; the tab before) |
@@ -624,7 +634,7 @@ back at all after the data stopped) is a new race. Free roam (no race clock) rec
 | `RaceLog.cs` | (since 4.5.0) A session log a race (since 4.10.0 a run, in the games that run sessions): Core's `SessionRecorder` (Manual) from the reading thread while the race clock runs; `Claim` keeps one for a lap or result, the rest deleted (`SettleLocked`, 15 s after the next frames) |
 | `Sessions/` | (since 4.5.0; Forza Analysis' module before) The Race Analysis (Share Session: `SessionShares.cs`, the server's `sessions` module, `SessionServer`, since 4.18.0 its `Leaderboard` connection, Core's `ServerConnection`, and `FetchAsync`; `ShareWindow.cs`; since 4.18.0 `AccountWindow.cs`, Account (user and password, and since 4.18.2 the server's address, 4.18.3 its port), and `SessionLinks.cs`, a `daisysapp://session/…` link, from Core's `OpenFiles.Links`): `SessionsView.cs` (its cards, the Session box, `Open` / `CompareWith` from the tables, Compare with its export and import; since 4.7.0 `ShowMoment` (a zone or move on Compare's chart), `PopOut` (the Video and Track Map in windows of their own), Session 1 the analysed session), `SessionManager.cs` (since 4.12.0: the Session Manager window, from `SessionsView`'s `Items`, `Listed`, `Load` and `Delete`), `SessionData.cs` (a log read back at 100 samples a second, and its laps), `PedalAnalysis.cs` (brake zones, throttle applications, scores, markers, timed tips), `Incidents.cs` (contact found and costed; speeds in mph or km/h), `SessionChart.cs` (since 4.7.0 only the drawing helpers, `Envelope` and `Clock`: the Trace went into Compare), `CompareChart.cs` (two runs by distance, and the delta; since 4.6.3 a colour per channel, the other run dotted, each line hidden or highlighted: `Hidden`, `Highlight`, `LinePen`; since 4.7.0 the Trace's zones, laps and markers, `ShowSamples` and `Mark`: the moment picked as a line), `LineMap.cs` (since 4.6.3, the Track Map (in Compare since 4.6.9): both runs' lines from X and Z, `HoverAt` from Compare's chart), `FrictionCircle.cs` (scores over the race, the friction circle), `Shifting.cs` (since 4.6.10: `ShiftAnalysis`, the gear changes judged against the car's best upshift points, the limiter, its tips; `Shift`), `ShiftChart.cs` (the Shifting card's chart), `SessionPicker.cs` (since 4.13.0: Compare's window to find a session), `YouTubeOptions.cs` (since 4.15.0: the Analysis Manager's YouTube window and the YouTube mark), `RaceVideoView.cs` (since 4.8.0: Compare's Video, its tools popped out, `Shown` for the chart's `PlayAt`; since 4.15.0 from YouTube with Shared's `YouTubePlayer`, and a second one for Session 2), `VideoFrames.cs` (a video's frames with Media Foundation, on its own thread: `Want`, `Play`, `Take`), `VideoSound.cs` (since 4.8.1: its sound while it plays, NAudio's `MediaFoundationReader` to WASAPI), `VideoExport.cs` (since 4.9.0: the video re-encoded with the telemetry drawn on: Media Foundation's sink writer, H.264 and AAC; Overlays' `DashView` and `OverlayWindow.Trace` drawn on a thread of its own), `OverlayChart.cs` (zones or applications drawn over each other), `SessionSettings.cs` (`ForzaAnalysis.json`), `SessionShares.cs` (since 4.17.0: `SessionShares`, `AnalysisShares.json`; `SessionServer`, the server's `sessions` channel: list, share and put, get, edit, delete; `ShareQueue`, shares one at a time, by themselves after YouTube), `ShareWindow.cs` (since 4.17.0: Share Session; the Shared Session Manager since 4.17.16) |
 | `Terrain.cs` | (since 4.10.8) Which of a game's maps the car is on (`AnalysisSettings.Worlds`, `World`, `Track.Map`): each map's ground learnt (`AnalysisTerrain.bin`), the last 16 squares as evidence, the switch (`AnalysisApplet.SetMap`, `MapChanged`; since 4.13.4 not while `LapTracker.MapKnown`, and a track's map first: `LapTracker.MapSeen`, its race's `raceMap`, `OnTop`) |
-| `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded, merged into `AnalysisSettings.Tracks` once per version of the file (`AnalysisSettings.KnownTracks`, a hash of it) |
+| `KnownTracks.cs`, `Tracks.json` | The tracks the app comes with, embedded: since 4.18.9 at each start `Merge` makes the file's games' tracks in `AnalysisSettings.Tracks` the file's (once per version of the file before, `AnalysisSettings.KnownTracks`, its hash); `Games`, where `LapTracker` adds none |
 | `AnalysisSettings.cs` | `AnalysisSettings` (`Analysis.json`: Enabled, `OnOffKey`, units, Temperature, `BoardRows`, `StartRadius` (since 3.30.2), `BlockWidget`s, `Track`s (since 3.31.0 with a `Type`), `Maps` (since 3.31.0: a `GameMap` per game, its image and `MapAnchor`s), car names; since 4.10.0 a `Track`'s `Key` (the game's id for it), `GameCars` and `GameClasses` (the names the games give, by `CarNames.Number`), `Learn`) |
 
 The race data comes from each game's reader (`TelemetryFrame.HasRace` and the fields after it; since 4.10.0 also

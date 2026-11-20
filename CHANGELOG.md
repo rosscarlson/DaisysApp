@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.9**
+- **SimEffects → Analysis**' Forza Horizon tracks are the app's own, the same on every PC: the 333 it comes with (FH4
+  98, FH5 147, FH6 88, as they are on the developer's rig). Each start puts a renamed, moved or deleted one back and
+  takes off any the list hasn't got (their laps keep their times, under "Unknown track"). Tracks can't be named,
+  added or deleted any more: Current Location's name box only shows the track (Save and Add New went), Known Tracks is
+  read-only (no renaming, map picking or Delete), and a Forza Horizon race on none of them isn't kept (no "Track n").
+
 **4.18.8**
 - **Widgets** (every module's): near the bottom of the screen, a widget being edited has its controls (Background, On
   top, Click through, Done, Delete) above it instead of below, so it can be put right at the bottom; they move back

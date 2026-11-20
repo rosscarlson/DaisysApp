@@ -35,9 +35,8 @@ internal sealed class AnalysisView : UserControl
     private readonly Button onOffKey;
     private readonly ToggleButton videoOn;
     private readonly TextBlock status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly TextBlock saved = Ui.Note("");
-    private readonly TextBox tagBox = new() { VerticalContentAlignment = VerticalAlignment.Center };
-    private readonly Button addNew, tagSave;
+    /// <summary>The track the car is at (since 4.18.9 shown only: the app's tracks aren't named here).</summary>
+    private readonly TextBox tagBox = new() { VerticalContentAlignment = VerticalAlignment.Center, IsReadOnly = true };
     /// <summary>(since 4.10.8) Which of the game's maps it's on (Horizon's share their coordinates), and the game it's for.</summary>
     private readonly ComboBox mapBox = new() { VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
     private string? mapGame;
@@ -48,10 +47,9 @@ internal sealed class AnalysisView : UserControl
     /// <summary>(since 4.13.1) Current Location's window, while it's open; what's in it stays this view's.</summary>
     private Window? placeWindow;
     private readonly StackPanel placeBody = new();
-    /// <summary>The track the car is at (its race's, or the one starting nearest), and the name the tag box was filled
-    /// with for it (kept while the user types over it).</summary>
+    /// <summary>The track the car is at (its race's, or the one starting nearest).</summary>
     private Track? matched;
-    private string autoText = "", hereText = "";
+    private string hereText = "";
     private readonly Grid trackTiles = new();
     private readonly TextBox tileSearch = new() { Width = 200, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
     private readonly DockPanel carName = new() { Margin = new Thickness(0, 6, 0, 0) };
@@ -68,9 +66,8 @@ internal sealed class AnalysisView : UserControl
     private readonly HeaderFilter gameColumn = new(T("Game")), trackColumn = new(T("Track")), carColumn = new(T("Car")),
         classColumn = new(T("Class"), (a, b) => string.Compare(Blocks.ClassOrder(a), Blocks.ClassOrder(b), StringComparison.CurrentCultureIgnoreCase));
     private readonly RaceStatsView raceStats;
-    private readonly TextBlock lapCount = Ui.Note(""), noTracks = Ui.Note(T("None yet: a track is added when a race on it ends its first lap or finishes, or with Name Track."));
+    private readonly TextBlock lapCount = Ui.Note(""), noTracks = Ui.Note(T("None yet"));
     private readonly TextBlock gameHeader = new() { Text = T("Game"), VerticalAlignment = VerticalAlignment.Center };
-    private readonly Button deleteTrack;
     /// <summary>(since 4.13.2) The Map card's hidden, for now: true brings it back.</summary>
     private static readonly bool MapShown = false;
     private readonly MapView? map;
@@ -120,7 +117,7 @@ internal sealed class AnalysisView : UserControl
         carBox.ToolTip = T("Car name");
         carBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) SaveCar(); };
         // (since 4.6.4 always there, Current Location's second row, greyed out while no car is driven)
-        nameCar = Icon("\uE804", T("Name Car"), ThenName(SaveCar));
+        nameCar = Icon("\uE804", T("Name Car"), SaveCar);
         nameCar.IsEnabled = false;
         DockPanel.SetDock(nameCar, Dock.Right);
         carName.Children.Add(nameCar);
@@ -142,36 +139,24 @@ internal sealed class AnalysisView : UserControl
         };
         TableColumns();
 
-        // Name Track: the place the car is, saved as a track (where an event starts), or the track it's at renamed
+        // the track the car is at (Name Track until 4.18.8: Save named it, Add New made another there)
         AutomationProperties.SetName(tagBox, T("Track name"));
-        tagBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) ThenName(() => TagHere(false))(); };
-        // (since 4.6.4 icons)
-        tagSave = Icon("\uE74E", T("Save"), ThenName(() => TagHere(false)));
-        addNew = Icon("\uE710", T("Save this place as another track"), ThenName(() => TagHere(true)));
-        addNew.Visibility = Visibility.Collapsed;
         // (since 3.24.7) the tracks and places, to a JSON file
-        var export = Icon("\uEDE1", T("Export the tracks to a file"), ThenName(ExportTracks));
-        // (in the game, a place without a track: "Unknown", picked whole to type over)
-        tagBox.GotKeyboardFocus += (_, _) => { if (tagBox.Text == T("Unknown")) tagBox.Dispatcher.BeginInvoke(tagBox.SelectAll); };
-        saved.Margin = new Thickness(0, 4, 0, 0);
-        saved.SetResourceReference(TextBlock.ForegroundProperty, "SuccessBrush");
-        // (no room kept for it until there's something to say)
-        saved.Visibility = Visibility.Collapsed;
-        System.ComponentModel.DependencyPropertyDescriptor.FromProperty(TextBlock.TextProperty, typeof(TextBlock))
-            .AddValueChanged(saved, (_, _) => saved.Visibility = saved.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed);
+        var export = Icon("", T("Export the tracks to a file"), ExportTracks);
         placeAt.Visibility = Visibility.Collapsed;
         placeAt.Margin = new Thickness(0, 4, 0, 0);
         // (since 4.6.2 the box, Save and Export on one row; since 4.6.4 the track's name only in the box, where the car
         // is under it, the car's name on the second row)
         var tagRow = new DockPanel();
-        foreach (var b in new[] { export, addNew, tagSave }) { DockPanel.SetDock(b, Dock.Right); tagRow.Children.Add(b); }
+        DockPanel.SetDock(export, Dock.Right);
+        tagRow.Children.Add(export);
         tagRow.Children.Add(tagBox);
         // (since 4.10.8) the game's map, where it has more than one: picked, or found as it's driven
         mapBox.ToolTip = T("Map");
         AutomationProperties.SetName(mapBox, T("Map"));
         mapBox.SelectionChanged += (_, _) => { if (!fillingMap && mapGame != null && mapBox.SelectedItem is string m) applet.SetMap(mapGame, m, true); };
         // (since 4.13.1 in a window of its own, from the Session card's link: ShowLocation)
-        foreach (var e in new FrameworkElement[] { tagRow, mapBox, carName, placeAt, saved }) placeBody.Children.Add(e);
+        foreach (var e in new FrameworkElement[] { tagRow, mapBox, carName, placeAt }) placeBody.Children.Add(e);
 
         // Known Tracks: a table sorted by any column (its header), Game's filter its funnel
         var funnel = VolumeControl.IconButton("");
@@ -181,25 +166,7 @@ internal sealed class AnalysisView : UserControl
         AutomationProperties.SetName(funnel, T("Filter by game"));
         funnel.Click += (_, e) => { GameMenu(funnel); e.Handled = true; };
         TrackColumns(new StackPanel { Orientation = Orientation.Horizontal, Children = { gameHeader, funnel } });
-        // (since 4.5.1 several picked with Ctrl or Shift, deleted together)
-        found.SelectionMode = DataGridSelectionMode.Extended;
-        found.SelectionChanged += (_, _) => deleteTrack!.IsEnabled = found.SelectedItems.Count > 0;
-        deleteTrack = SimUi.Confirm(T("Delete"), () =>
-        {
-            var picked = found.SelectedItems.OfType<TrackRow>().ToList();
-            if (picked.Count == 0) return;
-            foreach (var r in picked)
-            {
-                settings.Tracks.Remove(r.Track);
-                applet.Store.RemoveTrack(r.Track.Id);
-                Logging.Log.Here.Info($"Analysis: track {r.Track.Id} deleted with its laps");
-            }
-            settings.Save();
-            RenderStats();
-        }, T("Deletes the tracks picked and their laps"));
-        deleteTrack.IsEnabled = false;
-        deleteTrack.Margin = new Thickness(0, 0, 4, 0);
-
+        // (4.5.1–4.18.8 the tracks picked were deleted here, with their laps)
         lapCount.VerticalAlignment = VerticalAlignment.Center;
         lapCount.Margin = new Thickness(0, 0, 4, 0);
         var page = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
@@ -230,7 +197,7 @@ internal sealed class AnalysisView : UserControl
             map?.Follow();
         };
         if (map != null) page.Children.Add(Foldable("Map", T("Map"), map));
-        var tracksCard = Foldable("Tracks", T("Known Tracks"), new StackPanel { Children = { noTracks, found } }, deleteTrack);
+        var tracksCard = Foldable("Tracks", T("Known Tracks"), new StackPanel { Children = { noTracks, found } });
         tracksCard.Margin = new Thickness(0, 0, 12, 12);
         // (since 4.6.2) the races' numbers (a line over Races before); a last race clicked opens it (since 4.6.4); since
         // 4.13.1 beside Known Tracks (beside Current Location before)
@@ -310,14 +277,6 @@ internal sealed class AnalysisView : UserControl
         b.Click += (_, _) => click();
         return b;
     }
-
-    /// <summary>A Name Track button's action, then (since 3.31.1) the name box focused and selected for the next name
-    /// (queued: a file dialog gives the focus back after it closes).</summary>
-    private Action ThenName(Action action) => () =>
-    {
-        action();
-        Dispatcher.BeginInvoke(() => { tagBox.Focus(); tagBox.SelectAll(); }, System.Windows.Threading.DispatcherPriority.Input);
-    };
 
     private Border Foldable(string id, string title, UIElement body, params UIElement[] right) => Foldable(id, title, body, false, right);
 
@@ -505,22 +464,14 @@ internal sealed class AnalysisView : UserControl
         {
             // (since 4.6.2) no place from the game: "Unknown", greyed out
             placed = live;
-            tagBox.IsEnabled = tagSave.IsEnabled = live;
+            tagBox.IsEnabled = live;
             matched = t;
-            addNew.Visibility = t != null ? Visibility.Visible : Visibility.Collapsed;
-            autoText = tagBox.Text = t != null ? settings.TrackName(t.Id) : T("Unknown");
+            tagBox.Text = t != null ? settings.TrackName(t.Id) : T("Unknown");
             return;
         }
         if (t == matched || !live) return;
         matched = t;
-        addNew.Visibility = t != null ? Visibility.Visible : Visibility.Collapsed;
-        // (what the user's typing stays)
-        if (!tagBox.IsKeyboardFocusWithin || tagBox.Text == autoText)
-        {
-            autoText = t != null ? settings.TrackName(t.Id) : T("Unknown");
-            tagBox.Text = autoText;
-            if (tagBox.IsKeyboardFocusWithin) tagBox.SelectAll();
-        }
+        tagBox.Text = t != null ? settings.TrackName(t.Id) : T("Unknown");
     }
 
     /// <summary>The map box: the game's maps, the one it's on picked (none for a game with one map).</summary>
@@ -534,40 +485,6 @@ internal sealed class AnalysisView : UserControl
         mapBox.ItemsSource = maps;
         mapBox.SelectedItem = settings.MapOf(game) ?? maps[0];
         fillingMap = false;
-    }
-
-    /// <summary>Save: the track the car is at renamed, or (none, or Add New) the place it is saved as a track.</summary>
-    private void TagHere(bool asNew)
-    {
-        string name = tagBox.Text.Trim();
-        if (name.Length == 0 || (name == T("Unknown") && (asNew || matched == null))) { tagBox.Focus(); tagBox.SelectAll(); return; }
-        if (!asNew && matched != null && settings.Tracks.Contains(matched))
-        {
-            if (matched.Name != name) Rename(matched, name);
-            autoText = tagBox.Text = name;
-            saved.Text = F("Saved \"{0}\"", name);
-            return;
-        }
-        if (applet.NameHere(name) is not { } t)
-        {
-            saved.Text = T("No place from the game yet");
-            return;
-        }
-        matched = t;
-        autoText = tagBox.Text = t.Name;
-        addNew.Visibility = Visibility.Visible;
-        saved.Text = F("Saved \"{0}\" at {1:0}, {2:0}", t.Name, t.X, t.Z);
-        RenderStats();
-    }
-
-    private void Rename(Track t, string name)
-    {
-        t.Name = name.Trim();
-        Logging.Log.Here.Info($"Analysis: track named \"{t.Name}\"");
-        // (since 4.10.12 a race's track named as a place: the place is where its event is entered)
-        settings.AdoptPlaces();
-        settings.Save();
-        RenderStats();
     }
 
     // ---------------------------------------------------------------- the stats
@@ -903,7 +820,6 @@ internal sealed class AnalysisView : UserControl
         Fill(found, rows);
         found.Visibility = rows.Count > 0 || gameFilter != null ? Visibility.Visible : Visibility.Collapsed;
         noTracks.Visibility = settings.Tracks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        deleteTrack.IsEnabled = found.SelectedItems.Count > 0;
     }
 
     /// <summary>A place's key for sorting by Location: its 500 m square, in the order that keeps neighbouring squares
@@ -931,24 +847,11 @@ internal sealed class AnalysisView : UserControl
 
     private void TrackColumns(FrameworkElement gameHead)
     {
-        // the name, typed over in its row (Enter or leaving it renames the track)
-        var box = new FrameworkElementFactory(typeof(TextBox));
-        box.SetBinding(TextBox.TextProperty, new Binding(nameof(TrackRow.Name)) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.LostFocus });
-        box.SetValue(TextBox.MinWidthProperty, 180.0);
-        box.SetValue(TextBox.VerticalContentAlignmentProperty, VerticalAlignment.Center);
-        box.AddHandler(KeyDownEvent, new KeyEventHandler((s, e) =>
-        {
-            if (e.Key == Key.Enter && s is TextBox t) BindingOperations.GetBindingExpression(t, TextBox.TextProperty)?.UpdateSource();
-        }));
-        found.Columns.Add(new DataGridTemplateColumn { Header = T("Name"), CellTemplate = new DataTemplate { VisualTree = box }, SortMemberPath = nameof(TrackRow.Name) });
+        // (the name typed over and the map picked in its row until 4.18.8)
+        found.Columns.Add(new DataGridTextColumn { Header = T("Name"), Binding = new Binding(nameof(TrackRow.Name)), SortMemberPath = nameof(TrackRow.Name), MinWidth = 180 });
         found.Columns.Add(new DataGridTextColumn { Header = gameHead, Binding = new Binding(nameof(TrackRow.Game)), SortMemberPath = nameof(TrackRow.Game) });
-        // (since 4.10.8) the game's map it's on, picked in its row (Horizon's; none for the others)
-        var pick = new FrameworkElementFactory(typeof(ComboBox));
-        pick.SetBinding(ItemsControl.ItemsSourceProperty, new Binding(nameof(TrackRow.Maps)));
-        pick.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedItemProperty, new Binding(nameof(TrackRow.Map)) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
-        pick.SetBinding(VisibilityProperty, new Binding(nameof(TrackRow.HasMaps)) { Converter = new BooleanToVisibilityConverter() });
-        pick.SetValue(ToolTipProperty, T("Map"));
-        found.Columns.Add(new DataGridTemplateColumn { Header = T("Map"), CellTemplate = new DataTemplate { VisualTree = pick }, SortMemberPath = nameof(TrackRow.Map) });
+        // (since 4.10.8) the game's map it's on (Horizon's; none for the others)
+        found.Columns.Add(new DataGridTextColumn { Header = T("Map"), Binding = new Binding(nameof(TrackRow.Map)), SortMemberPath = nameof(TrackRow.Map) });
         foreach (var (header, path, sortBy) in new (string, string, string)[]
         {
             (T("Laps"), nameof(TrackRow.Laps), nameof(TrackRow.Laps)), (T("Lap"), nameof(TrackRow.LengthText), nameof(TrackRow.Length)),
@@ -977,37 +880,15 @@ internal sealed class AnalysisView : UserControl
         public string ClassOrder => Blocks.ClassOrder(Class);
     }
 
-    /// <summary>A Known Tracks row: its name renames the track when it's typed over.</summary>
+    /// <summary>A Known Tracks row.</summary>
     private sealed class TrackRow(AnalysisView view, Track track)
     {
         public Track Track { get; } = track;
-        public string Name
-        {
-            get => view.settings.TrackName(Track.Id);
-            set
-            {
-                string name = value.Trim();
-                if (name == Name || (name.Length == 0 && Track.Name.Length == 0)) return;
-                // (after the binding's done: the table is filled again)
-                view.Dispatcher.BeginInvoke(() => view.Rename(Track, name));
-            }
-        }
+        public string Name => view.settings.TrackName(Track.Id);
         public string Game { get; init; } = "";
         /// <summary>The game's maps (null: one, or a track the game names).</summary>
         public string[]? Maps { get; init; }
-        public bool HasMaps => Maps != null;
-        public string? Map
-        {
-            get => Maps == null ? null : Track.Map ?? Maps[0];
-            set
-            {
-                if (Maps == null || value == null || value == Map) return;
-                Track.Map = value == Maps[0] ? null : value;
-                view.settings.Save();
-                Logging.Log.Here.Info($"Analysis: track {Track.Id} on {value}");
-                view.Dispatcher.BeginInvoke(view.RenderStats);
-            }
-        }
+        public string? Map => Maps == null ? null : Track.Map ?? Maps[0];
         public int Laps { get; init; }
         public float Length { get; init; }
         public string LengthText { get; init; } = "";

@@ -153,7 +153,8 @@ internal sealed class MapView : Grid
         list.SelectionChanged += (_, _) => { if (!filling && list.SelectedItem is Item i && i.Track != selected) Select(i.Track, centre: true); };
         kindBox.SelectionChanged += (_, _) =>
         {
-            if (filling || selected == null) return;
+            // (since 4.18.9 not the app's tracks': theirs is the file's)
+            if (filling || selected == null || KnownTracks.Games.Contains(selected.Game)) return;
             selected.Type = Picked(kindBox);
             settings.Save();
             Rebuild();
