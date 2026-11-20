@@ -38,6 +38,9 @@ public sealed class SimProfile
 public sealed class SimProfilesSettings
 {
     public List<SimProfile> Profiles { get; set; } = new();
+    /// <summary>(a product, since SimEffects Analysis 0.3.1) Forza Horizon's port moved from Daisy's App's 8001 to
+    /// the game's own 8000, once.</summary>
+    public bool ProductPort8000 { get; set; }
     /// <summary>The profile in use, by name.</summary>
     public string? Active { get; set; }
     /// <summary>Game Switching, before 3.23.4 (for all profiles): read once into each profile's <see cref="SimProfile.AutoStart"/>.</summary>
@@ -133,6 +136,11 @@ public static class SimProfiles
             Logging.Log.Here.Info($"SimEffects: profile {made.Name} made");
         }
         if (OnlyGame != null) settings.Active = settings.Profiles[0].Name;
+        if (OnlyGame != null && !settings.ProductPort8000)
+        {
+            foreach (var p in settings.Profiles.Where(p => p.Game == Game.ForzaHorizon && p.Port == 8001)) p.Port = 8000;
+            settings.ProductPort8000 = true;
+        }
         SimData.Follow(Active);
     }
 

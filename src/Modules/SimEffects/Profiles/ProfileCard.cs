@@ -180,6 +180,21 @@ internal static class ProfileCard
         return panel;
     }
 
+    /// <summary>(a product for one game, since SimEffects Analysis 0.3.1: its Profiles tab isn't shown) the game's
+    /// profile's Options and Modules as a Settings card, "Forza Horizon Settings".</summary>
+    public static FrameworkElement SettingsCard(SimProfile p)
+    {
+        var panel = new StackPanel();
+        panel.Children.Add(Options(p));
+        var modules = SimProfiles.Tools.Where(t => t.IsOn != null).ToList();
+        if (modules.Count > 0)
+        {
+            panel.Children.Add(new TextBlock { Text = T("Modules"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4) });
+            panel.Children.Add(Modules(p, modules));
+        }
+        return Ui.Card(panel, F("{0} Settings", p.Game is { } g ? Games.Title(g) : T("Desktop")));
+    }
+
     /// <summary>The sub-modules, a chip each: the ones on start when the profile does.</summary>
     private static FrameworkElement Modules(SimProfile p, List<ToolScope> modules)
     {

@@ -26,15 +26,15 @@ reads it at start. With it the program is the product. All of these are off in D
 | `TagPrefix`, `Repo` | its updater reads `Repo`'s releases (Daisy's App's if none) tagged `TagPrefix<version>` | `UpdateService` (`Releases`, `TagVersion`) |
 | `Tabs` | its tabs, each a group's sub-tab (`Module/SubTab`) taken out of it, in order before Settings; the group's header (SimEffects' Play / Stop) goes left of Update | `MainWindow.AddProductTabs`, `AppletGroup.TakeView`/`TakeHeader` |
 | `Hidden` | sub-tabs made but not shown (one a tab needs: Video's Overlay for Recording): no settings page, setup page or tray items. Any sub-tab in neither list isn't made | `AppletGroup.Add`, `ProductInfo.Makes`/`Shows` |
-| `Game` | its one game: only that SimEffects profile, always in use, no Profile drop-down | `SimProfiles.OnlyGame` |
+| `Game` | its one game: only that SimEffects profile, always in use, no Profile drop-down; its settings (Options and Modules) as the card `SimEffects/Profiles/Game` ("Forza Horizon Settings"); Forza Horizon's port 8000 (Daisy's App's 8001 moved once) | `SimProfiles.OnlyGame`, `ProfileCard.SettingsCard`, `Games.Port` |
 | `Hide` | parts of a module left out, by name: `SimEffects/Analysis/KnownTracks`, `SimEffects/Analysis/CurrentLocation`, `SimEffects/Analysis/ShareAccount` (Share Manager's Account button), `SimEffects/Analysis/SharePort` (the account's Port: the one set is used), `Video/Recording/Benchmark`, `Video/Recording/History` (none logged) | `ProductInfo.Hides` (AnalysisView, SessionsView, AnalysisApplet, ShareWindow, AccountPanel, GamingView, GamingSettings…) |
-| `Settings` | Settings on one page, no sub-tabs: rows, each of columns side by side, each column's cards stacked: General's (`Startup`, `Updates`, `Appearance`, `Notifications`, `Language`, `Shortcuts`, `Files`), a sub-tab's settings (`Video/Recording`), a card a module offers (`SimEffects/Analysis/Account`: Core's `SettingsCards`), `YouTube`. General's others aren't on it | `SettingsPage.OnePage`, `AppletGroup.TakeSettings` |
+| `Settings` | Settings on one page, no sub-tabs: rows, each of columns side by side, each column's cards stacked: General's (`Startup`, `Updates`, `Appearance`, `Notifications`, `Language`, `Shortcuts`, `Files`), a sub-tab's settings (`Video/Recording`), a card a module offers (`SimEffects/Analysis/Account`, `SimEffects/Profiles/Game`: Core's `SettingsCards`), `YouTube`. General's others aren't on it | `SettingsPage.OnePage`, `AppletGroup.TakeSettings` |
 | `Ask` | what a module asks for once, on the first run: `SimEffects/Analysis/Account` (the ForzaLeaderBoard account) | `ProductInfo.Asks` (AnalysisApplet's onboarding) |
 
 Always, in a product: its icon in the tray (`TrayIcon`; no tray items of the sub-tabs only in `Hidden`), no FPS overlay
 when Video's Overlay isn't a tab (`GamingSettings.Load`), no setup tool picker (`SetupWindow`), Settings → General
 without Save / Load, Modules, Daisy's Server, Audio or Storage (`SettingsPage`), no virtual webcam (Windows knows it as
-Daisy's App's), Video's overlay and webcam shortcuts left out when those aren't there (`GamingService`).
+Daisy's App's), every overlay unticked at first (Overlays, once: `InputOverlayApplet.Start`), Video's overlay and webcam shortcuts left out when those aren't there (`GamingService`).
 
 **A new hook:** a switch that's off unless the product asks (`AppPaths.Product?.Hides("Module/Part") == true`, or a new
 key in `ProductInfo` and `build.ps1`'s list of keys copied into app.json), added to the table above; then the

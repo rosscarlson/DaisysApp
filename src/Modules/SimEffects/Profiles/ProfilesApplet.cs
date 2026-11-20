@@ -19,7 +19,14 @@ public sealed class ProfilesApplet : IApplet
     private readonly ProfilesView view = new();
     private readonly GameSwitcher switcher = new();
 
-    public ProfilesApplet() => SimProfiles.Changed += view.Render;
+    /// <summary>(since SimEffects Analysis 0.3.1) The one game's profile settings, for a product's Settings page.</summary>
+    public const string GameCard = "SimEffects/Profiles/Game";
+
+    public ProfilesApplet()
+    {
+        SimProfiles.Changed += view.Render;
+        if (SimProfiles.OnlyGame != null) SettingsCards.Offer(GameCard, () => ProfileCard.SettingsCard(SimProfiles.Active));
+    }
 
     public FrameworkElement View => view;
     public FrameworkElement? SettingsView => null;

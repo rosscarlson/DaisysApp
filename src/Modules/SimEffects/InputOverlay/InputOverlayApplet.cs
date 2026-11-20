@@ -383,6 +383,13 @@ public sealed class InputOverlayApplet : IApplet
                 settings.Save();
             }
         }
+        // (a product, since SimEffects Analysis 0.3.1) every overlay starts unticked, once
+        if (AppPaths.Product != null && !settings.ProductUnticked)
+        {
+            settings.Overlays!.Clear();
+            settings.ProductUnticked = true;
+            settings.Save();
+        }
         ShowOverlays();
         ShowBadge();
         view.Render();

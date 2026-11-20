@@ -24,10 +24,11 @@ public static class Games
     /// <summary>True for the games that send UDP (so a profile for them has a port).</summary>
     public static bool UsesPort(Game g) => g is Game.ForzaHorizon or Game.ForzaMotorsport;
 
-    /// <summary>The port a game's profile starts with (Forza's Data Out; a port of its own for each Forza).</summary>
+    /// <summary>The port a game's profile starts with (Forza's Data Out; a port of its own for each Forza; a product,
+    /// SimEffects Analysis: Forza Horizon's own 8000).</summary>
     public static int Port(Game g) => g switch
     {
-        Game.ForzaHorizon => 8001,
+        Game.ForzaHorizon => AppPaths.Product != null ? 8000 : 8001,
         Game.ForzaMotorsport => 5301,
         _ => 8000,
     };
