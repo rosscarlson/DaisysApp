@@ -79,7 +79,8 @@ public sealed class AnalysisApplet : IApplet
         raceVideo = new RaceVideo(raceLog, settings);
         // (since 4.13.4) a track found on another map: the car's on it
         tracker.MapSeen += (g, m) => seenMap = (g, m);
-        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0} (name it in Known Tracks)", settings.TrackName(t.Id)));
+        tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), AppPaths.Product?.Hides("SimEffects/Analysis/KnownTracks") == true
+            ? F("A new track: {0}", settings.TrackName(t.Id)) : F("A new track: {0} (name it in Known Tracks)", settings.TrackName(t.Id)));
         view = new AnalysisView(this);
         // (since 3.28.0 the units are on the Profiles tab's Profile card)
         ProfileCard.UnitBoxes = () => AnalysisSettingsView.UnitBoxes(this);

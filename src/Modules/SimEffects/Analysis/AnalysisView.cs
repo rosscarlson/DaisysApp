@@ -236,11 +236,16 @@ internal sealed class AnalysisView : UserControl
         // 4.13.1 beside Known Tracks (beside Current Location before)
         var statsCard = Foldable("RaceStats", T("Racing Statistics"), raceStats);
         Grid.SetColumn(statsCard, 1);
-        var tracksRow = new Grid { Children = { tracksCard, statsCard } };
-        tracksRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        tracksRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        page.Children.Add(tracksRow);
-        RowFold(tracksCard, statsCard);
+        // (a product without Known Tracks, SimEffects Analysis: the statistics on their own)
+        if (AppPaths.Product?.Hides("SimEffects/Analysis/KnownTracks") == true) page.Children.Add(statsCard);
+        else
+        {
+            var tracksRow = new Grid { Children = { tracksCard, statsCard } };
+            tracksRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            tracksRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            page.Children.Add(tracksRow);
+            RowFold(tracksCard, statsCard);
+        }
         var dock = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         dock.Children.Add(top);

@@ -17,7 +17,7 @@ public static class AppPaths
     public static string ShortName { get; } = ProgramName();
 
     /// <summary>
-    /// An app of its own made from this program with some modules (build.ps1 -Product, from products\&lt;Name&gt;):
+    /// An app of its own made from this program with some modules (build.ps1 -Product, from its own repository: products/README.md):
     /// app.json beside the program gives its title and its releases' tag prefix (SimEffects Analysis: "sea-v"). Null
     /// for Daisy's App and the wrapper.
     /// </summary>
@@ -48,6 +48,17 @@ public static class AppPaths
 
         /// <summary>The one game it's for (SimEffects' profile: "ForzaHorizon"), or null.</summary>
         public string? Game { get; init; }
+
+        /// <summary>(since 0.2.2) Its own GitHub repository ("rosscarlson/SimEffectsAnalysis"), whose releases its
+        /// updater reads; null: Daisy's App's, tagged with <see cref="TagPrefix"/>.</summary>
+        public string? Repo { get; init; }
+
+        /// <summary>(since 0.2.2) Parts of a module it leaves out, by the names the module checks
+        /// ("SimEffects/Analysis/KnownTracks"); see <see cref="Hides"/>.</summary>
+        public List<string>? Hide { get; init; }
+
+        /// <summary>The product leaves this part of a module out.</summary>
+        public bool Hides(string part) => Hide?.Contains(part, StringComparer.OrdinalIgnoreCase) == true;
 
         /// <summary>A group's sub-tab is a tab of its own.</summary>
         public bool Shows(string group, string tool) => Tabs == null || Tabs.Contains($"{group}/{tool}", StringComparer.OrdinalIgnoreCase);

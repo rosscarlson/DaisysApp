@@ -19,14 +19,17 @@ public sealed record UpdateInfo(Version Version, string Tag, string ReleaseUrl, 
 /// the asset) and runs it silently. The installer closes this app, upgrades in place and relaunches it. Each release
 /// carries an installer per app, named after the program: DaisysApp-Setup-1.2.3.exe, and the wrapper's
 /// (Joy2Key-Setup-1.2.3.exe); each app takes its own. A product (<see cref="AppPaths.Product"/>: SimEffects Analysis)
-/// has releases of its own in the same repository, tagged with its prefix (sea-v0.2.0) and never marked latest, so
-/// Daisy's App never sees them, and it reads only those.
+/// reads only its own releases: since 0.2.2 in its own repository (app.json Repo), before that in this one, tagged with
+/// its prefix (sea-v0.2.0) and never marked latest, so Daisy's App never sees them.
 /// </summary>
 public static class UpdateService
 {
     public const string Owner = "rosscarlson";
     public const string Repo = "DaisysApp";
-    public static string RepoUrl => $"https://github.com/{Owner}/{Repo}";
+    /// <summary>The repository whose releases it reads: a product's own if it has one (app.json Repo: since SimEffects
+    /// Analysis 0.2.2, rosscarlson/SimEffectsAnalysis), else Daisy's App's.</summary>
+    public static string Releases => AppPaths.Product?.Repo ?? $"{Owner}/{Repo}";
+    public static string RepoUrl => $"https://github.com/{Releases}";
 
     /// <summary>The release notes: every release, or a product's own (this version's).</summary>
     public static string ReleasesUrl => AppPaths.Product is { } product
@@ -67,7 +70,7 @@ public static class UpdateService
     {
         // (a product's releases aren't "latest": its newest of the list)
         bool product = AppPaths.Product != null;
-        using var response = await Http.GetAsync($"https://api.github.com/repos/{Owner}/{Repo}/releases" + (product ? "?per_page=100" : "/latest"), ct);
+        using var response = await Http.GetAsync($"https://api.github.com/repos/{Releases}/releases" + (product ? "?per_page=100" : "/latest"), ct);
         if (response.StatusCode == HttpStatusCode.NotFound) return null; // no releases published yet
         response.EnsureSuccessStatusCode();
 
@@ -117,7 +120,7 @@ public static class UpdateService
             var seen = new HashSet<Version>();
             for (int page = 1; page <= 10; page++)
             {
-                using var response = await Http.GetAsync($"https://api.github.com/repos/{Owner}/{Repo}/releases?per_page=100&page={page}", ct);
+                using var response = await Http.GetAsync($"https://api.github.com/repos/{Releases}/releases?per_page=100&page={page}", ct);
                 response.EnsureSuccessStatusCode();
                 using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
                 bool older = false, any = false;
@@ -289,7 +292,7 @@ public static class UpdateService
             // only GitHub's own download links for this repository
             if (!Uri.TryCreate(update.AssetUrl, UriKind.Absolute, out var url) || url.Scheme != Uri.UriSchemeHttps ||
                 !url.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) ||
-                !url.AbsolutePath.StartsWith($"/{Owner}/{Repo}/releases/download/", StringComparison.OrdinalIgnoreCase))
+                !url.AbsolutePath.StartsWith($"/{Releases}/releases/download/", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Unexpected download address: " + update.AssetUrl);
             foreach (var old in Directory.EnumerateFiles(UpdatesFolder, "*.exe")) { try { File.Delete(old); } catch { } }
 

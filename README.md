@@ -320,10 +320,10 @@ wrapper and pick the tool instead.)
 ## Products
 
 Apps of their own made from the same program with only some modules, each with its own name, icon, installer,
-settings, version and releases, and no mention of Daisy's App: **SimEffects Analysis** (SimEffects and Video, since
-2026-11-19, from 0.2.0). Each is a folder in `products/`; how they're built and released (tags of their own, such as
-`sea-v0.2.0`, never the latest release, so Daisy's App's updates never see them) is in
-[products/README.md](products/README.md). A Daisy's App release never rebuilds one.
+settings, layout, version and releases, and no mention of Daisy's App: **SimEffects Analysis** (SimEffects and Video,
+since 2026-11-19; its own repository, [rosscarlson/SimEffectsAnalysis](https://github.com/rosscarlson/SimEffectsAnalysis),
+since 0.2.2). Each product's repository holds only its `product.json`, icon and notes; the code, and the hooks that lay
+a product out, are here: [products/README.md](products/README.md). A Daisy's App release never rebuilds one.
 
 ---
 

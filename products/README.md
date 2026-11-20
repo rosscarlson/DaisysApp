@@ -1,31 +1,38 @@
 # Products
 
 Apps of their own made from Daisy's App's program with only some modules: the same `DaisysApp.exe` under another
-name (as the wrapper is), its modules installed beside it, with its own title, icon, installer, settings, logs and
-releases. A folder each:
+name (as the wrapper is), its modules installed beside it, with its own title, icon, installer, settings, logs,
+layout and releases. Each lives in **its own repository**, which holds no module code, only what makes it that app
+(`product.json`, its icon, CHANGELOG, the Daisy's App commit it's built from, its release workflow):
 
-| File | |
-|---|---|
-| `product.json` | `Name` (the program's and installer's name), `Title` (what people see), `Version` (its own, apart from Daisy's App's), `TagPrefix` (its releases' tags), `Guid` (its installer's AppId: never change it), `Modules` (the folders under `src/Modules` it carries); since 0.2.1 `Tabs` (its tabs, each a group's sub-tab, `Group/Tool`, before Settings), `Hidden` (sub-tabs made but not shown, for a tab that needs them) and `Game` (its one game) |
-| `icon.png`, `icon.ico` | its icon: the program's, the installer's and the tray's (`icon.ico` is made from `icon.png`, sizes 16–256) |
-| `CHANGELOG.md` | its releases' notes, newest first |
-
-**At run time** the program finds `app.json` beside it (Title, TagPrefix, Tabs, Hidden, Game; written by the build)
-and `app.ico`: Core's `AppPaths.Product`. With them it's the product: its title wherever the app's name shows (Core's
-`Loc` puts it in place of "Daisy's App" in every text), its icon in the tray, its tabs (each sub-tab taken out of its
-group by `AppletGroup.TakeView`; a group's Play / Stop at the top right), only the sub-tabs it makes (`AppletGroup.Add`;
-hidden ones have no settings, setup or tray items), one SimEffects profile for its game (`SimProfiles.OnlyGame`), no
-setup's tool picker, and in Settings → General no Save / Load, Modules, Daisy's Server, Audio or Storage; and its updater
-(`UpdateService`) reads only releases tagged with its prefix. Video's virtual webcam isn't shipped in one (Windows
-knows it as Daisy's App's).
-
-**Build:** `.\build.ps1 -Product SimEffectsAnalysis` → `artifacts\SimEffectsAnalysis-Setup-<version>.exe` (self-contained).
-
-**Release** (only when asked for that product): raise `Version` in its `product.json`, add its section to its
-`CHANGELOG.md`, commit, then tag `<TagPrefix><Version>` and push it (`git tag sea-v0.2.1; git push origin sea-v0.2.1`).
-`.github/workflows/release-product.yml` builds it and publishes a release that is **never marked latest**, so Daisy's
-App's updater (which reads the latest release) never sees it, and Daisy's App's own tags (`v*`) never build a product.
-
-| Product | Modules | Tags |
+| Product | Repository (local) | Modules |
 |---|---|---|
-| SimEffects Analysis (`SimEffectsAnalysis/`) | SimEffects (Analysis, Overlays), Video (Recording); Forza Horizon | `sea-v0.2.0`… |
+| SimEffects Analysis | [rosscarlson/SimEffectsAnalysis](https://github.com/rosscarlson/SimEffectsAnalysis) (`D:\OneDrive\Code\SimEffects Analysis`) | SimEffects (Analysis, Overlays), Video (Recording); Forza Horizon |
+
+Its 0.2.0 and 0.2.1 were released from here (`products/SimEffectsAnalysis`, tags `sea-v0.2.0`, `sea-v0.2.1`, never
+the latest release); from 0.2.2 its releases are in its own repository.
+
+**Build:** `.\build.ps1 -Product <its folder>` → `artifacts\<Name>-Setup-<version>.exe` (self-contained; only that). A
+name instead of a path still means `products\<Name>`. A Daisy's App release never rebuilds a product.
+
+## The hooks
+
+The build writes `product.json`'s keys into `app.json` beside the program, with `app.ico`; Core's `AppPaths.Product`
+reads it at start. With it the program is the product. All of these are off in Daisy's App:
+
+| Key | What it does | Read in |
+|---|---|---|
+| `Title` | the name wherever the app's shows (Core's `Loc` puts it in place of "Daisy's App" in every text) | `AppPaths.DisplayName`, `Loc.Named` |
+| `TagPrefix`, `Repo` | its updater reads `Repo`'s releases (Daisy's App's if none) tagged `TagPrefix<version>` | `UpdateService` (`Releases`, `TagVersion`) |
+| `Tabs` | its tabs, each a group's sub-tab (`Module/SubTab`) taken out of it, in order before Settings; the group's header (SimEffects' Play / Stop) goes left of Update | `MainWindow.AddProductTabs`, `AppletGroup.TakeView`/`TakeHeader` |
+| `Hidden` | sub-tabs made but not shown (one a tab needs: Video's Overlay for Recording): no settings page, setup page or tray items. Any sub-tab in neither list isn't made | `AppletGroup.Add`, `ProductInfo.Makes`/`Shows` |
+| `Game` | its one game: only that SimEffects profile, always in use, no Profile drop-down | `SimProfiles.OnlyGame` |
+| `Hide` | parts of a module left out, by name: `SimEffects/Analysis/KnownTracks`, `SimEffects/Analysis/CurrentLocation` | `ProductInfo.Hides` (AnalysisView, SessionsView, AnalysisApplet) |
+
+Always, in a product: its icon in the tray (`TrayIcon`), no setup tool picker (`SetupWindow`), Settings → General
+without Save / Load, Modules, Daisy's Server, Audio or Storage (`SettingsPage`), no virtual webcam (Windows knows it as
+Daisy's App's), Video's overlay and webcam shortcuts left out when those aren't there (`GamingService`).
+
+**A new hook:** a switch that's off unless the product asks (`AppPaths.Product?.Hides("Module/Part") == true`, or a new
+key in `ProductInfo` and `build.ps1`'s list of keys copied into app.json), added to the table above; then the
+product's repository moves its `daisysapp.ref` to the commit.

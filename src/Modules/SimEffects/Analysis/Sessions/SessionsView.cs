@@ -445,7 +445,10 @@ internal sealed class SessionsView
         manage.Click += (_, _) => SessionManager.Show(Host, this);
         // (since 4.17.8 no Session box: its picker and icons at the top right of Compare's card, Share last; its scores
         // and time split between Compare's rows; since 4.17.16 no Export, 4.7.0–4.17.15 between Location and the Manager)
-        headButtons = new UIElement[] { sessions, delete, place, manage };
+        // (a product without it, SimEffects Analysis: no Current Location)
+        headButtons = AppPaths.Product?.Hides("SimEffects/Analysis/CurrentLocation") == true
+            ? new UIElement[] { sessions, delete, manage }
+            : new UIElement[] { sessions, delete, place, manage };
 
         // (since 4.6.2) Compare and the lines both runs took; since 4.7.0 the Trace too (Session 1 alone, Session 2 None)
         compareChart.Hovered += x =>

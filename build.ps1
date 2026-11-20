@@ -7,8 +7,8 @@
       -> <WrapperName>-Setup-<version>.exe
     - Each module modules.json offers the wrapper, zipped: Module-<name>-<version>.zip, and the list of them with
       what each is, its size and SHA-256: Modules-<version>.json (written by the app itself, from the modules' DLLs).
-    - A product (products\<Name>, e.g. SimEffects Analysis): the same program as an app of its own, with only its
-      modules, its own name, title, icon and version (products\<Name>\product.json), self-contained.
+    - A product (its own repository's folder, e.g. SimEffects Analysis; products\README.md): the same program as an
+      app of its own, with only its modules, its own name, title, icon, layout and version (its product.json), self-contained.
       -> <Name>-Setup-<its version>.exe (only that: -Product builds nothing else)
   By default only Daisy's App is built (the user's wish, 2026-10-29: releases carry only its installer); -Full
   builds the wrapper and the module zips too.
@@ -16,6 +16,7 @@
           .\build.ps1 -Version 0.2.0  # override (the release workflow passes the tag)
           .\build.ps1 -Full           # the wrapper, Module-*.zip and Modules-*.json as well
           .\build.ps1 -Product SimEffectsAnalysis   # a product (version from its product.json)
+          .\build.ps1 -Product 'D:\...\SimEffects Analysis'   # a product kept in its own repository (its folder)
 #>
 param([string]$Version, [switch]$Full, [string]$Product)
 $ErrorActionPreference = 'Stop'
@@ -29,11 +30,12 @@ $WrapperTitle = 'Wrapper'
 $WrapperGuid = '00491034-12CC-4C0A-9521-36F4FFE15972'
 
 $proj = Join-Path $root 'src\DaisysApp\DaisysApp.csproj'
-# a product: its name, title, version, icon, installer AppId and modules (products\<Name>\product.json)
+# a product: its name, title, version, icon, installer AppId, modules and layout (its folder's product.json)
 $prod = $null
 if ($Product) {
     if ($Full) { throw '-Full and -Product: one or the other' }
-    $prodDir = Join-Path $root "products\$Product"
+    # (since SimEffects Analysis 0.2.2 a product can live in its own repository: its folder's path)
+    $prodDir = if (Test-Path (Join-Path $Product 'product.json')) { (Resolve-Path $Product).Path } else { Join-Path $root "products\$Product" }
     $prod = Get-Content (Join-Path $prodDir 'product.json') -Raw | ConvertFrom-Json
     $prodIcon = Join-Path $prodDir 'icon.ico'
     if (-not $Version) { $Version = $prod.Version }
@@ -71,7 +73,7 @@ if ($prod) {
     Move-Item (Join-Path $publish 'DaisysApp.exe') (Join-Path $publish "$($prod.Name).exe")
     # (since 0.2.1: its tabs, the sub-tabs made only for them, and its one game)
     $app = [ordered]@{ Title = $prod.Title; TagPrefix = $prod.TagPrefix }
-    foreach ($k in 'Tabs', 'Hidden', 'Game') { if ($prod.$k) { $app[$k] = $prod.$k } }
+    foreach ($k in 'Tabs', 'Hidden', 'Game', 'Hide', 'Repo') { if ($prod.$k) { $app[$k] = $prod.$k } }
     [IO.File]::WriteAllText((Join-Path $publish 'app.json'), ($app | ConvertTo-Json))
     Copy-Item $prodIcon (Join-Path $publish 'app.ico')
 }
