@@ -549,9 +549,12 @@ public static class Ui
     {
         var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? Application.Current?.MainWindow;
         var hwnd = owner == null ? IntPtr.Zero : new System.Windows.Interop.WindowInteropHelper(owner).Handle;
+        var took = System.Diagnostics.Stopwatch.StartNew();
+        string? holder = null;
         for (int i = 0; i < 10; i++)
         {
-            if (OpenClipboard(hwnd))
+            if (!OpenClipboard(hwnd)) holder ??= ClipboardHolder();
+            else
             {
                 try
                 {
@@ -563,22 +566,43 @@ public static class Ui
                     System.Runtime.InteropServices.Marshal.WriteInt16(at, text.Length * 2, 0);
                     GlobalUnlock(mem);
                     // (Windows makes CF_TEXT and CF_OEMTEXT from it for programs that ask for those)
-                    if (SetClipboardData(13 /* CF_UNICODETEXT */, mem) != IntPtr.Zero) return true;
+                    if (SetClipboardData(13 /* CF_UNICODETEXT */, mem) != IntPtr.Zero)
+                    {
+                        if (holder != null) Log.App.Info($"Copied after {took.ElapsedMilliseconds} ms: {holder} had the clipboard");
+                        return true;
+                    }
                     GlobalFree(mem);
-                    break;
+                    Log.App.Warn($"Couldn't copy: Windows refused the text (error {System.Runtime.InteropServices.Marshal.GetLastWin32Error()})");
+                    return false;
                 }
                 finally { CloseClipboard(); }
             }
             Thread.Sleep(30);
         }
-        Log.App.Warn("Couldn't copy: another program has the clipboard");
+        Log.App.Warn($"Couldn't copy in {took.ElapsedMilliseconds} ms: {holder ?? "another program"} has the clipboard");
         return false;
+    }
+
+    /// The program that has the clipboard open, for the log: "name (pid)", or null.
+    private static string? ClipboardHolder()
+    {
+        try
+        {
+            var w = GetOpenClipboardWindow();
+            if (w == IntPtr.Zero) return null;
+            GetWindowThreadProcessId(w, out var pid);
+            using var p = System.Diagnostics.Process.GetProcessById((int)pid);
+            return $"{p.ProcessName} ({pid})";
+        }
+        catch { return null; }
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)] private static extern bool OpenClipboard(IntPtr owner);
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool CloseClipboard();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr GetOpenClipboardWindow();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool EmptyClipboard();
-    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr SetClipboardData(uint format, IntPtr mem);
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetClipboardData(uint format, IntPtr mem);
     [System.Runtime.InteropServices.DllImport("kernel32.dll")] private static extern IntPtr GlobalAlloc(uint flags, UIntPtr bytes);
     [System.Runtime.InteropServices.DllImport("kernel32.dll")] private static extern IntPtr GlobalLock(IntPtr mem);
     [System.Runtime.InteropServices.DllImport("kernel32.dll")] private static extern bool GlobalUnlock(IntPtr mem);

@@ -6,6 +6,14 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **4.18.11 (asked 2026-11-19: Notepad froze ~5-20 s on every Copy/Cut on the Plex PC):** WPF's
+  `Clipboard.SetDataObject(text, true)` = OleSetClipboard (delayed rendering) + OleFlushClipboard. Chrome Remote
+  Desktop's host (`remoting_desktop`) opens the clipboard on every change and holds it ~1 s waiting on our STA thread
+  to render, so the flush failed after WPF's own 1 s of retries, and Ui.Copy's 10 tries made it 10-20 s (hang dumps:
+  main thread in `CriticalSetDataObject`). Repro outside the app: WPF 1000 ms CLIPBRD_E_CANT_OPEN every time, Win32
+  0-3 ms. Ui.Copy now does OpenClipboard/SetClipboardData(CF_UNICODETEXT) itself (10 × 30 ms at most) and logs the
+  holder (`GetOpenClipboardWindow`) when it had to wait or failed. Notepad's picture copy is still WPF's `SetImage`
+  (one try, ≤1 s). Not explained yet: the typing lag in Notepad and AI's input box on that PC (UI thread idle-fast).
 - **4.17.28 (asked 2026-11-17 after 4.17.26's flood killed Plex: audit everything that retries for ever, add limits
   with a log line or a popup by severity):** Core 0.65 `Shared/Network/RetryGuard` (waits doubled to a cap; Warn after
   N in a row, a notification if `notify`; `budget` tries in 10 min → Paused until Reset). ServerLink: one guard for
