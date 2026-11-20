@@ -34,7 +34,8 @@ reads it at start. With it the program is the product. All of these are off in D
 Always, in a product: its icon in the tray (`TrayIcon`; no tray items of the sub-tabs only in `Hidden`), no FPS overlay
 when Video's Overlay isn't a tab (`GamingSettings.Load`), no setup tool picker (`SetupWindow`), Settings → General
 without Save / Load, Modules, Daisy's Server, Audio or Storage (`SettingsPage`), no virtual webcam (Windows knows it as
-Daisy's App's), every overlay unticked at first (Overlays, once: `InputOverlayApplet.Start`), Video's overlay and webcam shortcuts left out when those aren't there (`GamingService`).
+Daisy's App's), every overlay unticked at first (Overlays, once: `InputOverlayApplet.Start`), YouTube's sign-in with the app's
+OAuth client only, no client boxes, when the build has one (`YouTube.OwnClientOffered`), Video's overlay and webcam shortcuts left out when those aren't there (`GamingService`).
 
 **A new hook:** a switch that's off unless the product asks (`AppPaths.Product?.Hides("Module/Part") == true`, or a new
 key in `ProductInfo` and `build.ps1`'s list of keys copied into app.json), added to the table above; then the

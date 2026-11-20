@@ -90,9 +90,13 @@ public static class YouTube
 
     private static string Clean(string s) => s.Trim().Trim('﻿', '​').Trim();
 
-    /// <summary>The client signing in: the user's own if they've given one, else the app's.</summary>
-    private static string ClientId => Account.ClientId.Length > 0 ? Account.ClientId : builtIn.Value.Id;
-    private static string Secret => Account.ClientId.Length > 0 ? Account.Secret : builtIn.Value.Secret;
+    /// <summary>(since 4.18.10) A product with the app's client offers no client of its own: its users just sign in.</summary>
+    public static bool OwnClientOffered => !(AppPaths.Product != null && AppClient);
+
+    /// <summary>The client signing in: the user's own if they've given one (and may), else the app's.</summary>
+    private static bool Own => Account.ClientId.Length > 0 && OwnClientOffered;
+    private static string ClientId => Own ? Account.ClientId : builtIn.Value.Id;
+    private static string Secret => Own ? Account.Secret : builtIn.Value.Secret;
 
     /// <summary>Raised (on the thread that changed it) when it's signed in or out, or the client changes.</summary>
     public static event Action? Changed;
