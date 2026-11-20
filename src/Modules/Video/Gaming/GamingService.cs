@@ -648,7 +648,8 @@ internal sealed class GamingService : IDisposable
             hiddenCameras = new HashSet<string>(hiddenCameras.Where(k => Settings.Cameras.Any(c => ControllerButtons.Same(c.HideHotkey, k))), StringComparer.OrdinalIgnoreCase);
         HotkeySpec Spec(string id, string name, Func<string?> get, Action<string?> set, string? standard = null, string? target = null) => new()
         {
-            Id = HotkeyPrefix + id, Module = T("Video"), Name = name, Target = target, Default = standard,
+            // (since SimEffects Analysis 0.3.3) a product for one game starts with none
+            Id = HotkeyPrefix + id, Module = T("Video"), Name = name, Target = target, Default = AppPaths.Product?.Game != null ? null : standard,
             Get = get, Set = v => { set(v); Settings.Save(); Changed?.Invoke(); },
         };
         var items = new List<(HotkeySpec, Action)>
@@ -978,7 +979,14 @@ internal sealed class GamingService : IDisposable
         string title = game?.Name ?? "";
         if (source == CaptureSource.App)
         {
-            if (s.AppExe.Length > 0)
+            // (since SimEffects Analysis 0.3.3) a product's game: any of its programs
+            if (s.AppExe == GamingSettings.ProductGame && ScreenRecordings.Game is { } productGame)
+            {
+                window = Native.MainWindowOf(productGame.Programs());
+                title = productGame.Name;
+                if (window == IntPtr.Zero) { problem = F("{0} isn't running.", title); return null; }
+            }
+            else if (s.AppExe.Length > 0)
             {
                 window = Native.MainWindowOf(s.AppExe);
                 title = s.FriendlyName(s.AppExe);
@@ -998,6 +1006,19 @@ internal sealed class GamingService : IDisposable
             if (s.RegionWidth < 16 || s.RegionHeight < 16) { problem = T("Select the region to record first."); return null; }
             if (title.Length == 0) title = T("Region");
         }
+        // (since SimEffects Analysis 0.3.3) only the game's sound: the recorded window's program, or the game in front
+        uint soundProcess = 0;
+        bool sound = s.RecordSystemAudio;
+        if (sound && s.GameSoundOnly)
+        {
+            soundProcess = window != IntPtr.Zero ? Native.ProcessOf(window) : game?.Pid ?? 0;
+            if (soundProcess == 0 || soundProcess == ownPid)
+            {
+                log.Info("Game's sound only, and no game: recording without sound");
+                sound = false;
+                soundProcess = 0;
+            }
+        }
         return new RecordingRequest
         {
             Source = source,
@@ -1006,7 +1027,8 @@ internal sealed class GamingService : IDisposable
             Window = window,
             Title = title,
             Profile = s.ActiveProfile.Clone(),
-            SystemAudio = s.RecordSystemAudio,
+            SystemAudio = sound,
+            SoundProcess = soundProcess,
             Microphone = s.RecordMicrophone,
             Cursor = s.RecordCursor,
             Hdr = s.Hdr,

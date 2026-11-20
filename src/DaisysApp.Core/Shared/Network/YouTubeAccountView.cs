@@ -85,5 +85,9 @@ public sealed class YouTubeAccountView : StackPanel
         AutomationProperties.SetName(sign, (string)sign.Content);
         id.IsEnabled = secret.IsEnabled = !busy && !YouTube.SignedIn;
         status.Text = note ?? (YouTube.SignedIn ? F("Signed in: {0}", YouTube.Account.Channel) : T("Not signed in"));
+        // (since SimEffects Analysis 0.3.3) signed in: green and bold
+        bool good = note == null && YouTube.SignedIn;
+        status.SetResourceReference(TextBlock.ForegroundProperty, good ? "SuccessBrush" : "TextSecondaryBrush");
+        status.FontWeight = good ? FontWeights.Bold : FontWeights.Normal;
     }
 }

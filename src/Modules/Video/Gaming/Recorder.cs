@@ -24,6 +24,8 @@ internal sealed record RecordingRequest
     public string Title { get; init; } = "";
     public required RecordingProfile Profile { get; init; }
     public bool SystemAudio { get; init; }
+    /// <summary>(since SimEffects Analysis 0.3.3) Not 0: <see cref="SystemAudio"/> is only this program's sound (the game's).</summary>
+    public uint SoundProcess { get; init; }
     public bool Microphone { get; init; }
     public bool Cursor { get; init; }
     public HdrRecording Hdr { get; init; }
@@ -184,7 +186,7 @@ internal sealed class Recorder : IDisposable
                     Encoders.Label(codec), outW, outH, fps));
 
             int systemStream = -1, micStream = -1;
-            if (request.SystemAudio) s.SystemAudio = OpenAudio(s, false, profile.AudioKbps, ref systemStream);
+            if (request.SystemAudio) s.SystemAudio = OpenAudio(s, false, profile.AudioKbps, ref systemStream, request.SoundProcess);
             if (request.Microphone) s.Microphone = OpenAudio(s, true, profile.AudioKbps, ref micStream);
 
             s.Allocator = new IMFVideoSampleAllocatorEx(MediaFactory.MFCreateVideoSampleAllocatorEx(typeof(IMFVideoSampleAllocatorEx).GUID));
@@ -337,13 +339,13 @@ internal sealed class Recorder : IDisposable
         return true;
     }
 
-    private AudioTrack? OpenAudio(Session s, bool microphone, int kbps, ref int stream)
+    private AudioTrack? OpenAudio(Session s, bool microphone, int kbps, ref int stream, uint process = 0)
     {
         AudioTrack? track = null;
         try
         {
             int index = -1, rate = 48000;
-            track = new AudioTrack(microphone, (pcm, bytes, time) => WriteAudio(s, index, rate, pcm, bytes, time));
+            track = new AudioTrack(microphone, (pcm, bytes, time) => WriteAudio(s, index, rate, pcm, bytes, time), process);
             rate = track.SampleRate;
             using var output = MediaFactory.MFCreateMediaType();
             output.Set(MediaTypeAttributeKeys.MajorType, MediaTypeGuids.Audio);

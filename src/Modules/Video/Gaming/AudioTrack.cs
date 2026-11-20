@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.Video.Gaming;
 
 /// <summary>
 /// One audio track of a recording: what the PC is playing (WASAPI loopback of the default playback device) or the
-/// default microphone, as 16-bit stereo at 48 or 44.1 kHz for the AAC encoder. Keeps in step with the video's clock:
+/// default microphone, or (since SimEffects Analysis 0.3.3) only what one program plays (<see cref="ProcessAudio"/>), as 16-bit stereo at 48 or 44.1 kHz for the AAC encoder. Keeps in step with the video's clock:
 /// silence is filled in when Windows sends nothing (nothing playing), and a little is dropped if the device's clock
 /// runs ahead.
 /// </summary>
@@ -29,7 +29,8 @@ internal sealed class AudioTrack : IDisposable
     public int SampleRate { get; }
     public string Name { get; }
 
-    public AudioTrack(bool microphone, Action<byte[], int, long> write)
+    /// <param name="processId">Not 0: only that program's sound (and the programs it started).</param>
+    public AudioTrack(bool microphone, Action<byte[], int, long> write, uint processId = 0)
     {
         this.write = write;
         if (microphone)
@@ -39,6 +40,11 @@ internal sealed class AudioTrack : IDisposable
             var mic = new WasapiCapture(DaisysApp.Shared.Audio.AppAudio.Input is { } id ? devices.GetDevice(id) : devices.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications), true, 20);
             Name = mic.WaveFormat.ToString();
             capture = mic;
+        }
+        else if (processId != 0)
+        {
+            capture = new ProcessAudio(processId);
+            Name = $"{capture.WaveFormat}, process {processId} only";
         }
         else
         {

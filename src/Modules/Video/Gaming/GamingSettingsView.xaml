@@ -9,12 +9,14 @@
             <Setter Property="Margin" Value="0,0,12,0"/>
             <Setter Property="MinWidth" Value="150"/>
         </Style>
+        <!-- (the Recording card's: right up against its box, the boxes lined up) -->
+        <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource Label}">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Margin" Value="0,0,12,10"/>
+        </Style>
         <Style x:Key="Row" TargetType="StackPanel">
             <Setter Property="Orientation" Value="Horizontal"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
-        </Style>
-        <!-- (the Recording card's: its controls go under the label when the card is narrow) -->
-        <Style x:Key="WrapRow" TargetType="WrapPanel">
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
         <Style x:Key="Swatch" TargetType="Button">
@@ -142,92 +144,120 @@
             <Border x:Name="RecordingCard" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="{l:Tr 'Recording'}" Style="{StaticResource CardHeader}"/>
-                    <!-- the box narrower when the card is (on SimEffects Analysis' one Settings page) -->
-                    <Grid Margin="0,0,0,10">
+                    <!-- (since SimEffects Analysis 0.3.3) a label column, right up against the boxes, and the boxes lined up
+                         (up to 300 wide, narrower with the card: on SimEffects Analysis' one Settings page) -->
+                    <Grid x:Name="RecordingRows" Grid.IsSharedSizeScope="True">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="100*" MaxWidth="360"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Labels"/>
+                            <ColumnDefinition Width="*" MaxWidth="300"/>
+                            <ColumnDefinition Width="0.01*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{l:Tr 'Save to'}" Style="{StaticResource Label}"/>
-                        <TextBox x:Name="FolderBox" Grid.Column="1" IsReadOnly="True" VerticalContentAlignment="Center"/>
-                        <Button Grid.Column="2" Content="{l:Tr 'Change…'}" Margin="8,0,0,0" Click="Folder_Click"/>
-                    </Grid>
-                    <CheckBox x:Name="SystemAudioBox" Content="{l:Tr 'Record the PC\'s sound'}" Margin="0,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
-                    <CheckBox x:Name="MicBox" Content="{l:Tr 'Record the microphone too (as a second audio track)'}" Margin="0,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
-                    <CheckBox x:Name="CursorBox" Content="{l:Tr 'Record the mouse pointer'}" Margin="0,0,0,10" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'HDR monitors'}" Style="{StaticResource Label}"/>
-                        <ComboBox x:Name="HdrBox" Width="360" SelectionChanged="Recording_Changed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="{l:Tr 'Save to'}" Style="{StaticResource FieldLabel}"/>
+                        <DockPanel Grid.Column="1" Margin="0,0,0,10">
+                            <Button DockPanel.Dock="Right" Content="{l:Tr 'Change…'}" Margin="8,0,0,0" Click="Folder_Click"/>
+                            <TextBox x:Name="FolderBox" IsReadOnly="True" VerticalContentAlignment="Center"/>
+                        </DockPanel>
+                        <StackPanel Grid.Row="1" Grid.ColumnSpan="3">
+                            <CheckBox x:Name="SystemAudioBox" Content="{l:Tr 'Record the PC\'s sound'}" Margin="0,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
+                            <CheckBox x:Name="GameSoundBox" Content="{l:Tr 'Only the game\'s sound'}" Margin="24,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed"
+                                      ToolTip="{l:Tr 'No voice chat, videos or other programs'}"/>
+                            <CheckBox x:Name="MicBox" Margin="0,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed">
+                                <TextBlock Text="{l:Tr 'Record the microphone too (as a second audio track)'}" TextWrapping="Wrap"/>
+                            </CheckBox>
+                            <CheckBox x:Name="CursorBox" Content="{l:Tr 'Record the mouse pointer'}" Margin="0,0,0,10" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="2" Text="{l:Tr 'HDR monitors'}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="HdrBox" Margin="0,0,0,10" SelectionChanged="Recording_Changed">
                             <ComboBoxItem Content="{l:Tr 'Record in SDR (plays right everywhere)'}"/>
                             <ComboBoxItem Content="{l:Tr 'Record in HDR10 (HEVC or AV1, 10-bit)'}"/>
                         </ComboBox>
-                    </WrapPanel>
-                    <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,0,0,14"
-                               Text="{l:Tr 'The picture goes straight from the screen to the graphics card\'s video encoder (NVENC on NVIDIA cards), like the NVIDIA app\'s recorder, so games keep their frame rate. If the encoder can\'t take a setting, recording stops rather than fall back to the processor.'}"/>
+                        <TextBlock Grid.Row="3" Grid.ColumnSpan="3" x:Name="EncoderNote" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,0,0,14"
+                                   Text="{l:Tr 'The picture goes straight from the screen to the graphics card\'s video encoder (NVENC on NVIDIA cards), like the NVIDIA app\'s recorder, so games keep their frame rate. If the encoder can\'t take a setting, recording stops rather than fall back to the processor.'}"/>
 
-                    <TextBlock Text="{l:Tr 'Quality profiles'}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                    <WrapPanel Margin="0,0,0,4">
-                        <TextBlock Text="{l:Tr 'Profile'}" Style="{StaticResource Label}" Margin="0,0,12,6"/>
-                        <ComboBox x:Name="ProfileBox" Width="180" Margin="0,0,8,6" SelectionChanged="ProfileBox_Changed"/>
-                        <Button Content="{l:Tr 'New'}" Margin="0,0,8,6" Click="NewProfile_Click"/>
-                        <Button x:Name="DeleteProfileButton" Content="{l:Tr 'Delete'}" Margin="0,0,0,6" Click="DeleteProfile_Click"/>
-                    </WrapPanel>
-                    <Expander x:Name="ProfileEditor" Header="{l:Tr 'Edit'}" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
-                    <StackPanel Margin="0,8,0,0">
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'Name'}" Style="{StaticResource Label}"/>
-                        <TextBox x:Name="NameBox" Width="180" VerticalContentAlignment="Center" LostFocus="Profile_Edited"/>
-                    </WrapPanel>
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'Codec'}" Style="{StaticResource Label}"/>
-                        <ComboBox x:Name="CodecBox" Width="260" SelectionChanged="Profile_Edited"/>
-                    </WrapPanel>
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'Frame rate'}" Style="{StaticResource Label}"/>
-                        <ComboBox x:Name="FpsBox" Width="120" SelectionChanged="Profile_Edited"/>
-                    </WrapPanel>
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'Resolution'}" Style="{StaticResource Label}"/>
-                        <ComboBox x:Name="HeightBox" Width="260" SelectionChanged="Profile_Edited"/>
-                    </WrapPanel>
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'Bit rate'}" Style="{StaticResource Label}"/>
-                        <ComboBox x:Name="RateControlBox" Width="200" SelectionChanged="Profile_Edited">
+                        <TextBlock Grid.Row="4" Grid.ColumnSpan="3" Text="{l:Tr 'Quality profiles'}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="5" Text="{l:Tr 'Profile'}" Style="{StaticResource FieldLabel}" Margin="0,0,12,6"/>
+                        <ComboBox Grid.Row="5" Grid.Column="1" x:Name="ProfileBox" Margin="0,0,0,6" SelectionChanged="ProfileBox_Changed"/>
+                        <WrapPanel Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,4">
+                            <Button Content="{l:Tr 'New'}" Margin="0,0,8,6" Click="NewProfile_Click"/>
+                            <Button x:Name="DeleteProfileButton" Content="{l:Tr 'Delete'}" Margin="0,0,0,6" Click="DeleteProfile_Click"/>
+                        </WrapPanel>
+                        <!-- (since 4.18.12) the profile's settings folded away; changes wait for Save -->
+                        <Expander x:Name="ProfileEditor" Grid.Row="7" Grid.ColumnSpan="3" Header="{l:Tr 'Edit'}" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
+                        <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="Labels"/>
+                            <ColumnDefinition Width="*" MaxWidth="300"/>
+                            <ColumnDefinition Width="0.01*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="{l:Tr 'Name'}" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="NameBox" Margin="0,0,0,10" VerticalContentAlignment="Center" LostFocus="Profile_Edited"/>
+                        <TextBlock Grid.Row="1" Text="{l:Tr 'Codec'}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="CodecBox" Margin="0,0,0,10" SelectionChanged="Profile_Edited"/>
+                        <TextBlock Grid.Row="2" Text="{l:Tr 'Frame rate'}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="FpsBox" Margin="0,0,0,10" SelectionChanged="Profile_Edited"/>
+                        <TextBlock Grid.Row="3" Text="{l:Tr 'Resolution'}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox Grid.Row="3" Grid.Column="1" x:Name="HeightBox" Margin="0,0,0,10" SelectionChanged="Profile_Edited"/>
+                        <TextBlock Grid.Row="4" Text="{l:Tr 'Bit rate'}" Style="{StaticResource FieldLabel}" Margin="0,0,12,6"/>
+                        <ComboBox Grid.Row="4" Grid.Column="1" x:Name="RateControlBox" Margin="0,0,0,6" SelectionChanged="Profile_Edited">
                             <ComboBoxItem Content="{l:Tr 'Variable (VBR)'}"/>
                             <ComboBoxItem Content="{l:Tr 'Constant (CBR)'}"/>
                         </ComboBox>
-                        <TextBlock Text="{l:Tr 'average'}" VerticalAlignment="Center" Margin="12,0,6,0"/>
-                        <TextBox x:Name="BitrateBox" Width="60" VerticalContentAlignment="Center" LostFocus="Profile_Edited"/>
-                        <TextBlock x:Name="MaxLabel" Text="{l:Tr 'max'}" VerticalAlignment="Center" Margin="12,0,6,0"/>
-                        <TextBox x:Name="MaxBitrateBox" Width="60" VerticalContentAlignment="Center" LostFocus="Profile_Edited"/>
-                        <TextBlock Text="Mbit/s" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                    </WrapPanel>
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'Encoder preset'}" Style="{StaticResource Label}"/>
-                        <ComboBox x:Name="QualityBox" Width="200" SelectionChanged="Profile_Edited">
+                        <WrapPanel Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,10">
+                            <TextBox x:Name="BitrateBox" Width="52" VerticalContentAlignment="Center" LostFocus="Profile_Edited" ToolTip="{l:Tr 'Average'}"/>
+                            <TextBlock x:Name="MaxLabel" Text="–" VerticalAlignment="Center" Margin="6,0,6,0"/>
+                            <TextBox x:Name="MaxBitrateBox" Width="52" VerticalContentAlignment="Center" LostFocus="Profile_Edited" ToolTip="{l:Tr 'Most'}"/>
+                            <TextBlock Text="Mbit/s" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        </WrapPanel>
+                        <TextBlock Grid.Row="6" Text="{l:Tr 'Encoder preset'}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox Grid.Row="6" Grid.Column="1" x:Name="QualityBox" Margin="0,0,0,10" SelectionChanged="Profile_Edited">
                             <ComboBoxItem Content="{l:Tr 'Fastest'}" Tag="0"/>
                             <ComboBoxItem Content="{l:Tr 'Balanced'}" Tag="50"/>
                             <ComboBoxItem Content="{l:Tr 'High quality'}" Tag="70"/>
                             <ComboBoxItem Content="{l:Tr 'Best quality'}" Tag="100"/>
                         </ComboBox>
-                    </WrapPanel>
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'Keyframe every'}" Style="{StaticResource Label}"/>
-                        <ComboBox x:Name="KeyframeBox" Width="120" SelectionChanged="Profile_Edited"/>
-                    </WrapPanel>
-                    <WrapPanel Style="{StaticResource WrapRow}">
-                        <TextBlock Text="{l:Tr 'Audio'}" Style="{StaticResource Label}"/>
-                        <ComboBox x:Name="AudioBox" Width="120" SelectionChanged="Profile_Edited"/>
-                    </WrapPanel>
-                    <TextBlock x:Name="ProfileNote" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button x:Name="SaveProfileButton" Content="{l:Tr 'Save'}" Style="{StaticResource AccentButton}" Margin="0,0,8,0" IsEnabled="False" Click="SaveProfile_Click"/>
-                        <Button x:Name="ResetProfilesButton" Content="{l:Tr 'Reset'}" ToolTip="{l:Tr 'High, Medium and Low as they came; your own profiles removed'}"/>
-                    </StackPanel>
-                    </StackPanel>
-                    </Expander>
+                        <TextBlock Grid.Row="7" Text="{l:Tr 'Keyframe every'}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox Grid.Row="7" Grid.Column="1" x:Name="KeyframeBox" Margin="0,0,0,10" SelectionChanged="Profile_Edited"/>
+                        <TextBlock Grid.Row="8" Text="{l:Tr 'Audio'}" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox Grid.Row="8" Grid.Column="1" x:Name="AudioBox" Margin="0,0,0,10" SelectionChanged="Profile_Edited"/>
+                        <TextBlock x:Name="ProfileNote" Grid.Row="9" Grid.ColumnSpan="3" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                        <StackPanel Grid.Row="10" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button x:Name="SaveProfileButton" Content="{l:Tr 'Save'}" Style="{StaticResource AccentButton}" Margin="0,0,8,0" IsEnabled="False" Click="SaveProfile_Click"/>
+                            <Button x:Name="ResetProfilesButton" Content="{l:Tr 'Reset'}" ToolTip="{l:Tr 'High, Medium and Low as they came; your own profiles removed'}"/>
+                        </StackPanel>
+                        </Grid>
+                        </Expander>
+                    </Grid>
                 </StackPanel>
             </Border>
             <!-- history -->

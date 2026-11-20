@@ -25,6 +25,14 @@ internal static class Native
         return (h, pid);
     }
 
+    /// <summary>The program a window is of (0: none).</summary>
+    public static uint ProcessOf(IntPtr window)
+    {
+        if (window == IntPtr.Zero) return 0;
+        GetWindowThreadProcessId(window, out uint pid);
+        return pid;
+    }
+
     private static readonly Dictionary<uint, (string Exe, string Path)> exeCache = new();
     private static readonly Dictionary<uint, long> unreadable = new();
 
@@ -106,13 +114,17 @@ internal static class Native
     }
 
     /// <summary>The program's biggest visible window.</summary>
-    public static IntPtr MainWindowOf(string exe)
+    public static IntPtr MainWindowOf(string exe) => MainWindowOf([exe]);
+
+    /// <summary>(since SimEffects Analysis 0.3.3) The biggest window of any of these programs.</summary>
+    public static IntPtr MainWindowOf(IReadOnlyCollection<string> exes)
     {
         IntPtr best = IntPtr.Zero;
         long bestArea = 0;
         foreach (var (h, pid, _) in TopLevelWindows())
         {
-            if (!string.Equals(ProcessExe(pid).Exe, exe, StringComparison.OrdinalIgnoreCase)) continue;
+            string exe = ProcessExe(pid).Exe;
+            if (exe.Length == 0 || !exes.Any(e => string.Equals(e, exe, StringComparison.OrdinalIgnoreCase))) continue;
             var b = WindowTools.GetBounds(h);
             long area = (long)b.Width * b.Height;
             if (area > bestArea) { bestArea = area; best = h; }

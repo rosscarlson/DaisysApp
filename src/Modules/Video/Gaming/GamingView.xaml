@@ -127,7 +127,7 @@
                     </Grid.RowDefinitions>
 
                     <!-- the PC's load: its graphs share whatever height the card has -->
-                    <Border Style="{StaticResource Square}" Grid.RowSpan="3">
+                    <Border x:Name="PerformanceCard" Style="{StaticResource Square}" Grid.RowSpan="3">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -174,10 +174,10 @@
                     </Border>
 
                     <!-- recording -->
-                    <Border Style="{StaticResource Square}" Grid.Column="2">
+                    <Border x:Name="RecordCard" Style="{StaticResource Square}" Grid.Column="2">
                         <StackPanel>
                             <TextBlock Text="{l:Tr 'Record'}" Style="{StaticResource CardHeader}"/>
-                            <WrapPanel Margin="0,0,0,10">
+                            <WrapPanel x:Name="SourcePanel" Margin="0,0,0,10">
                                 <RadioButton x:Name="SourceMonitor" GroupName="Source" Content="{l:Tr 'A monitor'}" Margin="0,0,18,4" Checked="Source_Changed"/>
                                 <RadioButton x:Name="SourceRegion" GroupName="Source" Content="{l:Tr 'A region'}" Margin="0,0,18,4" Checked="Source_Changed"/>
                                 <RadioButton x:Name="SourceApp" GroupName="Source" Content="{l:Tr 'A game or program'}" Margin="0,0,0,4" Checked="Source_Changed"/>
@@ -201,9 +201,9 @@
                             </DockPanel>
                             <TextBlock x:Name="ProfileText" Margin="0,0,0,10" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
                             <DockPanel Margin="0,0,0,4">
-                                <TextBlock Text="{l:Tr 'Shape'}" Style="{StaticResource Label}"/>
+                                <TextBlock Text="{l:Tr 'Aspect Ratio'}" Style="{StaticResource Label}"/>
                                 <ComboBox x:Name="OutputBox" SelectionChanged="Output_Changed"
-                                          ToolTip="{l:Tr 'The recording\'s shape: what\'s captured, or the middle of it in a set shape (the cameras\' layout shows it)'}"/>
+                                          ToolTip="{l:Tr 'What\'s captured, or the middle of it in this aspect ratio'}"/>
                             </DockPanel>
                             <TextBlock x:Name="OutputText" Margin="0,0,0,14" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
                             <WrapPanel>

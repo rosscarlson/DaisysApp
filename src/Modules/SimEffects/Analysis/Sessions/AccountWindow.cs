@@ -52,8 +52,9 @@ internal sealed class AccountPanel : StackPanel
     private readonly TextBox user = new();
     private readonly PasswordBox password = new();
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 14) };
-    private readonly Button signIn = new() { Content = T("Sign in"), Padding = new Thickness(16, 4, 16, 4) };
-    private readonly Button signOut = new() { Content = T("Sign out"), Padding = new Thickness(16, 4, 16, 4), Margin = new Thickness(8, 0, 0, 0) };
+    /// <summary>(since SimEffects Analysis 0.3.3) Sign in, or Sign out while signed in; Sign up only while not.</summary>
+    private readonly Button signIn = new() { Content = T("Sign In"), Padding = new Thickness(16, 4, 16, 4) };
+    private readonly Button signUp = new() { Content = T("Sign Up"), Padding = new Thickness(16, 4, 16, 4), Margin = new Thickness(8, 0, 0, 0) };
     private string? problem;
 
     private static ServerConnection Link => SessionServer.Leaderboard;
@@ -77,20 +78,17 @@ internal sealed class AccountPanel : StackPanel
         Row(rows, T("User"), user);
         Row(rows, T("Password"), password);
         Children.Add(rows);
-        signIn.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
-        signIn.Click += async (_, _) => await SignIn();
-        // (Enter in the password: not the button as the default, which on Settings would be the whole window's)
-        password.KeyDown += async (_, e) => { if (e.Key == System.Windows.Input.Key.Enter) { e.Handled = true; await SignIn(); } };
-        signOut.Click += (_, _) =>
+        signIn.Click += async (_, _) =>
         {
+            if (!Link.SignedIn) { await SignIn(); return; }
             Link.SignOut();
             password.Clear();
             Done();
         };
-        var signUp = Ui.Link(T("Sign up"), SessionServer.Website + "/signup");
-        signUp.VerticalAlignment = VerticalAlignment.Center;
-        signUp.Margin = new Thickness(16, 0, 0, 0);
-        Children.Add(new WrapPanel { Margin = new Thickness(0, 4, 0, 0), Children = { signIn, signOut, signUp } });
+        // (Enter in the password: not the button as the default, which on Settings would be the whole window's)
+        password.KeyDown += async (_, e) => { if (e.Key == System.Windows.Input.Key.Enter) { e.Handled = true; await SignIn(); } };
+        signUp.Click += (_, _) => Ui.Open(SessionServer.Website + "/signup");
+        Children.Add(new WrapPanel { Margin = new Thickness(0, 4, 0, 0), Children = { signIn, signUp } });
 
         Link.Changed += LinkChanged;
         Unloaded += (_, _) => Link.Changed -= LinkChanged;
@@ -130,12 +128,18 @@ internal sealed class AccountPanel : StackPanel
     private void ShowState()
     {
         var s = Link.Settings;
-        signOut.IsEnabled = Link.SignedIn;
+        bool signedIn = Link.SignedIn;
+        signIn.Content = signedIn ? T("Sign Out") : T("Sign In");
+        if (signedIn) signIn.ClearValue(FrameworkElement.StyleProperty);
+        else signIn.SetResourceReference(FrameworkElement.StyleProperty, "AccentButton");
+        signUp.Visibility = signedIn ? Visibility.Collapsed : Visibility.Visible;
         bool bad = problem != null || !Link.Connected && Link.Problem.Length > 0;
         status.Text = problem
             ?? (!Link.Connected && Link.Problem.Length > 0 ? T("Can't reach ForzaLeaderBoard")
-            : Link.SignedIn ? F("Signed in as {0}", s.User) : T("Not signed in"));
-        status.SetResourceReference(TextBlock.ForegroundProperty, bad ? "ErrorTextBrush" : "TextSecondaryBrush");
+            : signedIn ? F("Signed in as {0}", s.User) : T("Not signed in"));
+        bool good = !bad && signedIn;
+        status.SetResourceReference(TextBlock.ForegroundProperty, bad ? "ErrorTextBrush" : good ? "SuccessBrush" : "TextSecondaryBrush");
+        status.FontWeight = good ? FontWeights.Bold : FontWeights.Normal;
     }
 
     private async Task SignIn()

@@ -119,7 +119,7 @@ internal static class ProfileCard
 
     /// <summary>(Since 4.17.18) Short Name, Version (Forza's), UDP Port (Forza's), Auto Start, Processes (since 4.17.20:
     /// more than 3 scroll, the running ones drop down under the box; Defaults went).</summary>
-    private static FrameworkElement Options(SimProfile p)
+    private static FrameworkElement Options(SimProfile p, bool settingsCard = false)
     {
         var panel = new StackPanel();
         // (since 4.17.18) the name in the title bar's SimEffects bubble; emptied, the game's again
@@ -135,7 +135,8 @@ internal static class ProfileCard
         }
         shortName.LostFocus += (_, _) => SetShort();
         shortName.KeyDown += (_, e) => { if (e.Key == Key.Enter) SetShort(); };
-        panel.Children.Add(Field(T("Short Name"), shortName));
+        // (since SimEffects Analysis 0.3.3) not on a product's card: it has no title bar bubble
+        if (!settingsCard) panel.Children.Add(Field(T("Short Name"), shortName));
         if (p.Game is { } versioned && CarNames.Versions(versioned) is { Count: > 0 } versions)
         {
             var items = new List<KeyValuePair<int?, string>> { new(null, T("Auto")) };
@@ -176,24 +177,22 @@ internal static class ProfileCard
 
         panel.Children.Add(new TextBlock { Text = T("Processes"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4),
             ToolTip = T("With Auto Start, one of these starting plays this profile") });
-        panel.Children.Add(Ui.ProgramList(p.Programs, SimProfiles.Edited, addName: T("Process to add"), rows: 3, runningInBox: true));
+        var programs = Ui.ProgramList(p.Programs, SimProfiles.Edited, addName: T("Process to add"), rows: 3, runningInBox: true);
+        // (since SimEffects Analysis 0.3.3) on a product's card the box to add one two thirds of the card
+        if (settingsCard && programs.Children[^1] is FrameworkElement addLine)
+        {
+            addLine.HorizontalAlignment = HorizontalAlignment.Left;
+            programs.SizeChanged += (_, e) => addLine.Width = Math.Max(160, e.NewSize.Width * 2 / 3);
+        }
+        panel.Children.Add(programs);
         return panel;
     }
 
     /// <summary>(a product for one game, since SimEffects Analysis 0.3.1: its Profiles tab isn't shown) the game's
-    /// profile's Options and Modules as a Settings card, "Forza Horizon Settings".</summary>
-    public static FrameworkElement SettingsCard(SimProfile p)
-    {
-        var panel = new StackPanel();
-        panel.Children.Add(Options(p));
-        var modules = SimProfiles.Tools.Where(t => t.IsOn != null).ToList();
-        if (modules.Count > 0)
-        {
-            panel.Children.Add(new TextBlock { Text = T("Modules"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4) });
-            panel.Children.Add(Modules(p, modules));
-        }
-        return Ui.Card(panel, F("{0} Settings", p.Game is { } g ? Games.Title(g) : T("Desktop")));
-    }
+    /// profile's Options as a Settings card, "Forza Horizon Settings" (since 0.3.3 without Short Name or Modules: its
+    /// modules always start with it).</summary>
+    public static FrameworkElement SettingsCard(SimProfile p) =>
+        Ui.Card(Options(p, settingsCard: true), F("{0} Settings", p.Game is { } g ? Games.Title(g) : T("Desktop")));
 
     /// <summary>The sub-modules, a chip each: the ones on start when the profile does.</summary>
     private static FrameworkElement Modules(SimProfile p, List<ToolScope> modules)

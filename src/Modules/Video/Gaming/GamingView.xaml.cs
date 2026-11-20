@@ -9,6 +9,7 @@ using DaisysApp.Shared.Charts;
 using DaisysApp.Shared.Hardware;
 using DaisysApp.Shared.Hotkeys;
 using DaisysApp.Shared.Video;
+using DaisysApp.Shell;
 
 namespace DaisysApp.Applets.Video.Gaming;
 
@@ -35,6 +36,24 @@ public partial class GamingView : UserControl
         // (since SimEffects Analysis 0.3.0) a product with only the recorder: no benchmarks, no history
         if (AppPaths.Product?.Hides("Video/Recording/Benchmark") == true) BenchmarkCard.Visibility = Visibility.Collapsed;
         if (AppPaths.Product?.Hides("Video/Recording/History") == true) HistoryCard.Visibility = Visibility.Collapsed;
+        // (since SimEffects Analysis 0.3.3) no Performance card (Record in its place), no Camera button, no notes
+        if (AppPaths.Product?.Hides("Video/Recording/Performance") == true)
+        {
+            PerformanceCard.Visibility = Visibility.Collapsed;
+            Grid.SetColumn(RecordCard, 0);
+            Grid.SetColumn(BenchmarkCard, 0);
+        }
+        if (AppPaths.Product?.Hides("Video/Recording/Notes") == true) OutputText.Visibility = Visibility.Collapsed;
+        // (since SimEffects Analysis 0.3.3) a product for one game: the game first, then Display, then Region
+        if (AppPaths.Product?.Game != null)
+        {
+            SourcePanel.Children.Clear();
+            SourceMonitor.Content = T("Display");
+            SourceRegion.Content = T("Region");
+            SourceApp.Margin = SourceMonitor.Margin;
+            SourceRegion.Margin = new Thickness(0, 0, 0, 4);
+            foreach (var r in new[] { SourceApp, SourceMonitor, SourceRegion }) SourcePanel.Children.Add(r);
+        }
         timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         timer.Tick += (_, _) => RefreshLive();
         void ShownOrHidden()
@@ -44,7 +63,12 @@ public partial class GamingView : UserControl
             else timer.Stop();
         }
         OverlayPage.IsVisibleChanged += (_, _) => ShownOrHidden();
-        RecordingPage.IsVisibleChanged += (_, _) => ShownOrHidden();
+        RecordingPage.IsVisibleChanged += (_, _) =>
+        {
+            // (a product's game is offered once its module has started: after this was made)
+            if (RecordingPage.IsVisible) FillApps();
+            ShownOrHidden();
+        };
         service.Changed += () => { if (Showing) { Refresh(); ShowRegion(); } };
         service.SessionLogged += () => { if (Showing) LoadHistory(); };
         LoadControls();
@@ -377,6 +401,8 @@ public partial class GamingView : UserControl
         bool was = loading;
         loading = true;
         AppBox.Items.Clear();
+        // (since SimEffects Analysis 0.3.3) a product's game first: any of its programs
+        if (ScreenRecordings.Game is { } only) AppBox.Items.Add(new ComboBoxItem { Content = only.Name, Tag = GamingSettings.ProductGame });
         AppBox.Items.Add(new ComboBoxItem { Content = T("The game in front when recording starts"), Tag = "" });
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         List<KeyValuePair<string, GameEntry>> games;
@@ -392,7 +418,7 @@ public partial class GamingView : UserControl
             if (exe.Length == 0 || exe == "daisysapp.exe" || !seen.Add(exe)) continue;
             AppBox.Items.Add(new ComboBoxItem { Content = F("{0} ({1})", title.Length > 50 ? title[..50] + "…" : title, exe), Tag = exe });
         }
-        if (S.AppExe.Length > 0 && !seen.Contains(S.AppExe))
+        if (S.AppExe.Length > 0 && S.AppExe != GamingSettings.ProductGame && !seen.Contains(S.AppExe))
             AppBox.Items.Add(new ComboBoxItem { Content = S.FriendlyName(S.AppExe) + " (" + S.AppExe + ")", Tag = S.AppExe });
         AppBox.SelectedItem = AppBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => string.Equals((string)i.Tag, S.AppExe, StringComparison.OrdinalIgnoreCase)) ?? AppBox.Items[0];
         loading = was;
@@ -538,7 +564,10 @@ public partial class GamingView : UserControl
         bool off = service.CamerasOff;
         CamerasOffLabel.Text = (off ? T("Cameras back on") : T("Cameras off")) + (S.CamerasOffHotkey is { Length: > 0 } ch ? $" ({ControllerButtons.Describe(ch)})" : "");
         CamerasOffButton.Style = off ? (Style)FindResource("DangerButton") : null;
-        CamerasOffButton.Visibility = S.Cameras.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        // (since SimEffects Analysis 0.3.3) no cameras in a product that hides them
+        bool cameras = AppPaths.Product?.Hides("Video/Recording/Cameras") != true;
+        CamerasButton.Visibility = WebcamShortcuts.Visibility = cameras ? Visibility.Visible : Visibility.Collapsed;
+        CamerasOffButton.Visibility = cameras && S.Cameras.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         int n = S.Cameras.Count;
         int hidden = service.HiddenCameraNames().Count;
         CamerasLabel.Text = n == 0 ? T("Camera") : hidden > 0 ? F("Camera ({0}, {1} hidden)", n, hidden) : F("Camera ({0})", n);

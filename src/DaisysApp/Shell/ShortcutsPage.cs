@@ -17,9 +17,12 @@ internal sealed class ShortcutsPage : StackPanel
     private readonly CheckBox unbound = new() { Content = T("Show Unbound"), Margin = new Thickness(0, 0, 0, 12) };
     private string shown = "";
     private bool queued;
+    /// <summary>(since SimEffects Analysis 0.3.3) In a card already: each module a part of it, not a card of its own.</summary>
+    private readonly bool inCard;
 
-    public ShortcutsPage()
+    public ShortcutsPage(bool inCard = false)
     {
+        this.inCard = inCard;
         unbound.Click += (_, _) => Build(force: true);
         Children.Add(unbound);
         Children.Add(cards);
@@ -55,11 +58,12 @@ internal sealed class ShortcutsPage : StackPanel
         foreach (var module in list.GroupBy(h => h.Spec.Module).OrderBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase))
         {
             var card = new Border();
-            card.SetResourceReference(StyleProperty, "Card");
+            if (!inCard) card.SetResourceReference(StyleProperty, "Card");
             card.Margin = new Thickness(0, 0, 0, 12);
             var body = new StackPanel();
             var header = new TextBlock { Text = module.Key };
-            header.SetResourceReference(StyleProperty, "CardHeader");
+            if (inCard) { header.FontWeight = FontWeights.SemiBold; header.Margin = new Thickness(0, 0, 0, 6); }
+            else header.SetResourceReference(StyleProperty, "CardHeader");
             body.Children.Add(header);
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });

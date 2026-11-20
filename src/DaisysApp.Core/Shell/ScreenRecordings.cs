@@ -23,6 +23,10 @@ public static class ScreenRecordings
         void Stop(Action? done = null);
     }
 
+    /// <summary>(since SimEffects Analysis 0.3.3) A product's one game (SimEffects' profile of it): its name and its
+    /// programs (exe names). Recording offers it first and records its window and sound. Null in Daisy's App.</summary>
+    public static (string Name, Func<IReadOnlyCollection<string>> Programs)? Game { get; set; }
+
     private static IRecorder? recorder;
 
     /// <summary>The recorder offered (null: none).</summary>

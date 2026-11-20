@@ -25,7 +25,12 @@ public sealed class ProfilesApplet : IApplet
     public ProfilesApplet()
     {
         SimProfiles.Changed += view.Render;
-        if (SimProfiles.OnlyGame != null) SettingsCards.Offer(GameCard, () => ProfileCard.SettingsCard(SimProfiles.Active));
+        if (SimProfiles.OnlyGame is { } only)
+        {
+            SettingsCards.Offer(GameCard, () => ProfileCard.SettingsCard(SimProfiles.Active));
+            // (since SimEffects Analysis 0.3.3) Recording's game: its window and sound
+            ScreenRecordings.Game = (Games.Title(only), () => SimProfiles.Active.Programs.ToList());
+        }
     }
 
     public FrameworkElement View => view;

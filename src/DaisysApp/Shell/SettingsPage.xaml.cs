@@ -138,7 +138,10 @@ public partial class SettingsPage : UserControl
             for (int c = 0; c < columns.Count; c++)
             {
                 row.ColumnDefinitions.Add(new ColumnDefinition());
-                var parts = columns[c].Select(name => own.TryGetValue(name, out var mine) ? mine : Part(name)).OfType<FrameworkElement>().ToList();
+                FrameworkElement? One(string name) => own.TryGetValue(name, out var mine) ? mine : Part(name);
+                var parts = columns[c].Select(name => name.Split('=', 2) is [var title, var joined]
+                    ? Joined(title.Trim(), joined.Split('+').Select(n => One(n.Trim())).OfType<FrameworkElement>().ToList())
+                    : One(name)).OfType<FrameworkElement>().ToList();
                 var cell = new Border { Padding = new Thickness(c == 0 ? 0 : 6, 0, c == columns.Count - 1 ? 0 : 6, 0) };
                 if (parts.Count == 1) cell.Child = parts[0];
                 else
@@ -154,16 +157,55 @@ public partial class SettingsPage : UserControl
         }
     }
 
+    /// <summary>(since SimEffects Analysis 0.3.3) "Title=A+B": the cards as one titled <paramref name="title"/>, each's
+    /// own title over its part (a line between them).</summary>
+    private static FrameworkElement? Joined(string title, List<FrameworkElement> cards)
+    {
+        if (cards.Count == 0) return null;
+        var body = new StackPanel();
+        body.Children.Add(Shared.Ui.Header(title));
+        for (int i = 0; i < cards.Count; i++)
+        {
+            if (i > 0)
+            {
+                var line = new Border { Height = 1, Margin = new Thickness(0, 10, 0, 12) };
+                line.SetResourceReference(Border.BackgroundProperty, "CardBorderBrush");
+                body.Children.Add(line);
+            }
+            var inner = cards[i] is Border { Child: Panel p } ? p : null;
+            if (inner == null) { (cards[i].Parent as Panel)?.Children.Remove(cards[i]); body.Children.Add(cards[i]); continue; }
+            var children = inner.Children.Cast<UIElement>().ToList();
+            inner.Children.Clear();
+            foreach (var child in children)
+            {
+                // its title: smaller, as a part's
+                if (child == children[0] && child is TextBlock head)
+                {
+                    head.Style = null;
+                    head.FontWeight = FontWeights.SemiBold;
+                    head.Margin = new Thickness(0, 0, 0, 6);
+                }
+                body.Children.Add(child);
+            }
+        }
+        var card = new Border { Child = body, Margin = new Thickness(0, 0, 0, 12) };
+        card.SetResourceReference(StyleProperty, "Card");
+        return card;
+    }
+
     private FrameworkElement? Part(string name)
     {
         if (name.Equals("Shortcuts", StringComparison.OrdinalIgnoreCase))
         {
-            var shortcuts = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+            // (since SimEffects Analysis 0.3.3) a card like the others
+            var shortcuts = new StackPanel();
             var header = new TextBlock { Text = T("Shortcuts") };
             header.SetResourceReference(StyleProperty, "CardHeader");
             shortcuts.Children.Add(header);
-            shortcuts.Children.Add(new ShortcutsPage());
-            return shortcuts;
+            shortcuts.Children.Add(new ShortcutsPage(inCard: true));
+            var box = new Border { Child = shortcuts, Margin = new Thickness(0, 0, 0, 12) };
+            box.SetResourceReference(StyleProperty, "Card");
+            return box;
         }
         if (SettingsCards.Make(name) is { } offered) return offered;
         if (name.Equals("YouTube", StringComparison.OrdinalIgnoreCase))

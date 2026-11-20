@@ -150,7 +150,7 @@ internal sealed class CameraLayoutWindow : Window
         side.Children.Add(selectedPanel);
         var help = new TextBlock
         {
-            Text = F("Drag a camera to move it, and a corner or side to resize it: it keeps its shape unless you right-click it and untick Lock aspect (right-click also turns and flips it). Edges snap to the picture's edges and to the other cameras, and a resize snaps to another camera's height or width. Hold Alt and drag a corner or side to crop the camera's picture there; Alt and drag back out to uncrop. The picture is {0} at {1} × {2}, {3} (Shape, under Record); the cameras sit in the same place on a region or a game's window. Up to {4} cameras.",
+            Text = F("Drag a camera to move it, and a corner or side to resize it: it keeps its shape unless you right-click it and untick Lock aspect (right-click also turns and flips it). Edges snap to the picture's edges and to the other cameras, and a resize snaps to another camera's height or width. Hold Alt and drag a corner or side to crop the camera's picture there; Alt and drag back out to uncrop. The picture is {0} at {1} × {2}, {3} (Aspect Ratio, under Record); the cameras sit in the same place on a region or a game's window. Up to {4} cameras.",
                 monitor.Label, canvasW, canvasH, OutputAspects.Label(settings.OutputAspect), CameraPlacement.Max),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 0),
         };

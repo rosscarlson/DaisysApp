@@ -31,6 +31,7 @@ public partial class GamingSettingsView : UserControl
         InitializeComponent();
         Pages.Detach(this, OverlaySettings, RecordingSettings); // each its own sub-tab of Settings → Video
         if (AppPaths.Product?.Hides("Video/Recording/History") == true) HistorySettingsCard.Visibility = Visibility.Collapsed;
+        if (AppPaths.Product?.Hides("Video/Recording/Notes") == true) EncoderNote.Visibility = Visibility.Collapsed;
         foreach (string c in BackgroundColors) BackgroundSwatches.Children.Add(Swatch(c, () => { S.BackgroundColor = c; ApplyOverlay(); }));
         foreach (string c in TextColors) TextSwatches.Children.Add(Swatch(c, () => { S.TextColor = c; ApplyOverlay(); }));
         foreach (int fps in new[] { 30, 60, 90, 120, 144 }) FpsBox.Items.Add(new ComboBoxItem { Content = F("{0} fps", fps), Tag = fps });
@@ -78,6 +79,8 @@ public partial class GamingSettingsView : UserControl
 
         FolderBox.Text = S.RecordingFolder;
         SystemAudioBox.IsChecked = S.RecordSystemAudio;
+        GameSoundBox.IsChecked = S.GameSoundOnly;
+        GameSoundBox.IsEnabled = S.RecordSystemAudio;
         MicBox.IsChecked = S.RecordMicrophone;
         CursorBox.IsChecked = S.RecordCursor;
         HdrBox.SelectedIndex = (int)S.Hdr;
@@ -180,6 +183,8 @@ public partial class GamingSettingsView : UserControl
     {
         if (loading) return;
         S.RecordSystemAudio = SystemAudioBox.IsChecked == true;
+        S.GameSoundOnly = GameSoundBox.IsChecked == true;
+        GameSoundBox.IsEnabled = S.RecordSystemAudio;
         S.RecordMicrophone = MicBox.IsChecked == true;
         S.RecordCursor = CursorBox.IsChecked == true;
         S.Hdr = HdrBox.SelectedIndex == 1 ? HdrRecording.Hdr10 : HdrRecording.Sdr;

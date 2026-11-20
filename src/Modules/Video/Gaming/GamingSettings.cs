@@ -48,14 +48,22 @@ public sealed class GamingSettings
     public int RegionY { get; set; }
     public int RegionWidth { get; set; }
     public int RegionHeight { get; set; }
-    /// <summary>The program to record (exe name); empty = the game in front when recording starts.</summary>
+    /// <summary>The program to record (exe name); empty = the game in front when recording starts; (since SimEffects
+    /// Analysis 0.3.3) <see cref="ProductGame"/>: a product's game (Core's <c>ScreenRecordings.Game</c>).</summary>
     public string AppExe { get; set; } = "";
+    public const string ProductGame = "*game";
+    /// <summary>(since SimEffects Analysis 0.3.3) A product for one game: Record set to the game, and the shortcuts
+    /// Daisy's App starts with taken off, once.</summary>
+    public bool ProductGameSet { get; set; }
     public string Folder { get; set; } = "";
     public string Profile { get; set; } = "High";
     /// <summary>(since 4.16.0) Core's list, shared with Plex → Scanner (Gaming.json's own until then).</summary>
     [JsonIgnore]
     public List<RecordingProfile> Profiles => VideoProfiles.All;
     public bool RecordSystemAudio { get; set; } = true;
+    /// <summary>(since SimEffects Analysis 0.3.3) The PC's sound is only the game's (the recorded window's program, or the
+    /// game in front): no voice chat, videos or other programs. On at first in a product for one game.</summary>
+    public bool GameSoundOnly { get; set; } = AppPaths.Product?.Game != null;
     public bool RecordMicrophone { get; set; }
     public bool RecordCursor { get; set; } = true;
     public HdrRecording Hdr { get; set; } = HdrRecording.Sdr;
@@ -131,6 +139,20 @@ public sealed class GamingSettings
         // (since SimEffects Analysis 0.3.0) a product with only Recording: no FPS overlay, nothing logged
         if (AppPaths.Product?.Shows("Video", VideoApplet.Overlay) == false) s.OverlayVisible = false;
         if (AppPaths.Product?.Hides("Video/Recording/History") == true) s.LogHistory = false;
+        if (AppPaths.Product?.Game != null && !s.ProductGameSet)
+        {
+            s.Source = CaptureSource.App;
+            s.AppExe = ProductGame;
+            s.GameSoundOnly = true;
+            var d = new GamingSettings();
+            if (s.RecordHotkey == d.RecordHotkey) s.RecordHotkey = null;
+            if (s.OverlayHotkey == d.OverlayHotkey) s.OverlayHotkey = null;
+            if (s.ModeHotkey == d.ModeHotkey) s.ModeHotkey = null;
+            if (s.BenchmarkHotkey == d.BenchmarkHotkey) s.BenchmarkHotkey = null;
+            if (s.WebcamMuteHotkey == d.WebcamMuteHotkey) s.WebcamMuteHotkey = null;
+            s.ProductGameSet = true;
+            s.Save();
+        }
         return s;
     }
 

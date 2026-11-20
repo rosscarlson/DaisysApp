@@ -207,6 +207,9 @@ public static class SimProfiles
                 if (scope.OnAtFirst?.Invoke(p) is { } first && scope.Props.Contains("Enabled")) copy["Enabled"] = first;
                 p.Tools[scope.Id] = copy;
             }
+            // (since SimEffects Analysis 0.3.3) a product for one game: its modules always start with it
+            if (OnlyGame != null && scope.Props.Contains("Enabled"))
+                foreach (var p in settings.Profiles) p.Tools[scope.Id]["Enabled"] = true;
             Restore(scope, Active);
         }
         SaveSoon();
