@@ -6,12 +6,6 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
-- **4.18.8 (asked 2026-11-19: a widget at the screen's bottom hides its edit strip; flip it above within ~100 px):**
-  Core `Widget`: strip above (`PlaceStrip`, Dock Top) when it wouldn't fit below in the monitor's work area and does
-  above (`StripAboveFor`); BeginEdit grows upward then, EndEdit/SaveBounds take `grownPx` off the top. While dragging,
-  WM_MOVING places it from the pointer (`grabY`, taken at WM_NCLBUTTONDOWN): Windows builds each proposed rect on the
-  last one as changed, so offsetting the proposal drifted. Tested in DaisysDev (Performance widget, real drag).
-
 - **4.17.28 (asked 2026-11-17 after 4.17.26's flood killed Plex: audit everything that retries for ever, add limits
   with a log line or a popup by severity):** Core 0.65 `Shared/Network/RetryGuard` (waits doubled to a cap; Warn after
   N in a row, a notification if `notify`; `budget` tries in 10 min → Paused until Reset). ServerLink: one guard for
@@ -21,8 +15,7 @@ short (under ~8 KB): condense what's done.
   (10 s→2 min), ApiAgent (8 limit waits), ButtServer's UDP finder (no spin). Left as they were (bounded, local or
   by hand): iRacing (4 tries), updates (Attempts), YouTube uploads (5), LibreHardwareMonitor (15 s, localhost),
   Arduino (15 s, COM), Govee (200 ms on a socket error, UDP), AI remote (by hand), Support's pings (the user's rate),
-  ShareQueue (a minute; through ServerLink's guard). Harness `D:\Temp
-etryguard-test`.
+  ShareQueue (a minute; through ServerLink's guard). Harness in Temp (`retryguard-test`).
 
 - **4.17.10, 4.17.13 (asked 2026-11-14: browser-like back / forward, mouse buttons + Core Hotkeys; then "not the 2nd
   level ones": the installed app was still 4.17.2):** `Shell/TabHistory.cs`. A place = every checked, visible
@@ -33,33 +26,12 @@ etryguard-test`.
   HwndSource hook (WPF's BrowseBack binding never fired), skipped within 500 ms of a press. Hotkeys `App.Back` /
   `App.Forward` (unbound). Tested in DaisysDev with `%TEMP%\navtest\nav.ps1` (UIA selects, posted WM_XBUTTON).
 
-- **4.0.0 (the 2026-11-03 audit, the user: "everything but 1, 3, 4", released as 4.0):** Core 0.55. What each item became
-  and what's left: the status table in `docs/AUDIT-2026-11-03.md`. Watch points: `RunningPrograms.Watch` delivers on the
-  watcher's UI context (made on the UI thread) or the pool, never twice at once, `Recheck` re-delivers; `lookingFor`
-  re-delivers when a module's list changes. `DeviceChanges` makes its window on the UI thread the first time someone
-  listens; `GameControllers`' static ctor and `ControllerButtons.Listen` subscribe by BeginInvoke (no Invoke from a
-  pool thread). `Ui.Pen` freezes only frozen brushes (a theme's isn't). `JsonStore.Save` writes `.tmp` then moves;
-  `SaveSoon` keeps the latest value per name, flushed in `App.OnExit` and ProcessExit. Tested in DaisysDev: clean start,
-  fake ForzaHorizon5.exe (renamed ping, `%TEMP%\da\gw`) switched B2KR on/off and SimEffects' profile, buttclient.py
-  read the state. Scripts of the edits: `%TEMP%\da\*.py`. Lesson: heredocs with quotes fail here; write .py files.
-- **3.37.16 (asked 2026-11-03: audit that nothing uses its own shortcut button/system):** Core 0.54
-  `HotkeyWindow.Button(title, hotkey, closed)` and `Button(title, () => list, () => shown, extra, closed)` (several
-  bindings; `shown` = tooltip, accent when non-empty). Every hand-made joystick/ShortcutBox UI moved to it (list in
-  `CHANGELOG.md`); raw values shown (GUID names) fixed with `Describe`/`Text`; string matches of shortcuts →
-  `ControllerButtons.Same` (Resizer `OnHotkey`, Gaming's camera hide). Kept on purpose: Core's unbound `ShortcutBox`
-  in Gaming's `CameraLayoutWindow` (cameras are a copy until Save; ids by index), Screen's `SpaceDrag`/`TopMost` LL
-  hooks (features, not shortcuts), Button2Key's winmm reads (its mapping; under `JoystickApi`), AudioTools Tests'
-  in-tab keys. Lesson: a view built before its service registers gets null from `Hotkeys.Find` (Recording's broke).
-  Tested in DaisysDev via UIA (`%TEMP%\hkaudit\dump.ps1`, `open.ps1`).
-- **3.37.15 (asked 2026-11-03, from Mini Mirror: controller buttons kept by number, not device ID; released, Release
-  run passed):** Core 0.53. `ControllerButtons.Name` = "Controller <OEM name> Button N {guid}" when `devices` knows the
-  winmm id (`Identify`: IDirectInputJoyConfig8.GetConfig per id, guid at offset 4, type at 136, OEMName from the
-  registry; run at scan, Rescan and when a lost one answers again), else the old "Controller N Button M". `Same` (guid,
-  or number through the current map) is how `Hotkeys` matches presses, Clashes and let-go; `Describe` for display
-  (ShortcutBox, tray hints, `Hotkey.Text`, modules' tooltips); `Hotkeys.Upgrade` on `Identified` rewrites old number
-  values through `Spec.Set`. `HotkeyWindow.Button(title, () => hotkey)` is the standard joystick button (accent when
-  bound). Tested by reflection with fake devices (`%TEMP%\mmfix\harness`: swap, upgrade); PLEX has no controllers, so
-  GetConfig on real ones is untested (on the rig: `docs/UNTESTED.md`).
+- **4.0.0 (2026-11-03 audit, Core 0.55):** status in `docs/AUDIT-2026-11-03.md`. `RunningPrograms.Watch` delivers on
+  the watcher's UI context, never twice at once; `DeviceChanges`' window made on the UI thread; `JsonStore.Save` via
+  `.tmp`, `SaveSoon` flushed on exit.
+- **3.37.16 / 3.37.15 (Core 0.54 / 0.53):** every shortcut button is `HotkeyWindow.Button`; controller buttons kept by
+  DirectInput instance ("Controller <OEM> Button N {guid}", `ControllerButtons.Same`/`Describe`, `Hotkeys.Upgrade`).
+  A view built before its service registers gets null from `Hotkeys.Find`. GetConfig on real pads: `docs/UNTESTED.md`.
 - **3.32.0:** Core `Widget`: **Background** slider (`IWidgetPlace.Opacity`, the background's only), **Click through**
   (`IWidgetPlace.ClickThrough`; Ctrl+Shift held catches clicks), strip hit test `OnControl`. Green logo; `TrayIcon`
   idle blue from it.
@@ -90,6 +62,10 @@ etryguard-test`.
   4.6.8: every strip in rows (`stacked` ignored); a new widget (`Width <= 0`, strip) starts `ClickThrough`.
   4.15.2: every widget not clicking through rests on the 1-alpha `CatchBrush` (card or not; before, card-less ones
   caught right-clicks only where their body drew), and so does a click-through one while Ctrl+Shift is held.
+  4.18.8 (asked: a widget at the screen's bottom hid its strip): strip above (`PlaceStrip`) when it won't fit below
+  in the monitor's work area (`StripAboveFor`); edit grows upward, `SaveBounds` takes `grownPx` off the top; WM_MOVING
+  places it from the pointer (`grabY` at WM_NCLBUTTONDOWN): Windows builds each proposed rect on the last one as
+  changed, so offsetting proposals drifted. Tested in DaisysDev with a real drag.
 - **Title bubbles (3.13.0, 3.18.2, Core 0.39):** `TitleBadges` (`Green/Amber/Red`, `IsRed`, `Badge.Open` =
   "Module/SubTab"; AI's always last), drawn by `Shell/TitleBadgeStrip`. Tray icon colour follows (`Shell/TrayIcon.cs`).
 - **Update banner (3.23.2):** `UpdateService.CountBehindAsync` → " (N Behind)"; 0 on failure.
@@ -98,16 +74,10 @@ etryguard-test`.
 
 ## The rig's crashes (GAMER11, 192.168.1.10, AI remote port 38863)
 
-- **Found and fixed in 4.3.1 (2026-11-05):** the crashes since 0.6.3 (0xc0000374, access violations in victims, mostly
-  seconds after a controller drops) were a Windows bug in dinput.dll and dinput8.dll `DIHid_CheckHidList`: closing a gap
-  in `g_phdl` it scans from slot [capacity] (one past the end), copies it if +0x18 isn't 0 and memsets 0x68 bytes past
-  the block. Caught by full page heap + WER full dump (`%TEMP%\da-pageheap\enable.ps1`/`disable.ps1`, WinDbg's cdb from
-  winget): joyGetPosEx → joyOpen → CJoyCfg_GetConfig → DIHid_BuildHidList (non-forced rebuild). Core's
-  `DirectInputFix.Apply()` (App.OnStartup, Joystick's static ctor) patches 13 bytes in both DLLs when the 31-byte
-  pattern matches exactly once (scan from the last slot; `jle` when none between); log line "DirectInput fix … patched".
-  A Windows update changing the code → "not needed" in the log: check the new code. Earlier fixes (3.12.4 XInput
-  padding, 3.12.9 winmm lock, 3.24.6 DirectInput lock) stay. Mouse crawl before the crash: the process's LL hooks
-  stalled while it died. Watch: no crash on the rig after a pad goes.
+- **Fixed in 4.3.1:** the crashes (0xc0000374 after a controller drops) were a Windows bug in dinput(8).dll
+  `DIHid_CheckHidList` (scans one past `g_phdl`'s end). Core's `DirectInputFix.Apply()` patches 13 bytes when its
+  pattern matches once (log "DirectInput fix … patched"; "not needed" after a Windows update: check the new code).
+  Found with full page heap + WER dumps (`%TEMP%\da-pageheap\`).
 - Logs come as the app's export zip (Tools → Logs); a read-only Claude session on the rig can read its logs.
 
 ## Lessons
