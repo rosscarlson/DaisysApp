@@ -146,6 +146,14 @@ public abstract class AppletGroup : IApplet
         return view.Take(t.Id);
     }
 
+    /// <summary>(since SimEffects Analysis 0.3.0) Takes a tool's settings page out of the group's, for a product's
+    /// Settings on one page (<see cref="AppPaths.ProductInfo.Settings"/>); null if there's none.</summary>
+    public FrameworkElement? TakeSettings(string id)
+    {
+        if (tools.FirstOrDefault(t => t.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } t) return null;
+        return settingsView?.Take(t.Id);
+    }
+
     /// <summary>Takes what's at the right of the sub-tabs (SimEffects' Play / Stop), for a product's own tab row.</summary>
     public UIElement? TakeHeader()
     {

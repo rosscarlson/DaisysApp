@@ -32,6 +32,9 @@ public partial class GamingView : UserControl
         InitializeComponent();
         WebcamShortcuts.Content = WebcamShortcutsButton();
         Pages.Detach(this, OverlayPage, RecordingPage); // each its own sub-tab of Video
+        // (since SimEffects Analysis 0.3.0) a product with only the recorder: no benchmarks, no history
+        if (AppPaths.Product?.Hides("Video/Recording/Benchmark") == true) BenchmarkCard.Visibility = Visibility.Collapsed;
+        if (AppPaths.Product?.Hides("Video/Recording/History") == true) HistoryCard.Visibility = Visibility.Collapsed;
         timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         timer.Tick += (_, _) => RefreshLive();
         void ShownOrHidden()

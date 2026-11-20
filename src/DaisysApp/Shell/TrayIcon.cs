@@ -196,8 +196,10 @@ internal sealed class TrayIcon : IDisposable
         // tool's at the top level instead, named after the tool, rather than a submenu inside a submenu
         foreach (var applet in applets)
         {
+            // (a product's: not the tools made only for another's sake, as Video's Overlay)
             var menus = applet is AppletGroup group
-                ? group.Tools.Select(t => (t.Title, Items: Items(t.Applet)))
+                ? group.Tools.Where(t => AppPaths.Product?.Shows(applet.Meta.Id, t.Id) != false)
+                    .Select(t => (t.Title, Items: Items(t.Applet)))
                 : [(TabNames.For(applet.Meta.Id, Any(applet.Meta.Title)), Items(applet))];
             foreach (var (title, items) in menus)
             {

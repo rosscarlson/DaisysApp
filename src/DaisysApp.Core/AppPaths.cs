@@ -57,6 +57,18 @@ public static class AppPaths
         /// ("SimEffects/Analysis/KnownTracks"); see <see cref="Hides"/>.</summary>
         public List<string>? Hide { get; init; }
 
+        /// <summary>(since 0.3.0) Settings as one page, no sub-tabs: its rows, each of columns side by side, each column's
+        /// cards stacked (General's: "Startup", "Updates", "Appearance", "Notifications", "Language", "Shortcuts",
+        /// "Files"; a sub-tab's settings: "Video/Recording"; a module's card: "SimEffects/Analysis/Account"; "YouTube");
+        /// null: Settings' sub-tabs.</summary>
+        public List<List<List<string>>>? Settings { get; init; }
+
+        /// <summary>(since 0.3.0) What a module asks for on the first run, by name ("SimEffects/Analysis/Account").</summary>
+        public List<string>? Ask { get; init; }
+
+        /// <summary>A module asks for this on the first run.</summary>
+        public bool Asks(string part) => Ask?.Contains(part, StringComparer.OrdinalIgnoreCase) == true;
+
         /// <summary>The product leaves this part of a module out.</summary>
         public bool Hides(string part) => Hide?.Contains(part, StringComparer.OrdinalIgnoreCase) == true;
 

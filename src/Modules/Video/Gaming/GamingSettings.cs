@@ -128,6 +128,9 @@ public sealed class GamingSettings
         s.Scale = Math.Clamp(s.Scale, 0.5, 4);
         s.BackgroundOpacity = Math.Clamp(s.BackgroundOpacity, 0, 1);
         s.BenchmarkSeconds = Math.Clamp(s.BenchmarkSeconds, 5, 3600);
+        // (since SimEffects Analysis 0.3.0) a product with only Recording: no FPS overlay, nothing logged
+        if (AppPaths.Product?.Shows("Video", VideoApplet.Overlay) == false) s.OverlayVisible = false;
+        if (AppPaths.Product?.Hides("Video/Recording/History") == true) s.LogHistory = false;
         return s;
     }
 

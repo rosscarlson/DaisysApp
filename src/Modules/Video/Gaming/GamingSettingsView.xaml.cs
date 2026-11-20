@@ -30,6 +30,7 @@ public partial class GamingSettingsView : UserControl
         this.view = view;
         InitializeComponent();
         Pages.Detach(this, OverlaySettings, RecordingSettings); // each its own sub-tab of Settings → Video
+        if (AppPaths.Product?.Hides("Video/Recording/History") == true) HistorySettingsCard.Visibility = Visibility.Collapsed;
         foreach (string c in BackgroundColors) BackgroundSwatches.Children.Add(Swatch(c, () => { S.BackgroundColor = c; ApplyOverlay(); }));
         foreach (string c in TextColors) TextSwatches.Children.Add(Swatch(c, () => { S.TextColor = c; ApplyOverlay(); }));
         foreach (int fps in new[] { 30, 60, 90, 120, 144 }) FpsBox.Items.Add(new ComboBoxItem { Content = F("{0} fps", fps), Tag = fps });

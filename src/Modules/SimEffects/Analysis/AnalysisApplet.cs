@@ -90,6 +90,20 @@ public sealed class AnalysisApplet : IApplet
         Current = this;
         // (since 4.18.0) "daisysapp://session/…", a website's Open in Daisy's App
         OpenFiles.Links["session"] = uri => Sessions.SessionLinks.Open(uri, view.RaceAnalysis);
+        // (since SimEffects Analysis 0.3.0) the ForzaLeaderBoard account as a card on a product's Settings
+        SettingsCards.Offer(AccountCard, () => Ui.Card(new Sessions.AccountPanel(() => { }), T("ForzaLeaderBoard")));
+    }
+
+    private const string AccountCard = "SimEffects/Analysis/Account";
+
+    /// <summary>(since SimEffects Analysis 0.3.0) A product that asks for the ForzaLeaderBoard account: once, on the first run.</summary>
+    public bool NeedsOnboarding => AppPaths.Product?.Asks(AccountCard) == true && !settings.AccountAsked && !Sessions.SessionServer.Leaderboard.SignedIn;
+
+    public void RunOnboarding(Window owner)
+    {
+        settings.AccountAsked = true;
+        settings.Save();
+        if (owner.Content is FrameworkElement content) Sessions.AccountWindow.Show(content, () => { });
     }
 
     /// <summary>The one made (since 3.33.0 the blocks' widgets are SimEffects → Overlays', which shows them from here);

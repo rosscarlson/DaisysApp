@@ -13,6 +13,10 @@
             <Setter Property="Orientation" Value="Horizontal"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
+        <!-- (the Recording card's: its controls go under the label when the card is narrow) -->
+        <Style x:Key="WrapRow" TargetType="WrapPanel">
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
         <Style x:Key="Swatch" TargetType="Button">
             <Setter Property="Width" Value="24"/>
             <Setter Property="Height" Value="24"/>
@@ -138,21 +142,28 @@
             <Border x:Name="RecordingCard" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="{l:Tr 'Recording'}" Style="{StaticResource CardHeader}"/>
-                    <StackPanel Style="{StaticResource Row}">
+                    <!-- the box narrower when the card is (on SimEffects Analysis' one Settings page) -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="100*" MaxWidth="360"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
                         <TextBlock Text="{l:Tr 'Save to'}" Style="{StaticResource Label}"/>
-                        <TextBox x:Name="FolderBox" Width="360" IsReadOnly="True" VerticalContentAlignment="Center"/>
-                        <Button Content="{l:Tr 'Change…'}" Margin="8,0,0,0" Click="Folder_Click"/>
-                    </StackPanel>
+                        <TextBox x:Name="FolderBox" Grid.Column="1" IsReadOnly="True" VerticalContentAlignment="Center"/>
+                        <Button Grid.Column="2" Content="{l:Tr 'Change…'}" Margin="8,0,0,0" Click="Folder_Click"/>
+                    </Grid>
                     <CheckBox x:Name="SystemAudioBox" Content="{l:Tr 'Record the PC\'s sound'}" Margin="0,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
                     <CheckBox x:Name="MicBox" Content="{l:Tr 'Record the microphone too (as a second audio track)'}" Margin="0,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
                     <CheckBox x:Name="CursorBox" Content="{l:Tr 'Record the mouse pointer'}" Margin="0,0,0,10" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
-                    <StackPanel Style="{StaticResource Row}">
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'HDR monitors'}" Style="{StaticResource Label}"/>
                         <ComboBox x:Name="HdrBox" Width="360" SelectionChanged="Recording_Changed">
                             <ComboBoxItem Content="{l:Tr 'Record in SDR (plays right everywhere)'}"/>
                             <ComboBoxItem Content="{l:Tr 'Record in HDR10 (HEVC or AV1, 10-bit)'}"/>
                         </ComboBox>
-                    </StackPanel>
+                    </WrapPanel>
                     <TextBlock Style="{StaticResource SecondaryText}" TextWrapping="Wrap" Margin="0,0,0,14"
                                Text="{l:Tr 'The picture goes straight from the screen to the graphics card\'s video encoder (NVENC on NVIDIA cards), like the NVIDIA app\'s recorder, so games keep their frame rate. If the encoder can\'t take a setting, recording stops rather than fall back to the processor.'}"/>
 
@@ -164,23 +175,23 @@
                         <Button x:Name="DeleteProfileButton" Content="{l:Tr 'Delete'}" Margin="0,0,8,6" Click="DeleteProfile_Click"/>
                         <Button x:Name="ResetProfilesButton" Content="{l:Tr 'Reset to the defaults'}" Margin="0,0,0,6" ToolTip="{l:Tr 'High, Medium and Low as they came; your own profiles removed'}"/>
                     </WrapPanel>
-                    <StackPanel Style="{StaticResource Row}">
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'Name'}" Style="{StaticResource Label}"/>
                         <TextBox x:Name="NameBox" Width="180" VerticalContentAlignment="Center" LostFocus="Profile_Edited"/>
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
+                    </WrapPanel>
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'Codec'}" Style="{StaticResource Label}"/>
                         <ComboBox x:Name="CodecBox" Width="260" SelectionChanged="Profile_Edited"/>
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
+                    </WrapPanel>
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'Frame rate'}" Style="{StaticResource Label}"/>
                         <ComboBox x:Name="FpsBox" Width="120" SelectionChanged="Profile_Edited"/>
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
+                    </WrapPanel>
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'Resolution'}" Style="{StaticResource Label}"/>
                         <ComboBox x:Name="HeightBox" Width="260" SelectionChanged="Profile_Edited"/>
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
+                    </WrapPanel>
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'Bit rate'}" Style="{StaticResource Label}"/>
                         <ComboBox x:Name="RateControlBox" Width="200" SelectionChanged="Profile_Edited">
                             <ComboBoxItem Content="{l:Tr 'Variable (VBR)'}"/>
@@ -191,8 +202,8 @@
                         <TextBlock x:Name="MaxLabel" Text="{l:Tr 'max'}" VerticalAlignment="Center" Margin="12,0,6,0"/>
                         <TextBox x:Name="MaxBitrateBox" Width="60" VerticalContentAlignment="Center" LostFocus="Profile_Edited"/>
                         <TextBlock Text="Mbit/s" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
+                    </WrapPanel>
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'Encoder preset'}" Style="{StaticResource Label}"/>
                         <ComboBox x:Name="QualityBox" Width="200" SelectionChanged="Profile_Edited">
                             <ComboBoxItem Content="{l:Tr 'Fastest'}" Tag="0"/>
@@ -200,20 +211,20 @@
                             <ComboBoxItem Content="{l:Tr 'High quality'}" Tag="70"/>
                             <ComboBoxItem Content="{l:Tr 'Best quality'}" Tag="100"/>
                         </ComboBox>
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
+                    </WrapPanel>
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'Keyframe every'}" Style="{StaticResource Label}"/>
                         <ComboBox x:Name="KeyframeBox" Width="120" SelectionChanged="Profile_Edited"/>
-                    </StackPanel>
-                    <StackPanel Style="{StaticResource Row}">
+                    </WrapPanel>
+                    <WrapPanel Style="{StaticResource WrapRow}">
                         <TextBlock Text="{l:Tr 'Audio'}" Style="{StaticResource Label}"/>
                         <ComboBox x:Name="AudioBox" Width="120" SelectionChanged="Profile_Edited"/>
-                    </StackPanel>
+                    </WrapPanel>
                     <TextBlock x:Name="ProfileNote" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
             <!-- history -->
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="HistorySettingsCard" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="{l:Tr 'History'}" Style="{StaticResource CardHeader}"/>
                     <CheckBox x:Name="LogBox" Content="{l:Tr 'Log each game\'s performance (a line a second while it\'s in front)'}" Margin="0,0,0,10" Checked="History_Changed" Unchecked="History_Changed"/>

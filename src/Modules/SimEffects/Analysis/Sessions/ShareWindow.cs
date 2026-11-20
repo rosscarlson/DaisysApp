@@ -188,6 +188,8 @@ internal sealed class ShareWindow
         ShowAuto();
         // (since 4.17.16 Share and Import here, Refresh with them)
         var right = new StackPanel { Orientation = Orientation.Horizontal, Children = { account, auto, close } };
+        // (since SimEffects Analysis 0.3.0: the account on its Settings)
+        if (AppPaths.Product?.Hides("SimEffects/Analysis/ShareAccount") == true) right.Children.Remove(account);
         DockPanel.SetDock(right, Dock.Right);
         buttons.Children.Add(right);
         buttons.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { share, import, compare, watch, page, delete, refresh } });

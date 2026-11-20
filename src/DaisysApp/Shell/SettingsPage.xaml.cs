@@ -28,13 +28,22 @@ public partial class SettingsPage : UserControl
         // General first, then a page for each applet that has settings, in the same order as the main tabs
         subTabs = new TabStrip(SubTabButtons, SubTabPages);
         subTabs.Add("general", T("General"), "", Scrolling(GeneralPanel), renamable: false);
-        // every module's shortcuts in one list (Core's Hotkeys)
-        subTabs.Add("shortcuts", T("Shortcuts"), "", Scrolling(new ShortcutsPage()), renamable: false);
-        foreach (var applet in applets)
-            if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, Scrolling(view));
-        // then the applets shown here rather than as tabs (none since Logs went to the Network tab in 0.39), last, filling the page
-        foreach (var applet in applets.Where(a => a.Meta.InSettings))
-            subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View);
+        if (AppPaths.Product?.Settings is { } columns)
+        {
+            // (since SimEffects Analysis 0.3.0) a product's Settings on one page, no sub-tabs
+            SubTabRow.Visibility = Visibility.Collapsed;
+            OnePage(columns);
+        }
+        else
+        {
+            // every module's shortcuts in one list (Core's Hotkeys)
+            subTabs.Add("shortcuts", T("Shortcuts"), "", Scrolling(new ShortcutsPage()), renamable: false);
+            foreach (var applet in applets)
+                if (applet.SettingsView is { } view) subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, Scrolling(view));
+            // then the applets shown here rather than as tabs (none since Logs went to the Network tab in 0.39), last, filling the page
+            foreach (var applet in applets.Where(a => a.Meta.InSettings))
+                subTabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View);
+        }
         subTabs.Select(null);
         saved = new SavedIndicator(SubTabPages); // every page saves as you change it: say so
         foreach (var applet in applets.Where(a => a.Meta.InSettings)) saved.Skip.Add(applet.View); // (not a settings page)
@@ -55,7 +64,7 @@ public partial class SettingsPage : UserControl
         {
             // (since SimEffects Analysis 0.2.1) a product's General: no Save / Load, Modules, Daisy's Server, Audio or Storage
             BackupCard.Visibility = ModulesCard.Visibility = StorageCard.Visibility = Visibility.Collapsed;
-            UpdatesCard.Margin = new Thickness(6, 0, 0, 12);
+            if (AppPaths.Product.Settings == null) UpdatesCard.Margin = new Thickness(6, 0, 0, 12);
         }
         else
         {
@@ -100,6 +109,93 @@ public partial class SettingsPage : UserControl
         return new ScrollViewer { Content = page, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     }
 
+    /// <summary>The sub-tabs' settings pages on General (<see cref="OnePage"/>).</summary>
+    private readonly List<FrameworkElement> onePage = new();
+
+    /// <summary>
+    /// A product's Settings on one page (<see cref="AppPaths.ProductInfo.Settings"/>): its rows, each of columns side by
+    /// side (one card as tall as the row), each column's cards stacked: General's own, sub-tabs' settings (taken out of
+    /// their module's), cards modules offer (<see cref="SettingsCards"/>) or the YouTube account. General's others
+    /// (Save / Load, Modules, Storage, Daisy's Server, Audio) aren't on it.
+    /// </summary>
+    private void OnePage(List<List<List<string>>> rows)
+    {
+        var own = new Dictionary<string, FrameworkElement>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Startup"] = StartupCard, ["Updates"] = UpdatesCard, ["Appearance"] = AppearanceCard,
+            ["Notifications"] = NotificationsCard, ["Language"] = LanguageCard, ["Files"] = FilesCard,
+        };
+        foreach (var card in own.Values)
+        {
+            (card.Parent as Panel)?.Children.Remove(card);
+            card.Margin = new Thickness(0, 0, 0, 12);
+            Grid.SetColumn(card, 0);
+        }
+        GeneralPanel.Children.Clear();
+        foreach (var columns in rows)
+        {
+            var row = new Grid();
+            for (int c = 0; c < columns.Count; c++)
+            {
+                row.ColumnDefinitions.Add(new ColumnDefinition());
+                var parts = columns[c].Select(name => own.TryGetValue(name, out var mine) ? mine : Part(name)).OfType<FrameworkElement>().ToList();
+                var cell = new Border { Padding = new Thickness(c == 0 ? 0 : 6, 0, c == columns.Count - 1 ? 0 : 6, 0) };
+                if (parts.Count == 1) cell.Child = parts[0];
+                else
+                {
+                    var stack = new StackPanel();
+                    foreach (var part in parts) stack.Children.Add(part);
+                    cell.Child = stack;
+                }
+                Grid.SetColumn(cell, c);
+                row.Children.Add(cell);
+            }
+            GeneralPanel.Children.Add(row);
+        }
+    }
+
+    private FrameworkElement? Part(string name)
+    {
+        if (name.Equals("Shortcuts", StringComparison.OrdinalIgnoreCase))
+        {
+            var shortcuts = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+            var header = new TextBlock { Text = T("Shortcuts") };
+            header.SetResourceReference(StyleProperty, "CardHeader");
+            shortcuts.Children.Add(header);
+            shortcuts.Children.Add(new ShortcutsPage());
+            return shortcuts;
+        }
+        if (SettingsCards.Make(name) is { } offered) return offered;
+        if (name.Equals("YouTube", StringComparison.OrdinalIgnoreCase))
+        {
+            var body = new StackPanel();
+            var header = new TextBlock { Text = "YouTube" };
+            header.SetResourceReference(StyleProperty, "CardHeader");
+            body.Children.Add(header);
+            body.Children.Add(new Shared.Network.YouTubeAccountView());
+            var card = new Border { Child = body };
+            card.SetResourceReference(StyleProperty, "Card");
+            return card;
+        }
+        if (name.Split('/') is not [var groupId, var toolId]
+            || applets.OfType<AppletGroup>().FirstOrDefault(g => ((IApplet)g).Meta.Id.Equals(groupId, StringComparison.OrdinalIgnoreCase)) is not { } group
+            || group.TakeSettings(toolId) is not { } page)
+        {
+            Logging.Log.App.Warn($"Settings: {name} isn't a sub-tab with settings");
+            return null;
+        }
+        // one that scrolls by itself (Analysis'): its content, the page scrolling
+        if (page is UserControl { Content: ScrollViewer { Content: FrameworkElement inner } scroll } own)
+        {
+            scroll.Content = null;
+            own.Content = inner;
+            inner.HorizontalAlignment = HorizontalAlignment.Stretch;
+            if (inner is Border { Child: FrameworkElement body }) body.HorizontalAlignment = HorizontalAlignment.Left;
+        }
+        onePage.Add(page);
+        return page;
+    }
+
     private static bool HasSetupPage(IApplet a)
     {
         try { return a.SetupPage != null; }
@@ -112,6 +208,14 @@ public partial class SettingsPage : UserControl
     /// </summary>
     public void ShowPage(string appletId, string? elementName)
     {
+        if (AppPaths.Product?.Settings != null)
+        {
+            subTabs.Select("general");
+            if (elementName != null && onePage.Select(p => p.FindName(elementName) as FrameworkElement is { } e && (e == p || p.IsAncestorOf(e)) ? e : null)
+                    .FirstOrDefault(e => e != null) is { } found)
+                ScrollTo(found);
+            return;
+        }
         if (!applets.Any(a => a.Meta.Id.Equals(appletId, StringComparison.OrdinalIgnoreCase))
             && applets.OfType<AppletGroup>().FirstOrDefault(g => g.ToolFor(appletId) != null) is { } group)
         {
@@ -122,7 +226,11 @@ public partial class SettingsPage : UserControl
         if (elementName == null || applets.FirstOrDefault(a => a.Meta.Id == appletId)?.SettingsView is not { } view) return;
         // a group's page (Video, Hardware): the element is on one of its sub-tabs, which is shown first
         var target = view.FindName(elementName) as FrameworkElement ?? (view as SubTabs)?.Reveal(elementName);
-        if (target == null) return;
+        if (target != null) ScrollTo(target);
+    }
+
+    private void ScrollTo(FrameworkElement target)
+    {
         // after the page has been laid out, or there's nowhere to scroll to yet
         Dispatcher.BeginInvoke(() =>
         {

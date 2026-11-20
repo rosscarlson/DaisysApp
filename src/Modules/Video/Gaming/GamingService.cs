@@ -666,7 +666,9 @@ internal sealed class GamingService : IDisposable
         };
         // (a product without the Overlay sub-tab, SimEffects Analysis: none of the overlay's; without the virtual webcam: none of its)
         bool overlay = AppPaths.Product?.Shows("Video", VideoApplet.Overlay) != false;
+        bool benchmark = AppPaths.Product?.Hides("Video/Recording/Benchmark") != true;
         items.RemoveAll(i => !overlay && i.Item1.Id is HotkeyPrefix + "Overlay" or HotkeyPrefix + "Mode"
+            || !benchmark && i.Item1.Id is HotkeyPrefix + "Benchmark"
             || !VirtualCamera.Shipped && i.Item1.Id is HotkeyPrefix + "Webcam" or HotkeyPrefix + "WebcamMute");
         for (int i = 0; i < Settings.Cameras.Count; i++)
         {
@@ -1023,10 +1025,12 @@ internal sealed class GamingService : IDisposable
         var items = new List<AppletMenuItem>
         {
             new(Recorder.IsRecording ? T("Stop recording") : T("Start recording"), ToggleRecording) { Hint = Settings.RecordHotkey },
-            new(BenchmarkRunning ? T("Stop the benchmark") : armed ? T("Cancel the benchmark") : T("Start a benchmark (when a game is in front)"),
-                () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
-                { Hint = Settings.BenchmarkHotkey },
         };
+        // (none in SimEffects Analysis)
+        if (AppPaths.Product?.Hides("Video/Recording/Benchmark") != true)
+            items.Add(new(BenchmarkRunning ? T("Stop the benchmark") : armed ? T("Cancel the benchmark") : T("Start a benchmark (when a game is in front)"),
+                () => { if (BenchmarkRunning) StopBenchmark(); else if (armed) CancelBenchmark(); else if (current != null) StartBenchmark(); else ArmBenchmark(); })
+                { Hint = Settings.BenchmarkHotkey });
         // (no virtual webcam in SimEffects Analysis)
         if (VirtualCamera.Shipped || Webcam.IsRunning)
         {

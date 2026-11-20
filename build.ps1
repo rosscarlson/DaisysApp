@@ -73,8 +73,8 @@ if ($prod) {
     Move-Item (Join-Path $publish 'DaisysApp.exe') (Join-Path $publish "$($prod.Name).exe")
     # (since 0.2.1: its tabs, the sub-tabs made only for them, and its one game)
     $app = [ordered]@{ Title = $prod.Title; TagPrefix = $prod.TagPrefix }
-    foreach ($k in 'Tabs', 'Hidden', 'Game', 'Hide', 'Repo') { if ($prod.$k) { $app[$k] = $prod.$k } }
-    [IO.File]::WriteAllText((Join-Path $publish 'app.json'), ($app | ConvertTo-Json))
+    foreach ($k in 'Tabs', 'Hidden', 'Game', 'Hide', 'Repo', 'Settings', 'Ask') { if ($prod.$k) { $app[$k] = $prod.$k } }
+    [IO.File]::WriteAllText((Join-Path $publish 'app.json'), ($app | ConvertTo-Json -Depth 5))
     Copy-Item $prodIcon (Join-Path $publish 'app.ico')
 }
 

@@ -9,7 +9,7 @@
         </Grid.RowDefinitions>
 
         <!-- Sub-tabs: General, then one per module that has settings, in tab order, then the modules shown here (none now) -->
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+        <ScrollViewer x:Name="SubTabRow" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
             <StackPanel x:Name="SubTabButtons" Orientation="Horizontal"/>
         </ScrollViewer>
 
@@ -25,7 +25,7 @@
                     <ColumnDefinition/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Border Style="{StaticResource Card}" Margin="0,0,6,12">
+                <Border x:Name="StartupCard" Style="{StaticResource Card}" Margin="0,0,6,12">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Startup and System Tray'}" Style="{StaticResource CardHeader}"/>
                         <CheckBox x:Name="TrayBox" Content="{l:Tr 'Keep running in the system tray when the window is closed'}"
@@ -104,7 +104,7 @@
                     <ColumnDefinition/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
-                <Border Style="{StaticResource Card}" Margin="0,0,6,12">
+                <Border x:Name="AppearanceCard" Style="{StaticResource Card}" Margin="0,0,6,12">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Appearance'}" Style="{StaticResource CardHeader}"/>
                         <DockPanel LastChildFill="False">
@@ -124,17 +124,17 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,12">
+                <Border x:Name="NotificationsCard" Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,12">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Notifications'}" Style="{StaticResource CardHeader}"/>
-                        <DockPanel LastChildFill="False">
-                            <TextBlock Text="{l:Tr 'Close the notification bar after'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <ComboBox x:Name="NotificationBox" Width="140" SelectionChanged="NotificationBox_SelectionChanged"/>
-                        </DockPanel>
+                        <WrapPanel>
+                            <TextBlock Text="{l:Tr 'Close the notification bar after'}" VerticalAlignment="Center" Margin="0,0,10,4"/>
+                            <ComboBox x:Name="NotificationBox" Width="140" Margin="0,0,0,4" SelectionChanged="NotificationBox_SelectionChanged"/>
+                        </WrapPanel>
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="6,0,0,12">
+                <Border x:Name="LanguageCard" Grid.Column="2" Style="{StaticResource Card}" Margin="6,0,0,12">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Language'}" Style="{StaticResource CardHeader}"/>
                         <WrapPanel>
@@ -156,7 +156,7 @@
             <!-- what's kept on disk, and cleaning it up (Shell/Storage.cs) -->
             <Border x:Name="StorageCard" Style="{StaticResource Card}"/>
 
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="FilesCard" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="{l:Tr 'Files'}" Style="{StaticResource CardHeader}"/>
                     <DockPanel Margin="0,0,0,8">

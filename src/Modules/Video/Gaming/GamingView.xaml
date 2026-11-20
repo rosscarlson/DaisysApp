@@ -266,7 +266,7 @@
                     </Border>
 
                     <!-- benchmark -->
-                    <Border Style="{StaticResource Square}" Grid.Column="2" Grid.Row="2">
+                    <Border x:Name="BenchmarkCard" Style="{StaticResource Square}" Grid.Column="2" Grid.Row="2">
                         <StackPanel>
                             <TextBlock Text="{l:Tr 'Benchmark'}" Style="{StaticResource CardHeader}"/>
                             <WrapPanel>
@@ -286,7 +286,7 @@
                 </Grid>
 
                 <!-- history: the whole width, underneath -->
-                <Border Style="{StaticResource Card}">
+                <Border x:Name="HistoryCard" Style="{StaticResource Card}">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'History'}" Style="{StaticResource CardHeader}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">

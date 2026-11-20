@@ -45,7 +45,11 @@ public sealed class AnalysisSettings
 
     /// <summary>(since 4.13.3) Left Foot Braking: throttle and brake together only count (the time split's Both, a
     /// brake zone's "throttle on too", the Both pedals mark) when both are over <see cref="Sessions.PedalAnalysis.LeftFootBoth"/>.</summary>
-    public bool LeftFootBraking { get; set; }
+    public bool LeftFootBraking { get; set; } = true;
+
+    /// <summary>(since SimEffects Analysis 0.3.0) The ForzaLeaderBoard account was asked for on the first run (a
+    /// product that asks: <see cref="AppPaths.ProductInfo.Ask"/>).</summary>
+    public bool AccountAsked { get; set; }
 
     public AnalysisUnits Units { get; set; }
 
