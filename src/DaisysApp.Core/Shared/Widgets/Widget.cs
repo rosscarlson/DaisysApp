@@ -28,7 +28,7 @@ public interface IWidgetPlace
 /// <summary>
 /// A widget: something of a module's (a graph, a box, meters) in its own small, borderless window that never takes the
 /// focus and isn't in Alt+Tab. While it's being edited (just made, or right-click) it can be dragged anywhere and
-/// stretched from any edge or corner, and a strip at the bottom sets its background's opacity, whether it stays on top
+/// stretched from any edge or corner, and a strip at the bottom (above it near the screen's bottom) sets its background's opacity, whether it stays on top
 /// and whether clicks go through it (plus the
 /// module's <see cref="AddOption"/>s); <b>Done</b> fixes it in place and saves its place. Every widget in the app is
 /// one of these (Hardware → Performance, Zabbix, ForzaWheel's input overlay, the Shaker's meters, Button2Key Remote's
@@ -68,6 +68,10 @@ public class Widget : Window
     private Brush? edge;
     private bool editing, shown = true;
     private int grownPx;
+    /// <summary>The edit strip is above what it shows (since 4.18.8: near the bottom of the screen, where it wouldn't
+    /// show below); <see cref="grabY"/>: the pointer's height over what it shows when a drag began.</summary>
+    private bool stripAbove;
+    private int grabY;
     private double? aspect;
 
     /// <summary>The words every module's menu uses for making a widget.</summary>
@@ -255,10 +259,10 @@ public class Widget : Window
             UIElement row = new StackPanel { Children = { sliders, checks, buttons } };
             // a bar of its own, so it reads over whatever the body draws, however see-through the background is
             editStrip = new Border { Child = row, Padding = card ? new Thickness(8, 6, 8, 6) : new Thickness(10, 6, 10, 6), Visibility = Visibility.Collapsed,
-                CornerRadius = card ? new CornerRadius(6) : new CornerRadius(0, 0, 8, 8), Margin = card ? new Thickness(0, 8, 0, 0) : default };
+                CornerRadius = card ? new CornerRadius(6) : default };
             editStrip.SetResourceReference(Border.BackgroundProperty, "CardBrush");
-            DockPanel.SetDock(editStrip, Dock.Bottom);
             layout.Children.Add(editStrip);
+            PlaceStrip(false);
         }
 
         if (card)
@@ -431,7 +435,10 @@ public class Widget : Window
             if (!editing || grownPx > 0 || hwnd == IntPtr.Zero || !GetWindowRect(hwnd, out var r)) return;
             double scale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M22 ?? 1;
             grownPx = (int)Math.Ceiling(editStrip.ActualHeight * scale);
-            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, r.Right - r.Left, r.Bottom - r.Top + grownPx, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+            // (above it, growing upwards, where there's no room for it below)
+            bool above = StripAboveFor(r);
+            PlaceStrip(above);
+            SetWindowPos(hwnd, IntPtr.Zero, r.Left, above ? r.Top - grownPx : r.Top, r.Right - r.Left, r.Bottom - r.Top + grownPx, SWP_NOZORDER | SWP_NOACTIVATE);
         }, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
@@ -445,8 +452,9 @@ public class Widget : Window
         Background = Resting;
         var hwnd = new WindowInteropHelper(this).Handle;
         if (grownPx > 0 && hwnd != IntPtr.Zero && GetWindowRect(hwnd, out var r))
-            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, r.Right - r.Left, Math.Max((int)MinHeight, r.Bottom - r.Top - grownPx), SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+            SetWindowPos(hwnd, IntPtr.Zero, r.Left, stripAbove ? r.Top + grownPx : r.Top, r.Right - r.Left, Math.Max((int)MinHeight, r.Bottom - r.Top - grownPx), SWP_NOZORDER | SWP_NOACTIVATE);
         grownPx = 0;
+        if (editStrip != null) PlaceStrip(false);
         ApplyStyle();
         SaveBounds();
         if (!shown) Hide();
@@ -511,7 +519,7 @@ public class Widget : Window
         if (hwnd != IntPtr.Zero && GetWindowRect(hwnd, out var r))
         {
             place.X = r.Left;
-            place.Y = r.Top;
+            place.Y = stripAbove ? r.Top + grownPx : r.Top;
             place.Width = r.Right - r.Left;
             place.Height = Math.Max((int)MinHeight, r.Bottom - r.Top - grownPx);
         }
@@ -556,11 +564,51 @@ public class Widget : Window
             handled = true;
             return new IntPtr(1);
         }
+        if (msg == WM_NCLBUTTONDOWN && editing && GetWindowRect(hwnd, out var start))
+            grabY = unchecked((short)((lParam.ToInt64() >> 16) & 0xFFFF)) - start.Top - (stripAbove ? grownPx : 0);
+        if (msg == WM_MOVING && editing && grownPx > 0 && GetCursorPos(out var pointer))
+        {
+            // the strip goes above what it shows near the screen's bottom (below again away from it), what it shows
+            // staying under the pointer (placed from it: Windows builds each place on the last one, as changed here)
+            var r = Marshal.PtrToStructure<RECT>(lParam);
+            int height = r.Bottom - r.Top, top = pointer.Y - grabY;
+            bool above = StripAboveFor(new RECT { Left = r.Left, Right = r.Right, Top = top, Bottom = top + height - grownPx });
+            if (above != stripAbove) PlaceStrip(above);
+            r.Top = above ? top - grownPx : top;
+            r.Bottom = r.Top + height;
+            Marshal.StructureToPtr(r, lParam, false);
+            handled = true;
+            return new IntPtr(1);
+        }
         if (msg == WM_EXITSIZEMOVE) SaveBounds();
         // no window menu on a right-click of the "caption" while editing
         if (msg == WM_NCRBUTTONUP && editing) { handled = true; return IntPtr.Zero; }
         return IntPtr.Zero;
     }
+
+    /// <summary>The edit strip below what it shows, or above it (its margin and corners to match).</summary>
+    private void PlaceStrip(bool above)
+    {
+        stripAbove = above;
+        DockPanel.SetDock(editStrip!, above ? Dock.Top : Dock.Bottom);
+        if (card) editStrip!.Margin = above ? new Thickness(0, 0, 0, 8) : new Thickness(0, 8, 0, 0);
+        else editStrip!.CornerRadius = above ? new CornerRadius(8, 8, 0, 0) : new CornerRadius(0, 0, 8, 8);
+    }
+
+    /// <summary>Whether the strip goes above what it shows (<paramref name="body"/>, on screen): when it wouldn't fit
+    /// below it on its screen (the taskbar left out) and does above.</summary>
+    private bool StripAboveFor(RECT body)
+    {
+        var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        if (!GetMonitorInfo(MonitorFromRect(ref body, MONITOR_DEFAULTTONEAREST), ref info)) return false;
+        return body.Bottom + grownPx > info.rcWork.Bottom && body.Top - grownPx >= info.rcWork.Top;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MONITORINFO { public int cbSize; public RECT rcMonitor, rcWork; public uint dwFlags; }
+    [DllImport("user32.dll")] private static extern IntPtr MonitorFromRect(ref RECT rect, uint flags);
+    [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
 
     /// <summary>Whether <paramref name="d"/> is part of a control in <paramref name="container"/> (a check box's box as
     /// well as its words, a slider's track…), not the strip's own background or a label.</summary>
@@ -575,7 +623,7 @@ public class Widget : Window
         return false;
     }
 
-    private const int WM_NCHITTEST = 0x84, WM_EXITSIZEMOVE = 0x232, WM_NCRBUTTONUP = 0xA5, WM_SIZING = 0x214;
+    private const int WM_NCHITTEST = 0x84, WM_NCLBUTTONDOWN = 0xA1, WM_MOVING = 0x216, WM_EXITSIZEMOVE = 0x232, WM_NCRBUTTONUP = 0xA5, WM_SIZING = 0x214;
     private const int WMSZ_TOP = 3, WMSZ_TOPLEFT = 4, WMSZ_TOPRIGHT = 5, WMSZ_BOTTOM = 6;
     private const int HTCLIENT = 1, HTCAPTION = 2, HTLEFT = 10, HTRIGHT = 11, HTTOP = 12, HTTOPLEFT = 13, HTTOPRIGHT = 14, HTBOTTOM = 15, HTBOTTOMLEFT = 16, HTBOTTOMRIGHT = 17;
     private const int GWL_EXSTYLE = -20;

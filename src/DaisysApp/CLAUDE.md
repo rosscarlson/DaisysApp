@@ -6,6 +6,12 @@ short (under ~8 KB): condense what's done.
 
 ## Latest
 
+- **4.18.8 (asked 2026-11-19: a widget at the screen's bottom hides its edit strip; flip it above within ~100 px):**
+  Core `Widget`: strip above (`PlaceStrip`, Dock Top) when it wouldn't fit below in the monitor's work area and does
+  above (`StripAboveFor`); BeginEdit grows upward then, EndEdit/SaveBounds take `grownPx` off the top. While dragging,
+  WM_MOVING places it from the pointer (`grabY`, taken at WM_NCLBUTTONDOWN): Windows builds each proposed rect on the
+  last one as changed, so offsetting the proposal drifted. Tested in DaisysDev (Performance widget, real drag).
+
 - **4.17.28 (asked 2026-11-17 after 4.17.26's flood killed Plex: audit everything that retries for ever, add limits
   with a log line or a popup by severity):** Core 0.65 `Shared/Network/RetryGuard` (waits doubled to a cap; Warn after
   N in a row, a notification if `notify`; `budget` tries in 10 min → Paused until Reset). ServerLink: one guard for
@@ -15,7 +21,8 @@ short (under ~8 KB): condense what's done.
   (10 s→2 min), ApiAgent (8 limit waits), ButtServer's UDP finder (no spin). Left as they were (bounded, local or
   by hand): iRacing (4 tries), updates (Attempts), YouTube uploads (5), LibreHardwareMonitor (15 s, localhost),
   Arduino (15 s, COM), Govee (200 ms on a socket error, UDP), AI remote (by hand), Support's pings (the user's rate),
-  ShareQueue (a minute; through ServerLink's guard). Harness `D:\Tempetryguard-test`.
+  ShareQueue (a minute; through ServerLink's guard). Harness `D:\Temp
+etryguard-test`.
 
 - **4.17.10, 4.17.13 (asked 2026-11-14: browser-like back / forward, mouse buttons + Core Hotkeys; then "not the 2nd
   level ones": the installed app was still 4.17.2):** `Shell/TabHistory.cs`. A place = every checked, visible

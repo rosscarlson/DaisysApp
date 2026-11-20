@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.8**
+- **Widgets** (every module's): near the bottom of the screen, a widget being edited has its controls (Background, On
+  top, Click through, Done, Delete) above it instead of below, so it can be put right at the bottom; they move back
+  below as it's dragged up again.
+- **Settings → General**'s Translation files is a folder icon; **Video → Recording**'s settings wrap when the window is
+  narrow; **SimEffects → Analysis**' Left Foot Braking is on by default.
+
 **4.18.7**
 - **SimEffects → Shaker**'s meters (and their widget): while the Master is muted (by its button or shortcut) every
   device's column shows muted; each column's volume marker is on its right now, and a red marker left of the first
