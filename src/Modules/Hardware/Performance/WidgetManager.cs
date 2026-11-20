@@ -42,8 +42,7 @@ internal sealed class WidgetManager
         double scale = source?.CompositionTarget?.TransformToDevice.M11 ?? 1;
         def.X = (int)((near.Left + 60) * scale);
         def.Y = (int)((near.Top + 80) * scale);
-        def.Width = (int)(320 * scale);
-        def.Height = (int)(150 * scale);
+        // (its size is left to Core's widget, which makes a new one, 0 wide, click through)
         settings.Widgets.Add(def);
         settings.Save();
         Open(def)?.BeginEdit();

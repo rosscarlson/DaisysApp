@@ -3,6 +3,10 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.10**
+- **Widgets** (every module's): a new widget starts with Click through on. Hardware → Performance's and Zabbix's
+  new widgets started with it off.
+
 **4.18.9**
 - **SimEffects → Analysis**' Forza Horizon tracks are the app's own, the same on every PC: the 333 it comes with (FH4
   98, FH5 147, FH6 88, as they are on the developer's rig). Each start puts a renamed, moved or deleted one back and

@@ -12,7 +12,8 @@ namespace DaisysApp.Shared.Widgets;
 /// <summary>Where a widget is and how it looks, kept in its module's settings.</summary>
 public interface IWidgetPlace
 {
-    /// <summary>Its place and size on screen, in physical pixels (0 width: not placed yet).</summary>
+    /// <summary>Its place and size on screen, in physical pixels (0 width: not placed yet, so a new widget: Core sizes it
+    /// and makes it click through; a module leaves a new one's size at 0, since 4.18.10).</summary>
     int X { get; set; }
     int Y { get; set; }
     int Width { get; set; }
@@ -218,7 +219,7 @@ public class Widget : Window
 
         if (strip)
         {
-            // a new widget lets clicks through by default (since 4.6.8): the strip's Click through takes it off
+            // a new widget lets clicks through by default (since 4.6.8; every module's since 4.18.10): the strip's Click through takes it off
             if (place.Width <= 0) place.ClickThrough = true;
             // the edit strip: opacity, on top, the module's options, Done and Delete
             var topmost = new CheckBox { Content = T("On top"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.Topmost, ToolTip = T("Stay on top of other windows") };

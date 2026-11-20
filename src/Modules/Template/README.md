@@ -137,7 +137,7 @@ if `ToolSwitches.IsOn(moduleId, toolId)`. Switches take effect at the next start
   it's stretched, `card: false` when your control draws its own background (`opacity: false`: no
   Background slider of Core's). The strip is in rows (every widget's since 4.6.8; `stacked` is ignored): Background and
   `AddSlider`'s sliders, then On top, Click through and the options, then Done and Delete at the bottom right. A new
-  widget (its place's `Width` 0) starts with Click through on. `Showing = false` hides one while your module is off and `true` brings it back (it isn't closed or
+  widget (its place's `Width` 0: leave a new one's size to the widget) starts with Click through on. `Showing = false` hides one while your module is off and `true` brings it back (it isn't closed or
   deleted; one being edited stays until Done). To offer one, `Widget.Offer(element,
   make)` adds **Make Widget** to an element's right-click menu (or `Widget.MenuItem(make)` in a menu of yours), so
   every module says it the same way. Never write a widget window of your own.

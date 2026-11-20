@@ -26,24 +26,23 @@ internal sealed class ZabbixWidgets
     }
 
     public void CreateHost(string hostId, string title, Window? near) =>
-        Create(new ZabbixWidgetDefinition { Kind = ZabbixWidgetKind.Host, HostId = hostId, Title = title }, near, 260, 190);
+        Create(new ZabbixWidgetDefinition { Kind = ZabbixWidgetKind.Host, HostId = hostId, Title = title }, near);
 
     public void CreateGroup(string hostId, string groupKey, string title, Window? near) =>
-        Create(new ZabbixWidgetDefinition { Kind = ZabbixWidgetKind.Group, HostId = hostId, Group = groupKey, Title = title }, near, 320, 150);
+        Create(new ZabbixWidgetDefinition { Kind = ZabbixWidgetKind.Group, HostId = hostId, Group = groupKey, Title = title }, near);
 
     public void CreateItems(string hostId, IEnumerable<string> keys, string title, Window? near) =>
-        Create(new ZabbixWidgetDefinition { Kind = ZabbixWidgetKind.Items, HostId = hostId, ItemKeys = keys.ToList(), Title = title }, near, 320, 150);
+        Create(new ZabbixWidgetDefinition { Kind = ZabbixWidgetKind.Items, HostId = hostId, ItemKeys = keys.ToList(), Title = title }, near);
 
     /// <summary>A new widget beside <paramref name="near"/>, ready to be placed.</summary>
-    private void Create(ZabbixWidgetDefinition def, Window? near, int width, int height)
+    private void Create(ZabbixWidgetDefinition def, Window? near)
     {
         // in physical pixels, a little in from the window it was made from
         double scale = near != null ? PresentationSource.FromVisual(near)?.CompositionTarget?.TransformToDevice.M11 ?? 1 : 1;
         double left = near?.WindowState == WindowState.Maximized ? 0 : near?.Left ?? 100, top = near?.WindowState == WindowState.Maximized ? 0 : near?.Top ?? 100;
         def.X = (int)((left + 60) * scale);
         def.Y = (int)((top + 80) * scale);
-        def.Width = (int)(width * scale);
-        def.Height = (int)(height * scale);
+        // (its size is left to Core's widget, which makes a new one, 0 wide, click through)
         Settings.Widgets.Add(def);
         Settings.Save();
         Open(def)?.BeginEdit();

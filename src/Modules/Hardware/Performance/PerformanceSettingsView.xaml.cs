@@ -90,8 +90,8 @@ public sealed class WidgetDefinition : DaisysApp.Shared.Widgets.IWidgetPlace
     /// <summary>Where it is, in physical screen pixels.</summary>
     public int X { get; set; }
     public int Y { get; set; }
-    public int Width { get; set; } = 320;
-    public int Height { get; set; } = 150;
+    public int Width { get; set; }
+    public int Height { get; set; }
     /// <summary>Its background's opacity, 0 – 1.</summary>
     public double Opacity { get; set; } = 0.9;
     public bool Topmost { get; set; } = true;

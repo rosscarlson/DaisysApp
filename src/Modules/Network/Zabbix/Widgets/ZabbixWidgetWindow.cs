@@ -24,7 +24,8 @@ internal sealed class ZabbixWidgetWindow : Widget
 
     public ZabbixWidgetDefinition Definition => def;
 
-    public ZabbixWidgetWindow(ZabbixWidgetDefinition def, ZabbixService service, Action save, Action delete) : base(def, save, delete)
+    public ZabbixWidgetWindow(ZabbixWidgetDefinition def, ZabbixService service, Action save, Action delete)
+        : base(def, save, delete, firstSize: def.Kind == ZabbixWidgetKind.Host ? new Size(260, 190) : null)
     {
         this.def = def;
         this.service = service;
