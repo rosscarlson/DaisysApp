@@ -4,6 +4,10 @@ Past work on this part of Daisy's App (Claude Code reads this file only when it 
 
 ## Latest
 
+- **4.18.12 (asked 2026-11-20):** Settings → Video → Recording's profile fields in an `Expander` (`ProfileEditor`,
+  collapsed; New opens it); `Profile_Edited` only previews (note, max box) and enables `SaveProfileButton`;
+  `SaveProfile_Click` → `Apply(p)` + save; Reset (ConfirmButton, all profiles) at the bottom. Tested in DaisysDev via
+  UIA (collapsed, expanded, an edit enables Save, Save writes `VideoProfiles.json`).
 - **4.18.4 (2026-11-18: the friend's logs, DESKTOP-QTNJDH2, two 5120×1440, DISPLAY1 main at 0,0, DISPLAY2 above
   at 0,-1440):** (1) recording DISPLAY1 failed 0x80070057 at `Hub.Join` → `DuplicateOutput`: Mini Mirror's own
   duplication of it. Now `Hub.Join` claims the monitor (`claimed`, lock-free `Running`), calls

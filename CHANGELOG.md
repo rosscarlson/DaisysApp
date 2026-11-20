@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.12**
+- **Settings → Video → Recording**'s quality profiles: under the Profile line, the profile's settings are folded away
+  in **Edit**, opened to change them. Changes wait for **Save** at the bottom (picking another profile drops them);
+  **Reset** (High, Medium and Low as they came) is beside it.
+
 **4.18.11**
 - **Copy and Cut** (Tools → Notepad, every Copy in the app) no longer freeze the window for 10-20 s while Chrome Remote
   Desktop (or another program that reads each copy) is running: the text goes on the clipboard at once. When another

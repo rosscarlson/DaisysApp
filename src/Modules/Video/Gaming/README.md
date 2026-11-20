@@ -293,7 +293,8 @@ matters, hide the overlay with its shortcut.
 - **FPS overlay:** show only while a game is in front; leave it out of recordings and screenshots; which graphs to
   show; justify left or right; background colour and opacity; text colour; size; lock in place.
 - **Recording:** folder; the PC's sound; the microphone as a second track; the mouse pointer; HDR as SDR or HDR10; the
-  quality profiles (new, delete, reset to the defaults, and every setting of each).
+  quality profiles: pick one, New, Delete; its settings folded away in **Edit** (since 4.18.12), with **Save** (an edit
+  waits for it; picking another profile drops it) and **Reset** (High, Medium and Low as they came) at the bottom.
 - **Shortcuts:** those above (but the benchmark's, set on its card).
 - **Games:** every program recognised as a game: its friendly name, whether it counts as a game, and remove.
 - **History:** on or off, how long to keep it, open the folder.

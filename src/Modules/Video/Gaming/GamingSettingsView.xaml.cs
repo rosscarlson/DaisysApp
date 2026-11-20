@@ -234,6 +234,7 @@ public partial class GamingSettingsView : UserControl
         Select(KeyframeBox, p.KeyframeSeconds);
         Select(AudioBox, p.AudioKbps);
         DeleteProfileButton.IsEnabled = S.Profiles.Count > 1;
+        SaveProfileButton.IsEnabled = false;
         ShowProfileNote(p);
         loading = was;
     }
@@ -254,15 +255,34 @@ public partial class GamingSettingsView : UserControl
         ShowProfile();
     }
 
+    // an edit waits for Save; picking another profile drops it
     private void Profile_Edited(object sender, RoutedEventArgs e)
     {
         if (loading || Editing is not { } p) return;
+        var edited = p.Clone();
+        Apply(edited);
+        MaxBitrateBox.IsEnabled = MaxLabel.IsEnabled = edited.RateControl == RateControl.Vbr;
+        ShowProfileNote(edited);
+        SaveProfileButton.IsEnabled = true;
+    }
+
+    private void SaveProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (Editing is not { } p) return;
         string name = NameBox.Text.Trim();
         if (name.Length > 0 && name != GamingView.ProfileName(p.Name) && S.Profiles.All(o => o.Name != name))
         {
             if (S.Profile == p.Name) S.Profile = name;
             p.Name = name;
         }
+        Apply(p);
+        S.Save();
+        FillProfiles(p.Name);
+        view.SettingsChanged();
+    }
+
+    private void Apply(RecordingProfile p)
+    {
         if (CodecBox.SelectedItem is ComboBoxItem { Tag: string codec }) p.Codec = codec;
         if (FpsBox.SelectedItem is ComboBoxItem { Tag: int fps }) p.Fps = fps;
         if (HeightBox.SelectedItem is ComboBoxItem { Tag: int height }) p.Height = height;
@@ -273,9 +293,6 @@ public partial class GamingSettingsView : UserControl
         if (QualityBox.SelectedItem is ComboBoxItem { Tag: string q }) p.Quality = int.Parse(q);
         if (KeyframeBox.SelectedItem is ComboBoxItem { Tag: int k }) p.KeyframeSeconds = k;
         if (AudioBox.SelectedItem is ComboBoxItem { Tag: int a }) p.AudioKbps = a;
-        S.Save();
-        FillProfiles(p.Name);
-        view.SettingsChanged();
     }
 
     private void NewProfile_Click(object sender, RoutedEventArgs e)
@@ -289,6 +306,7 @@ public partial class GamingSettingsView : UserControl
         S.Save();
         FillProfiles(name);
         view.SettingsChanged();
+        ProfileEditor.IsExpanded = true;
         NameBox.Focus();
         NameBox.SelectAll();
     }
