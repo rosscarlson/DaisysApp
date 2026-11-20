@@ -37,19 +37,22 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <!-- one row; scrolls sideways (mouse wheel too) when the tabs don't fit -->
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="TabButtons" Orientation="Horizontal"/>
             </ScrollViewer>
+            <!-- a product's (SimEffects Analysis): what was at the right of its tabs' sub-tabs (SimEffects' Play / Stop) -->
+            <StackPanel x:Name="ProductHeader" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"/>
             <!-- the quick update: if there's a newer version, it's installed and the app starts again by itself -->
-            <Button x:Name="UpdateButton" Grid.Column="1" Style="{StaticResource TabActionButton}" Margin="8,0,0,0" VerticalAlignment="Top"
+            <Button x:Name="UpdateButton" Grid.Column="2" Style="{StaticResource TabActionButton}" Margin="8,0,0,0" VerticalAlignment="Top"
                     Click="Update_Click" AutomationProperties.Name="{l:Tr 'Update'}"
                     ToolTip="{l:Tr 'Update now: if a newer version is out, it is installed and the app starts again by itself'}">
                 <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
             </Button>
             <!-- modules' own buttons after it (Core's QuickButtons: Tools → Notepad's pop-out) -->
-            <StackPanel x:Name="QuickButtonsPanel" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top"/>
+            <StackPanel x:Name="QuickButtonsPanel" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Top"/>
         </Grid>
         <Grid x:Name="TabPages" Grid.Row="2"/>
     </Grid>

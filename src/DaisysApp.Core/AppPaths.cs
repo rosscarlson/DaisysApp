@@ -38,6 +38,22 @@ public static class AppPaths
     {
         /// <summary>The product's icon file beside the program (app.ico), for the tray.</summary>
         public string Icon => Path.Combine(AppContext.BaseDirectory, "app.ico");
+
+        /// <summary>(since 0.2.1) Its tabs, each a group's sub-tab ("SimEffects/Analysis"), in order before Settings;
+        /// null: the modules' tabs as in Daisy's App.</summary>
+        public List<string>? Tabs { get; init; }
+
+        /// <summary>Sub-tabs made but not shown (one a tab needs: Video's Overlay for Recording). Any other is left out.</summary>
+        public List<string>? Hidden { get; init; }
+
+        /// <summary>The one game it's for (SimEffects' profile: "ForzaHorizon"), or null.</summary>
+        public string? Game { get; init; }
+
+        /// <summary>A group's sub-tab is a tab of its own.</summary>
+        public bool Shows(string group, string tool) => Tabs == null || Tabs.Contains($"{group}/{tool}", StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>A group's sub-tab is made (shown, or one a shown one needs).</summary>
+        public bool Makes(string group, string tool) => Shows(group, tool) || Hidden?.Contains($"{group}/{tool}", StringComparer.OrdinalIgnoreCase) == true;
     }
 
     private static ProductInfo? ReadProduct()

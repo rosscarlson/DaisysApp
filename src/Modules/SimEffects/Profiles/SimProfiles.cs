@@ -89,6 +89,10 @@ public static class SimProfiles
     /// <summary>A profile was renamed (old name, new name): the Shaker renames its effects' profile.</summary>
     public static event Action<string, string>? Renamed;
 
+    /// <summary>(since SimEffects Analysis 0.2.1) The one game of a product made for it (SimEffects Analysis: Forza
+    /// Horizon): only its profile, always the one in use; null in Daisy's App.</summary>
+    public static Game? OnlyGame { get; } = Enum.TryParse<Game>(AppPaths.Product?.Game, out var only) ? only : null;
+
     public static SimProfilesSettings Settings => settings;
     public static IReadOnlyList<SimProfile> All => settings.Profiles;
     public static IReadOnlyList<ToolScope> Tools => tools;
@@ -117,7 +121,8 @@ public static class SimProfiles
             p.ShortName ??= DefaultShort(p);
         }
         // (since 4.17.20) every game has its profile, with the game's port and processes, so its game starting plays it
-        foreach (var g in Games.All.Cast<Game?>().Append(null))
+        if (OnlyGame != null) settings.Profiles.RemoveAll(p => p.Game != OnlyGame);
+        foreach (var g in Games.All.Cast<Game?>().Append(null).Where(g => OnlyGame == null || g == OnlyGame))
         {
             if (settings.Profiles.Any(p => p.Game == g)) continue;
             var made = New(g);
@@ -127,6 +132,7 @@ public static class SimProfiles
             settings.Profiles.Add(made);
             Logging.Log.Here.Info($"SimEffects: profile {made.Name} made");
         }
+        if (OnlyGame != null) settings.Active = settings.Profiles[0].Name;
         SimData.Follow(Active);
     }
 

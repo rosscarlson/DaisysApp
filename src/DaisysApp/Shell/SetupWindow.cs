@@ -61,8 +61,9 @@ internal sealed class SetupWindow : Window
     private int step;
     private DateTime shownAt; // when the step showed: a double-click on Next doesn't skip the one after
 
-    /// <summary>More than one module to choose from: one module has no welcome or modules step.</summary>
-    private static bool PicksModules => AppletCatalog.All.Count > 1;
+    /// <summary>More than one module to choose from: one module has no welcome or modules step, nor has a product
+    /// (SimEffects Analysis: its modules are all it is).</summary>
+    private static bool PicksModules => AppletCatalog.All.Count > 1 && AppPaths.Product == null;
 
     private int First => full && PicksModules ? 2 : 0; // the welcome and the modules come first in full
     private int Steps => First + appletPages.Count + 1;

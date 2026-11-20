@@ -85,6 +85,20 @@ public sealed class SubTabs : UserControl
             other.IsChecked = true;
     }
 
+    /// <summary>Takes a page out (its sub-tab too), to be shown elsewhere: a product's tab of its own.</summary>
+    public FrameworkElement? Take(string id)
+    {
+        int i = pages.FindIndex(t => t.Id == id);
+        if (i < 0) return null;
+        var (_, button, page) = pages[i];
+        pages.RemoveAt(i);
+        strip.Children.Remove(button);
+        host.Children.Remove(page);
+        page.Visibility = Visibility.Visible;
+        if (Current == id) Select(null);
+        return page;
+    }
+
     /// <summary>Shows the page holding the element with this x:Name and returns the element, or null if none has it.</summary>
     public FrameworkElement? Reveal(string elementName)
     {

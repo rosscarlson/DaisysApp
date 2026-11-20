@@ -51,15 +51,23 @@ public partial class SettingsPage : UserControl
         }
 
         VersionText.Text = F("{0} version {1}", AppPaths.DisplayName, UpdateService.Display(UpdateService.CurrentVersion));
-        StorageCard.Child = new StoragePanel(settings);
-        // Daisy's Server, and the app's audio devices beside it: Core's cards, for every module
-        var audio = new Shared.Audio.AudioSettingsView { Margin = new Thickness(AppPaths.Product == null ? 12 : 0, 0, 0, 12), VerticalAlignment = VerticalAlignment.Top };
-        var serverRow = new Grid { ColumnDefinitions = { new ColumnDefinition { Width = GridLength.Auto }, new ColumnDefinition() } };
-        // (a product, SimEffects Analysis, has no module using Daisy's Server)
-        if (AppPaths.Product == null) serverRow.Children.Add(new Server.ServerSettingsView { VerticalAlignment = VerticalAlignment.Top });
-        Grid.SetColumn(audio, 1);
-        serverRow.Children.Add(audio);
-        GeneralPanel.Children.Insert(GeneralPanel.Children.IndexOf(StorageCard), serverRow);
+        if (AppPaths.Product != null)
+        {
+            // (since SimEffects Analysis 0.2.1) a product's General: no Save / Load, Modules, Daisy's Server, Audio or Storage
+            BackupCard.Visibility = ModulesCard.Visibility = StorageCard.Visibility = Visibility.Collapsed;
+            UpdatesCard.Margin = new Thickness(6, 0, 0, 12);
+        }
+        else
+        {
+            StorageCard.Child = new StoragePanel(settings);
+            // Daisy's Server, and the app's audio devices beside it: Core's cards, for every module
+            var audio = new Shared.Audio.AudioSettingsView { Margin = new Thickness(12, 0, 0, 12), VerticalAlignment = VerticalAlignment.Top };
+            var serverRow = new Grid { ColumnDefinitions = { new ColumnDefinition { Width = GridLength.Auto }, new ColumnDefinition() } };
+            serverRow.Children.Add(new Server.ServerSettingsView { VerticalAlignment = VerticalAlignment.Top });
+            Grid.SetColumn(audio, 1);
+            serverRow.Children.Add(audio);
+            GeneralPanel.Children.Insert(GeneralPanel.Children.IndexOf(StorageCard), serverRow);
+        }
         SettingsFolderText.Text = AppPaths.SettingsFolder;
         LogFolderText.Text = AppPaths.LogFolder;
         LogLevelBox.SelectedIndex = settings.DebugLogging ? 1 : 0;

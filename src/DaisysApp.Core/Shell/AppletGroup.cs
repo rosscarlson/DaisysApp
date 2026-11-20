@@ -67,6 +67,12 @@ public abstract class AppletGroup : IApplet
     /// modules built against the one above, before 2.0, still find it).</summary>
     protected void Add(string id, string title, string icon, Func<IApplet> create, int? order, string? needs)
     {
+        // (a product, SimEffects Analysis, makes only the sub-tabs it shows and the ones they need)
+        if (AppPaths.Product is { } product && !product.Makes(meta.Id, id))
+        {
+            GroupLog.Info($"{id} isn't part of {AppPaths.DisplayName}: not loaded");
+            return;
+        }
         ToolSwitches.Declare(meta.Id, id, title, needs);
         if (!ToolSwitches.IsOn(meta.Id, id, needs))
         {
@@ -108,16 +114,45 @@ public abstract class AppletGroup : IApplet
         tools.Insert(tools.Count(t => places.Take(at).Any(p => p.Id == t.Id)), tool);
         view.Add(id, title, icon, applet.View, at);
         if (wanted == id) view.Select(id);
-        if (applet.SettingsView is { } page)
+        // one a product makes only for another (Video's Overlay, for Recording): no sub-tab, settings, setup or tray items
+        if (AppPaths.Product?.Shows(meta.Id, id) == false)
+        {
+            unseen.Add(id);
+            view.SetShown(id, false);
+        }
+        else if (applet.SettingsView is { } page)
         {
             settingsView ??= new SubTabs();
             // in the same order as the sub-tabs
-            settingsView.Add(id, title, icon, page, tools.Where(t => t.Applet.SettingsView != null).ToList().IndexOf(tool));
+            settingsView.Add(id, title, icon, page, Seen.Where(t => t.Applet.SettingsView != null).ToList().IndexOf(tool));
         }
         places.Insert(at, (id, order));
     }
 
     public IReadOnlyList<Tool> Tools => tools;
+
+    private readonly HashSet<string> unseen = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The tools but the ones a product made only for another's sake.</summary>
+    private IEnumerable<Tool> Seen => tools.Where(t => !unseen.Contains(t.Id));
+
+    /// <summary>
+    /// (since SimEffects Analysis 0.2.1) Takes a tool's page out of the group's sub-tabs, for a product that
+    /// shows it as a tab of its own (<see cref="AppPaths.ProductInfo.Tabs"/>); null if there's none.
+    /// </summary>
+    public FrameworkElement? TakeView(string id)
+    {
+        if (tools.FirstOrDefault(t => t.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) is not { } t) return null;
+        return view.Take(t.Id);
+    }
+
+    /// <summary>Takes what's at the right of the sub-tabs (SimEffects' Play / Stop), for a product's own tab row.</summary>
+    public UIElement? TakeHeader()
+    {
+        var header = view.Right;
+        view.Right = null;
+        return header;
+    }
 
     /// <summary>Something at the right of the sub-tabs' row, shown on every sub-tab (SimEffects' Profile drop-down; since Core 0.42).</summary>
     protected UIElement? HeaderRight
@@ -202,13 +237,13 @@ public abstract class AppletGroup : IApplet
     }
 
     /// <summary>The tools' setup wizard pages, one after another (null if none has one).</summary>
-    public FrameworkElement? SetupPage => Pages(tools.Select(t => t.Applet.SetupPage));
+    public FrameworkElement? SetupPage => Pages(Seen.Select(t => t.Applet.SetupPage));
 
     /// <summary>Some tool has a setting it can't do without missing.</summary>
-    public bool SetupRequired => tools.Any(t => { try { return t.Applet.SetupRequired; } catch { return false; } });
+    public bool SetupRequired => Seen.Any(t => { try { return t.Applet.SetupRequired; } catch { return false; } });
 
     /// <summary>The pages of the tools that need setting up, one after another.</summary>
-    public FrameworkElement? RequiredSetupPage => Pages(tools.Select(t => t.Applet.RequiredSetupPage));
+    public FrameworkElement? RequiredSetupPage => Pages(Seen.Select(t => t.Applet.RequiredSetupPage));
 
     private static FrameworkElement? Pages(IEnumerable<FrameworkElement?> all)
     {
@@ -229,7 +264,7 @@ public abstract class AppletGroup : IApplet
         get
         {
             var menus = new List<(Tool Tool, IReadOnlyList<AppletMenuItem> Items)>();
-            foreach (var t in tools)
+            foreach (var t in Seen)
             {
                 IReadOnlyList<AppletMenuItem>? items = null;
                 try { items = t.Applet.TrayMenu; } catch { }

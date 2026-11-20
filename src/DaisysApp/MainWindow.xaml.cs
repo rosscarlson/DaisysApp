@@ -52,7 +52,8 @@ public partial class MainWindow : Window
         var ordered = applets.OrderBy(a => settings.TabOrder.FindIndex(id => id.Equals(a.Meta.Id, StringComparison.OrdinalIgnoreCase)) is var i && i >= 0 ? i : int.MaxValue).ToList();
         loadedOrder = ordered.Select(a => a.Meta.Id).ToList();
         // (an applet shown in Settings is a sub-tab there instead)
-        foreach (var applet in ordered.Where(a => !a.Meta.InSettings)) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View, movable: true);
+        if (AppPaths.Product?.Tabs is { } own) AddProductTabs(own);
+        else foreach (var applet in ordered.Where(a => !a.Meta.InSettings)) tabs.Add(applet.Meta.Id, Any(applet.Meta.Title), applet.Meta.Icon, applet.View, movable: true);
         tabs.Reordered += order =>
         {
             // keep switched-off applets' places too
@@ -89,6 +90,13 @@ public partial class MainWindow : Window
         };
         AppNavigation.TabOpener = id =>
         {
+            // a product's tab, by "Module/SubTab" or the sub-tab's id
+            if (productTabs.Keys.FirstOrDefault(k => k.Equals(id, StringComparison.OrdinalIgnoreCase) || k.EndsWith("/" + id, StringComparison.OrdinalIgnoreCase)) is { } mine)
+            {
+                tabs.Select(mine);
+                ShowFromTray();
+                return true;
+            }
             // "Module/SubTab": that module's sub-tab (two modules' sub-tabs can share an id)
             if (id.Split('/') is [var module, var tool]
                 && applets.OfType<AppletGroup>().FirstOrDefault(g => ((IApplet)g).Meta.Id.Equals(module, StringComparison.OrdinalIgnoreCase)) is { } owner)
@@ -130,7 +138,7 @@ public partial class MainWindow : Window
         };
         tabs.Selected += id =>
         {
-            activeApplet = applets.FirstOrDefault(t => t.Meta.Id == id);
+            activeApplet = productTabs.TryGetValue(id, out var tool) ? tool : applets.FirstOrDefault(t => t.Meta.Id == id);
             settings.LastTab = id;
             Log.App.Debug($"Tab opened: {id}");
         };
@@ -157,6 +165,30 @@ public partial class MainWindow : Window
 
     private List<string> loadedOrder = new();
     private bool setupOpen;
+    private readonly Dictionary<string, IApplet> productTabs = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// A product's tabs (SimEffects Analysis: Analysis, Overlays, Recording): each a group's sub-tab taken out of it, in
+    /// the product's order; what was at the right of a group's sub-tabs (SimEffects' Play / Stop) goes left of Update.
+    /// </summary>
+    private void AddProductTabs(IEnumerable<string> own)
+    {
+        foreach (var name in own)
+        {
+            if (name.Split('/') is not [var groupId, var toolId]
+                || applets.OfType<AppletGroup>().FirstOrDefault(g => ((IApplet)g).Meta.Id.Equals(groupId, StringComparison.OrdinalIgnoreCase)) is not { } group
+                || group.Tools.FirstOrDefault(t => t.Id.Equals(toolId, StringComparison.OrdinalIgnoreCase)) is not { } tool
+                || group.TakeView(tool.Id) is not { } page)
+            {
+                Log.App.Warn($"{name}: not a sub-tab that's loaded");
+                continue;
+            }
+            productTabs[name] = tool.Applet;
+            tabs.Add(name, tool.Title, tool.Icon, page);
+        }
+        foreach (var group in applets.OfType<AppletGroup>())
+            if (group.TakeHeader() is { } header) ProductHeader.Children.Add(header);
+    }
 
     /// <summary>
     /// The wrapper at start: with no modules yet, asks which to download; with modules from another version (it was

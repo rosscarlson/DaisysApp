@@ -64,8 +64,12 @@ public sealed class ProfilesApplet : IApplet
         SimProfiles.Changed += Fill;
         Fill();
         var row = new StackPanel { Orientation = Orientation.Horizontal };
-        row.Children.Add(new TextBlock { Text = T("Profile:"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
-        row.Children.Add(box);
+        // (a product for one game, SimEffects Analysis: its one profile, so no drop-down)
+        if (SimProfiles.OnlyGame == null)
+        {
+            row.Children.Add(new TextBlock { Text = T("Profile:"), FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
+            row.Children.Add(box);
+        }
 
         playKey ??= Hotkeys.Add(new HotkeySpec
         {
@@ -74,7 +78,7 @@ public sealed class ProfilesApplet : IApplet
         }, () => SimProfiles.Play(!SimProfiles.Playing, "shortcut"));
         var glyph = new TextBlock { FontSize = 12 };
         glyph.SetResourceReference(TextBlock.FontFamilyProperty, "IconFont");
-        var play = new Button { Content = glyph, Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, BorderThickness = new Thickness(0) };
+        var play = new Button { Content = glyph, Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(SimProfiles.OnlyGame == null ? 8 : 0, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, BorderThickness = new Thickness(0) };
         play.Click += (_, _) => SimProfiles.Play(!SimProfiles.Playing, "Play / Stop");
         var key = HotkeyWindow.Button(T("Play / Stop shortcut"), () => playKey);
         key.Margin = new Thickness(2, 0, 0, 0);

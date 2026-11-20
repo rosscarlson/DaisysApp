@@ -664,6 +664,10 @@ internal sealed class GamingService : IDisposable
             (Spec("WebcamMute", T("Mute / unmute the virtual webcam"), () => Settings.WebcamMuteHotkey, v => Settings.WebcamMuteHotkey = v, "Ctrl+Alt+F8"), ToggleWebcamMute),
             (Spec("CamerasOff", T("Cameras off / on"), () => Settings.CamerasOffHotkey, v => Settings.CamerasOffHotkey = v), ToggleCamerasOff),
         };
+        // (a product without the Overlay sub-tab, SimEffects Analysis: none of the overlay's; without the virtual webcam: none of its)
+        bool overlay = AppPaths.Product?.Shows("Video", VideoApplet.Overlay) != false;
+        items.RemoveAll(i => !overlay && i.Item1.Id is HotkeyPrefix + "Overlay" or HotkeyPrefix + "Mode"
+            || !VirtualCamera.Shipped && i.Item1.Id is HotkeyPrefix + "Webcam" or HotkeyPrefix + "WebcamMute");
         for (int i = 0; i < Settings.Cameras.Count; i++)
         {
             var c = Settings.Cameras[i];

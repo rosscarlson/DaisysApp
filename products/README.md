@@ -6,13 +6,16 @@ releases. A folder each:
 
 | File | |
 |---|---|
-| `product.json` | `Name` (the program's and installer's name), `Title` (what people see), `Version` (its own, apart from Daisy's App's), `TagPrefix` (its releases' tags), `Guid` (its installer's AppId: never change it), `Modules` (the folders under `src/Modules` it carries) |
+| `product.json` | `Name` (the program's and installer's name), `Title` (what people see), `Version` (its own, apart from Daisy's App's), `TagPrefix` (its releases' tags), `Guid` (its installer's AppId: never change it), `Modules` (the folders under `src/Modules` it carries); since 0.2.1 `Tabs` (its tabs, each a group's sub-tab, `Group/Tool`, before Settings), `Hidden` (sub-tabs made but not shown, for a tab that needs them) and `Game` (its one game) |
 | `icon.png`, `icon.ico` | its icon: the program's, the installer's and the tray's (`icon.ico` is made from `icon.png`, sizes 16–256) |
 | `CHANGELOG.md` | its releases' notes, newest first |
 
-**At run time** the program finds `app.json` beside it (Title, TagPrefix; written by the build) and `app.ico`: Core's
-`AppPaths.Product`. With them it's the product: its title wherever the app's name shows (Core's `Loc` puts it in place
-of "Daisy's App" in every text), its icon in the tray, no Daisy's Server card, no module picker; and its updater
+**At run time** the program finds `app.json` beside it (Title, TagPrefix, Tabs, Hidden, Game; written by the build)
+and `app.ico`: Core's `AppPaths.Product`. With them it's the product: its title wherever the app's name shows (Core's
+`Loc` puts it in place of "Daisy's App" in every text), its icon in the tray, its tabs (each sub-tab taken out of its
+group by `AppletGroup.TakeView`; a group's Play / Stop at the top right), only the sub-tabs it makes (`AppletGroup.Add`;
+hidden ones have no settings, setup or tray items), one SimEffects profile for its game (`SimProfiles.OnlyGame`), no
+setup's tool picker, and in Settings → General no Save / Load, Modules, Daisy's Server, Audio or Storage; and its updater
 (`UpdateService`) reads only releases tagged with its prefix. Video's virtual webcam isn't shipped in one (Windows
 knows it as Daisy's App's).
 
@@ -25,4 +28,4 @@ App's updater (which reads the latest release) never sees it, and Daisy's App's 
 
 | Product | Modules | Tags |
 |---|---|---|
-| SimEffects Analysis (`SimEffectsAnalysis/`) | SimEffects, Video | `sea-v0.2.0`… |
+| SimEffects Analysis (`SimEffectsAnalysis/`) | SimEffects (Analysis, Overlays), Video (Recording); Forza Horizon | `sea-v0.2.0`… |

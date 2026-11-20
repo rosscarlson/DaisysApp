@@ -69,7 +69,10 @@ if ($prod) {
     # the program under the product's name (AppPaths takes its name from it), its title and tag prefix (app.json:
     # AppPaths.Product) and its tray icon (app.ico)
     Move-Item (Join-Path $publish 'DaisysApp.exe') (Join-Path $publish "$($prod.Name).exe")
-    [IO.File]::WriteAllText((Join-Path $publish 'app.json'), (@{ Title = $prod.Title; TagPrefix = $prod.TagPrefix } | ConvertTo-Json))
+    # (since 0.2.1: its tabs, the sub-tabs made only for them, and its one game)
+    $app = [ordered]@{ Title = $prod.Title; TagPrefix = $prod.TagPrefix }
+    foreach ($k in 'Tabs', 'Hidden', 'Game') { if ($prod.$k) { $app[$k] = $prod.$k } }
+    [IO.File]::WriteAllText((Join-Path $publish 'app.json'), ($app | ConvertTo-Json))
     Copy-Item $prodIcon (Join-Path $publish 'app.ico')
 }
 

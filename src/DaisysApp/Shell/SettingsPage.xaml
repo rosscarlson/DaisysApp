@@ -39,7 +39,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,12">
+                <Border x:Name="UpdatesCard" Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,12">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,10">
                             <Button x:Name="CheckNowButton" DockPanel.Dock="Right" Click="CheckNow_Click" Padding="10,3">
@@ -57,7 +57,7 @@
                     </StackPanel>
                 </Border>
                 <!-- every module's settings in one file, and back (Shell/SettingsBackup) -->
-                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="6,0,0,12">
+                <Border x:Name="BackupCard" Grid.Column="2" Style="{StaticResource Card}" Margin="6,0,0,12">
                     <StackPanel>
                         <TextBlock Text="{l:Tr 'Settings'}" Style="{StaticResource CardHeader}"/>
                         <Button x:Name="SaveSettingsButton" Click="SaveSettings_Click" Padding="10,3" HorizontalAlignment="Stretch"
@@ -140,8 +140,10 @@
                         <WrapPanel>
                             <TextBlock Text="{l:Tr 'Language'}" VerticalAlignment="Center" Margin="0,0,10,4"/>
                             <ComboBox x:Name="LanguageBox" Width="160" Margin="0,0,10,4" SelectionChanged="LanguageBox_SelectionChanged"/>
-                            <Button Content="{l:Tr 'Translation files'}" Margin="0,0,0,4" Click="OpenLanguageFolder_Click"
-                                    ToolTip="{l:Tr 'Open the folder with the app\'s modules; each has a lang folder with its translations'}"/>
+                            <Button Margin="0,0,0,4" Padding="8,4" Click="OpenLanguageFolder_Click" ToolTip="{l:Tr 'Translation files'}"
+                                    AutomationProperties.Name="{l:Tr 'Translation files'}">
+                                <TextBlock Text="&#xE838;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center"/>
+                            </Button>
                         </WrapPanel>
                         <DockPanel x:Name="LanguageRestartRow" Visibility="Collapsed" Margin="0,10,0,0">
                             <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:Tr 'Restart now'}" Click="RestartNow_Click"/>
