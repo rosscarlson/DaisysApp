@@ -63,11 +63,8 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 - **Antigravity (3.29.0, `AntigravityAgent.cs`):** Gemini on the user's Google AI plan (Gemini CLI lost those plans in
   June 2026), so a preset runs `agy.exe` (`%LOCALAPPDATA%\agy\bin`). No control channel: Stop/mode/model = restart
   with `--conversation`. Tested: `%TEMP%\agyharness`, `%TEMP%\agyscripts\drive.py`.
-- **Links (4.18.13):** `Markdown.Inlines` makes Hyperlinks of `[t](url)`, `<url>`, bare http(s) (trailing
-  punctuation and unbalanced `)` trimmed), a backticked URL; bold/italic recurse. Absolute paths: Explorer. The box's
-  `FlowMarkdown` writes a link whose `NavigateUri.OriginalString` is its text as plain text.
-- **Queue ✕ (4.18.13):** `Unqueue` → `RichInput.Put` (Markdown drawn, `[image n]` swapped for the picture, files
-  back in `attached`; one undo step).
+- **4.18.13:** `Markdown.Inlines` links `[t](url)`, `<url>`, bare/backticked http(s) (trailing punctuation trimmed),
+  absolute paths (Explorer). Queue ✕: `Unqueue` → `RichInput.Put` (images and files back; one undo step).
 
 ## Testing
 
