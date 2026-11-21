@@ -359,7 +359,13 @@ public static class Ui
 
     /// <inheritdoc cref="ProgramList(List{string}, Action, string?, string?, string?)"/>
     public static StackPanel ProgramList(List<string> list, Action changed, string? removeTip = null, string? none = null, string? addName = null,
-        int rows = 0, bool runningInBox = false)
+        int rows = 0, bool runningInBox = false) =>
+        ProgramList(list, changed, removeTip, none, addName, rows, runningInBox, false);
+
+    /// <inheritdoc cref="ProgramList(List{string}, Action, string?, string?, string?)"/>
+    /// <param name="bullets">(since SimEffects Analysis 0.4.0) each line indented after a bullet.</param>
+    public static StackPanel ProgramList(List<string> list, Action changed, string? removeTip, string? none, string? addName,
+        int rows, bool runningInBox, bool bullets)
     {
         const double LineHeight = 30;
         var s = new StackPanel();
@@ -383,6 +389,13 @@ public static class Ui
                 };
                 DockPanel.SetDock(take, Dock.Right);
                 line.Children.Add(take);
+                if (bullets)
+                {
+                    var dot = new TextBlock { Text = "•", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 8, 0) };
+                    dot.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+                    DockPanel.SetDock(dot, Dock.Left);
+                    line.Children.Add(dot);
+                }
                 line.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = name });
                 lines.Children.Add(line);
             }

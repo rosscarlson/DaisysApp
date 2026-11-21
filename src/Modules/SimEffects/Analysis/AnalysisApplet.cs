@@ -53,8 +53,9 @@ public sealed class AnalysisApplet : IApplet
             Id = "Analysis.OnOff", Module = T("Analysis"), Name = T("On / off"),
             Get = () => settings.OnOffKey, Set = v => { settings.OnOffKey = v; settings.Save(); },
         }, () => SetEnabled(!settings.Enabled));
-        // (since 4.13.3) Previous and Next Event: the marks above Compare's chart
-        eventKeys = new[]
+        // (since 4.13.3) Previous and Next Event: the marks above Compare's chart (since SimEffects Analysis 0.4.0 none
+        // in a product without it)
+        eventKeys = SessionsHidden ? Array.Empty<Hotkey>() : new[]
         {
             Hotkeys.Add(new HotkeySpec
             {
@@ -80,6 +81,12 @@ public sealed class AnalysisApplet : IApplet
         // (since 4.13.4) a track found on another map: the car's on it
         tracker.MapSeen += (g, m) => seenMap = (g, m);
         tracker.NewTrack += t => DaisysApp.Shell.Notifications.Show(T("Analysis"), F("A new track: {0}", settings.TrackName(t.Id)));
+        if (SessionsHidden && !Sessions.SessionShares.All.Auto)
+        {
+            Sessions.SessionShares.All.Auto = true;
+            Sessions.SessionShares.All.AutoSince = DateTime.Now;
+            Sessions.SessionShares.All.Save();
+        }
         view = new AnalysisView(this);
         // (since 3.28.0 the units are on the Profiles tab's Profile card)
         ProfileCard.UnitBoxes = () => AnalysisSettingsView.UnitBoxes(this);
@@ -94,6 +101,10 @@ public sealed class AnalysisApplet : IApplet
     }
 
     private const string AccountCard = "SimEffects/Analysis/Account";
+
+    /// <summary>(since SimEffects Analysis 0.4.0) A product without the sessions on the tab (on ForzaLeaderBoard's
+    /// website): each one shared by itself (from when that was first so), the tab the race videos' options and uploads.</summary>
+    private static bool SessionsHidden => AppPaths.Product?.Hides("SimEffects/Analysis/Sessions") == true;
 
     /// <summary>(since SimEffects Analysis 0.3.0) A product that asks for the ForzaLeaderBoard account: once, on the first run.</summary>
     public bool NeedsOnboarding => AppPaths.Product?.Asks(AccountCard) == true && !settings.AccountAsked && !Sessions.SessionServer.Leaderboard.SignedIn;

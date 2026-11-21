@@ -143,6 +143,8 @@ internal static class ProfileCard
             items.AddRange(versions.Select(v => new KeyValuePair<int?, string>(v.Version, v.Title)));
             var version = new ComboBox { ItemsSource = items, DisplayMemberPath = "Value", SelectedIndex = Math.Max(0, items.FindIndex(i => i.Key == p.Version)),
                 ToolTip = T("For its cars' names and laps; Auto: the one running") };
+            // (since SimEffects Analysis 0.4.0) as wide as its longest name, not the card's
+            if (settingsCard) { version.Width = 150; version.HorizontalAlignment = HorizontalAlignment.Left; }
             AutomationProperties.SetName(version, T("Version"));
             version.SelectionChanged += (_, _) =>
             {
@@ -177,7 +179,8 @@ internal static class ProfileCard
 
         panel.Children.Add(new TextBlock { Text = T("Processes"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4),
             ToolTip = T("With Auto Start, one of these starting plays this profile") });
-        var programs = Ui.ProgramList(p.Programs, SimProfiles.Edited, addName: T("Process to add"), rows: 3, runningInBox: true);
+        // (since SimEffects Analysis 0.4.0 on a product's card all of them, a bullet each, not 3 that scroll)
+        var programs = Ui.ProgramList(p.Programs, SimProfiles.Edited, null, null, T("Process to add"), settingsCard ? 0 : 3, true, bullets: settingsCard);
         // (since SimEffects Analysis 0.3.3) on a product's card the box to add one two thirds of the card
         if (settingsCard && programs.Children[^1] is FrameworkElement addLine)
         {

@@ -199,7 +199,7 @@
                                 <TextBlock Text="{l:Tr 'Quality'}" Style="{StaticResource Label}"/>
                                 <ComboBox x:Name="ProfileBox" SelectionChanged="Profile_Changed"/>
                             </DockPanel>
-                            <TextBlock x:Name="ProfileText" Margin="0,0,0,10" Style="{StaticResource SecondaryText}" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="ProfileText" Margin="0,0,0,10" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" TextAlignment="Right"/>
                             <DockPanel Margin="0,0,0,4">
                                 <TextBlock Text="{l:Tr 'Aspect Ratio'}" Style="{StaticResource Label}"/>
                                 <ComboBox x:Name="OutputBox" SelectionChanged="Output_Changed"

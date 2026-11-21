@@ -219,6 +219,9 @@ internal sealed class AnalysisView : UserControl
         scroller = SimUi.Scroll(page);
         dock.Children.Add(scroller);
         Content = dock;
+        // (since SimEffects Analysis 0.4.0) a product without the sessions here (on ForzaLeaderBoard's website): the race
+        // videos' options and the uploads, the rest made but not shown (the sessions still listed, to share them)
+        if (AppPaths.Product?.Hides("SimEffects/Analysis/Sessions") == true) Content = new UploadsView(applet, raceAnalysis, status);
         holdTimer.Tick += (_, _) =>
         {
             if (raceAnalysis.Reading) heldQuiet = 0;

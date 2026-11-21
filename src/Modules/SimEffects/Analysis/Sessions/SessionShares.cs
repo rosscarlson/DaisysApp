@@ -345,6 +345,23 @@ internal static class ShareQueue
         : SessionShares.All.Auto && Wanted(item) && WaitsForYouTube(item.Key) ? T("Waiting for YouTube")
         : "";
 
+    /// <summary>(since SimEffects Analysis 0.4.0) A session's share for its Uploads list, and a tip: Uploaded, Uploading
+    /// n%, Failed (why), Waiting for YouTube, Waiting for sign-in, Waiting, or Not uploaded (one from before, or no lap).</summary>
+    public static (string Text, string Tip) Status(SessionsView.Item item)
+    {
+        if (Progress(item.Key) is double p) return (F("Uploading {0:0}%", p * 100), "");
+        if (SessionShares.Of(item.Key) is { } s) return (T("Uploaded"), s.Shared.ToString("g"));
+        if (Failure(item.Key) is { } f) return (T("Failed"), f);
+        if (!SessionShares.All.Auto || !Wanted(item)) return (T("Not uploaded"), T("Right-click to upload"));
+        if (MustSignIn) return (T("Waiting for sign-in"), T("ForzaLeaderBoard"));
+        if (WaitsForYouTube(item.Key)) return (T("Waiting for YouTube"), "");
+        return (T("Waiting"), "");
+    }
+
+    /// <summary>(since SimEffects Analysis 0.4.0) A product without the sessions on its tab shares only with an account
+    /// (they're looked at on the website, as the user's).</summary>
+    private static bool MustSignIn => AppPaths.Product?.Hides("SimEffects/Analysis/Sessions") == true && !SessionServer.Leaderboard.SignedIn;
+
     /// <summary>(since 4.17.16) What a session's shared as: its track (else what YouTube's told), no description.</summary>
     public static string TitleOf(SessionsView.Item i) => i.TrackName.Length > 0 ? i.TrackName : SessionsView.Describe(i).Title;
 
@@ -509,7 +526,7 @@ internal static class ShareQueue
             // (not over a share going, or one just done)
             if (going.Count == 0 && !held) Idle();
         }
-        if (busy || !SessionServer.Leaderboard.Configured) return;
+        if (busy || !SessionServer.Leaderboard.Configured || MustSignIn) return;
         busy = true;
         try
         {
