@@ -219,6 +219,17 @@ public static class YouTube
     public static async Task<Uploaded> Upload(string file, string title, string description, YouTubePrivacy privacy,
         IProgress<double>? progress, CancellationToken cancel, IEnumerable<string>? tags = null, string category = "20")
     {
+        // (since 4.18.14 every step and failure in the app's log: a friend's uploads failed with nothing in it)
+        var info = new FileInfo(file);
+        Log.App.Info($"YouTube: upload asked: {file} ({(info.Exists ? $"{info.Length / 1048576.0:0.0} MB, written {info.LastWriteTime:G}" : "the file isn't there")}), \"{Title(title)}\", {privacy}; signed in {SignedIn} ({(Own ? "own client" : AppClient ? "app's client" : "no client")}, channel {Account.Channel})");
+        try { return await UploadFile(file, title, description, privacy, progress, cancel, tags, category); }
+        catch (OperationCanceledException) when (cancel.IsCancellationRequested) { Log.App.Info($"YouTube: upload of {Path.GetFileName(file)} stopped"); throw; }
+        catch (Exception ex) { Log.App.Warn($"YouTube: upload of {Path.GetFileName(file)} failed", ex); throw; }
+    }
+
+    private static async Task<Uploaded> UploadFile(string file, string title, string description, YouTubePrivacy privacy,
+        IProgress<double>? progress, CancellationToken cancel, IEnumerable<string>? tags, string category)
+    {
         long total = new FileInfo(file).Length;
         var meta = new JsonObject
         {
@@ -235,8 +246,9 @@ public static class YouTube
         };
         start.Headers.Add("X-Upload-Content-Length", total.ToString());
         start.Headers.Add("X-Upload-Content-Type", Mime(file));
+        Log.App.Info("YouTube: asking for an upload address");
         using var begun = await Send(start, cancel);
-        if (!begun.IsSuccessStatusCode) throw new IOException(await Problem(begun));
+        if (!begun.IsSuccessStatusCode) throw new IOException(await Problem(begun, "the upload address"));
         var session = begun.Headers.Location ?? throw new IOException(T("YouTube gave no upload address"));
         Log.App.Info($"YouTube: uploading {Path.GetFileName(file)} ({total / 1048576.0:0.0} MB, {privacy})");
 
@@ -256,7 +268,13 @@ public static class YouTube
             put.Content.Headers.ContentRange = n > 0 ? new ContentRangeHeaderValue(sent, sent + n - 1, total) : new ContentRangeHeaderValue(total);
             HttpResponseMessage answer;
             try { answer = await Send(put, cancel); }
-            catch (HttpRequestException) when (++failures <= 5) { await Task.Delay(TimeSpan.FromSeconds(2 * failures), cancel); sent = await Received(session, total, cancel) ?? sent; continue; }
+            catch (HttpRequestException ex) when (++failures <= 5)
+            {
+                Log.App.Info($"YouTube: sending at {sent / 1048576.0:0.0} MB failed ({ex.Message}), try {failures} of 5");
+                await Task.Delay(TimeSpan.FromSeconds(2 * failures), cancel);
+                sent = await Received(session, total, cancel) ?? sent;
+                continue;
+            }
             using (answer)
             {
                 if ((int)answer.StatusCode == 308)
@@ -277,11 +295,12 @@ public static class YouTube
                 }
                 if ((int)answer.StatusCode >= 500 && ++failures <= 5)
                 {
+                    Log.App.Info($"YouTube: sending at {sent / 1048576.0:0.0} MB: {(int)answer.StatusCode} {answer.ReasonPhrase}, try {failures} of 5");
                     await Task.Delay(TimeSpan.FromSeconds(2 * failures), cancel);
                     sent = await Received(session, total, cancel) ?? sent;
                     continue;
                 }
-                throw new IOException(await Problem(answer));
+                throw new IOException(await Problem(answer, $"sending at {sent / 1048576.0:0.0} MB"));
             }
         }
     }
@@ -327,7 +346,7 @@ public static class YouTube
     {
         string id = IdOf(video) ?? video;
         using var answer = await Send(new HttpRequestMessage(HttpMethod.Delete, "https://www.googleapis.com/youtube/v3/videos?id=" + Uri.EscapeDataString(id)), cancel);
-        if (!answer.IsSuccessStatusCode && answer.StatusCode != HttpStatusCode.NotFound) throw new IOException(await Problem(answer));
+        if (!answer.IsSuccessStatusCode && answer.StatusCode != HttpStatusCode.NotFound) throw new IOException(await Problem(answer, "deleting " + id));
         Log.App.Info($"YouTube: deleted {id}");
     }
 
@@ -389,19 +408,30 @@ public static class YouTube
         try
         {
             if (accessToken != null && DateTime.UtcNow < accessUntil) return accessToken;
-            if (!SignedIn) throw new InvalidOperationException(T("Not signed in to YouTube"));
+            if (!SignedIn)
+            {
+                Log.App.Warn($"YouTube: not signed in (sign-in kept {Account.RefreshProtected.Length > 0}, client {ClientId.Length > 0})");
+                throw new InvalidOperationException(T("Not signed in to YouTube"));
+            }
             try
             {
                 Took(await Post("https://oauth2.googleapis.com/token", new Dictionary<string, string>
                 {
                     ["client_id"] = ClientId, ["client_secret"] = Secret, ["refresh_token"] = Account.Refresh, ["grant_type"] = "refresh_token",
                 }, cancel));
+                Log.App.Info($"YouTube: access renewed until {accessUntil.ToLocalTime():T}");
             }
             catch (YouTubeRefused ex) when (ex.Code == "invalid_grant")
             {
+                Log.App.Warn($"YouTube: the sign-in was refused when renewing it (invalid_grant: {ex.Message}): signed out");
                 // (revoked, or a testing project's week-long sign-in ran out)
                 Forget();
                 throw new InvalidOperationException(T("YouTube's sign-in has run out: sign in again"));
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Log.App.Warn($"YouTube: renewing the access failed ({ex.GetType().Name}: {ex.Message})");
+                throw;
             }
             return accessToken!;
         }
@@ -431,12 +461,16 @@ public static class YouTube
         return json;
     }
 
-    /// <summary>What a refusal says: YouTube's own message, else its status.</summary>
-    private static async Task<string> Problem(HttpResponseMessage answer)
+    /// <summary>What a refusal says: YouTube's own message, else its status. (since 4.18.14) Logged whole: the status
+    /// and YouTube's answer (its reason, such as quotaExceeded or uploadLimitExceeded).</summary>
+    private static async Task<string> Problem(HttpResponseMessage answer, string doing)
     {
+        string text;
+        try { text = await answer.Content.ReadAsStringAsync(); } catch (Exception ex) { text = $"(unreadable: {ex.Message})"; }
+        Log.App.Warn($"YouTube: {doing} refused: {(int)answer.StatusCode} {answer.ReasonPhrase}: {(text.Length > 3000 ? text[..3000] + "…" : text)}");
         try
         {
-            var json = JsonNode.Parse(await answer.Content.ReadAsStringAsync());
+            var json = JsonNode.Parse(text);
             if (json?["error"]?["message"]?.GetValue<string>() is { Length: > 0 } m) return m;
         }
         catch { }

@@ -54,6 +54,11 @@ public static class Log
     /// <summary>The log named <paramref name="name"/> (spaces and punctuation are left out of it).</summary>
     public static Logger For(string name) => loggers.GetOrAdd(CleanName(name), n => new Logger(n));
 
+    /// <summary>(since 4.18.14) A product's modules write to its one log ("[SimEffects] …"), so the one file someone
+    /// sends has everything.</summary>
+    internal static Logger? OneLog(string name) =>
+        AppPaths.Product != null && !name.Equals(CleanName(AppName), StringComparison.OrdinalIgnoreCase) ? App : null;
+
     /// <summary>Raised for every line written (from any thread): the log's name and the entry.</summary>
     public static event Action<string, LogEntry>? Written;
 
@@ -234,6 +239,7 @@ public sealed class Logger
 
     public void Write(LogLevel level, string message)
     {
+        if (Log.OneLog(Name) is { } one) { one.Write(level, $"[{Name}] {message}"); return; }
         var t = Thread.CurrentThread;
         var entry = new LogEntry(DateTime.Now, level, t.ManagedThreadId.ToString(CultureInfo.InvariantCulture) + (t.Name is { Length: > 0 } n && n.Length < 40 ? " " + n : ""), message);
         try

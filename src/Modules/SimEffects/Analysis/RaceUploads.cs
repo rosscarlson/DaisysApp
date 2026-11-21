@@ -47,9 +47,12 @@ internal static class RaceUploads
             {
                 link.Upload = true;
                 failed.Remove(log);
+                Logging.Log.App.Info($"Analysis: {log}'s video queued for YouTube{(going.ContainsKey(log) ? " (already)" : "")}: {link.File}");
                 if (!going.ContainsKey(log)) going[log] = double.NaN;
                 any = true;
             }
+            else
+                Logging.Log.App.Info($"Analysis: {log}'s video not queued for YouTube: {(RaceVideos.Of(log) is not { } l ? "no video linked to it" : l.YouTube != null ? "on YouTube already (" + l.YouTube + ")" : l.File.Length == 0 ? "its file was deleted" : "its file isn't there: " + l.File)}");
         if (!any) return;
         RaceVideos.All.Save();
         Changed?.Invoke();
@@ -59,14 +62,17 @@ internal static class RaceUploads
     /// <summary>Those marked to go (a restart, or waiting for a sign-in), queued again.</summary>
     public static void Resume()
     {
-        if (!YouTube.SignedIn) return;
         var marked = RaceVideos.All.Videos.Where(v => v.Value.Upload && v.Value.YouTube == null).Select(v => v.Key).ToList();
+        if (marked.Count > 0 || !YouTube.SignedIn)
+            Logging.Log.App.Info($"Analysis: {marked.Count} race videos marked to go to YouTube{(YouTube.SignedIn ? "" : ", waiting: not signed in to YouTube")}");
+        if (!YouTube.SignedIn) return;
         if (marked.Count > 0) Queue(marked);
     }
 
     /// <summary>Stops the uploads (those waiting stay marked, for a later Resume).</summary>
     public static void StopAll()
     {
+        if (going.Count > 0) Logging.Log.App.Info($"Analysis: YouTube uploads stopped ({going.Count})");
         cancel?.Cancel();
         foreach (var k in going.Keys.ToList()) if (RaceVideos.Of(k) is { } l) l.Upload = false;
         going.Clear();
@@ -82,8 +88,19 @@ internal static class RaceUploads
         {
             while (going.Keys.FirstOrDefault() is { } log)
             {
-                if (RaceVideos.Of(log) is not { HasFile: true, YouTube: null } link) { going.Remove(log); continue; }
-                if (!YouTube.SignedIn) { failed[log] = T("Not signed in to YouTube"); going.Clear(); break; }
+                if (RaceVideos.Of(log) is not { HasFile: true, YouTube: null } link)
+                {
+                    Logging.Log.App.Info($"Analysis: {log}'s video passed over: {(RaceVideos.Of(log) is not { } l ? "no video linked to it" : l.YouTube != null ? "on YouTube already" : "its file isn't there: " + l.File)}");
+                    going.Remove(log);
+                    continue;
+                }
+                if (!YouTube.SignedIn)
+                {
+                    Logging.Log.App.Warn($"Analysis: {log}'s video couldn't go to YouTube: not signed in ({going.Count} waiting)");
+                    failed[log] = T("Not signed in to YouTube");
+                    going.Clear();
+                    break;
+                }
                 var (title, description) = Describe?.Invoke(log) ?? (F("Race {0}", Path.GetFileNameWithoutExtension(log)), "");
                 going[log] = 0;
                 Changed?.Invoke();
@@ -106,14 +123,14 @@ internal static class RaceUploads
                     link.YouTube = up.Url;
                     link.Upload = false;
                     RaceVideos.All.Save();
-                    Logging.Log.Here.Info($"Analysis: {log}'s video is on YouTube: {up.Url}");
+                    Logging.Log.App.Info($"Analysis: {log}'s video is on YouTube: {up.Url}");
                     if (RaceVideos.All.YouTubeDeleteLocal) DeleteFiles(new[] { log });
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception ex)
                 {
                     failed[log] = ex.Message;
-                    Logging.Log.Here.Warn($"Analysis: {log}'s video couldn't go to YouTube: {ex.Message}");
+                    Logging.Log.App.Warn($"Analysis: {log}'s video couldn't go to YouTube: {ex.GetType().Name}: {ex.Message}");
                 }
                 finally
                 {
@@ -160,7 +177,7 @@ internal static class RaceUploads
             string file = link.File;
             link.File = "";
             n++;
-            Logging.Log.Here.Info($"Analysis: {log}'s video file deleted (on YouTube: {link.YouTube})");
+            Logging.Log.App.Info($"Analysis: {log}'s video file deleted (on YouTube: {link.YouTube})");
             // (once the video shown has let go of it)
             Task.Run(async () =>
             {
@@ -169,7 +186,7 @@ internal static class RaceUploads
                     try { File.Delete(file); return; }
                     catch { await Task.Delay(1000); }
                 }
-                if (File.Exists(file)) Logging.Log.Here.Warn($"Analysis: the video file couldn't be deleted: {file}");
+                if (File.Exists(file)) Logging.Log.App.Warn($"Analysis: the video file couldn't be deleted: {file}");
             });
         }
         if (n > 0) RaceVideos.All.Save();

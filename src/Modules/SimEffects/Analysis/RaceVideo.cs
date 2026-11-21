@@ -95,6 +95,7 @@ internal sealed class RaceVideo
         var gone = RaceVideos.All.Videos.Keys.Where(k => !File.Exists(Path.Combine(SessionLog.Folder, k))).ToList();
         if (gone.Count > 0)
         {
+            Logging.Log.App.Info($"Analysis: {gone.Count} race videos' sessions gone, their links forgotten: {string.Join(", ", gone)}");
             foreach (var k in gone) RaceVideos.All.Videos.Remove(k);
             RaceVideos.All.Save();
         }
@@ -111,8 +112,8 @@ internal sealed class RaceVideo
     private void Began(string log)
     {
         if (recording != null) Ended(recording);
-        if (!settings.RecordVideo) return;
-        if (ScreenRecordings.Recorder is not { } r) { Logging.Log.Here.Info("Analysis: race not recorded: Video → Recording is off"); return; }
+        if (!settings.RecordVideo) { Logging.Log.App.Info($"Analysis: race {log} not recorded: Record each race is off"); return; }
+        if (ScreenRecordings.Recorder is not { } r) { Logging.Log.App.Info("Analysis: race not recorded: Video → Recording is off"); return; }
         // (not r.Busy: the last race's video is still being saved when the next race begins, and Recording starts this
         // one after it; it says when it's busy with the user's own)
         recording = log;
@@ -122,11 +123,11 @@ internal sealed class RaceVideo
             starting = false;
             if (started == null)
             {
-                Logging.Log.Here.Warn($"Analysis: the race's video couldn't start: {error}");
+                Logging.Log.App.Warn($"Analysis: the race's video couldn't start: {error}");
                 if (recording == log) recording = null;
                 return;
             }
-            Logging.Log.Here.Info($"Analysis: recording the race {log} to {started.File}");
+            Logging.Log.App.Info($"Analysis: recording the race {log} to {started.File}");
             RaceVideos.All.Videos[log] = new RaceVideoLink { File = started.File, Started = started.At };
             RaceVideos.All.Save();
             // (ended, or dropped, while it started)
@@ -138,6 +139,7 @@ internal sealed class RaceVideo
     {
         if (recording != log) return;
         recording = null;
+        Logging.Log.App.Info($"Analysis: race {log} ended: its video {(starting ? "still starting (stopped once it has)" : "stopping")}");
         if (!starting) ScreenRecordings.Recorder?.Stop(() => Saved(log));
     }
 
@@ -145,13 +147,16 @@ internal sealed class RaceVideo
     /// race not kept has its video dropped a moment after it ends).</summary>
     private void Saved(string log)
     {
-        if (!RaceVideos.All.YouTubeAuto || RaceVideos.Of(log) is not { YouTube: null } link) return;
+        var saved = RaceVideos.Of(log);
+        Logging.Log.App.Info($"Analysis: race {log}'s video saved: {(saved == null ? "no link to it (dropped?)" : $"{saved.File} ({(saved.HasFile ? $"{new FileInfo(saved.File).Length / 1048576.0:0.0} MB" : "the file isn't there")})")}; Upload to YouTube {(RaceVideos.All.YouTubeAuto ? "on" : "off")}");
+        if (!RaceVideos.All.YouTubeAuto || saved is not { YouTube: null } link) return;
         // (marked now, so a restart in the meantime still uploads it)
         link.Upload = true;
         RaceVideos.All.Save();
         _ = Task.Delay(TimeSpan.FromSeconds(20)).ContinueWith(_ =>
         {
             if (RaceVideos.Of(log) is { HasFile: true, YouTube: null }) RaceUploads.Queue(new[] { log });
+            else Logging.Log.App.Info($"Analysis: race {log}'s video not uploaded: {(RaceVideos.Of(log) is not { } l ? "dropped (the race wasn't kept)" : l.YouTube != null ? "on YouTube already" : "its file isn't there")}");
         }, TaskScheduler.FromCurrentSynchronizationContext());
     }
 
@@ -159,6 +164,7 @@ internal sealed class RaceVideo
     {
         if (starting && recording == log) { dropped.Add(log); return; }
         if (!RaceVideos.All.Videos.Remove(log, out var link)) return;
+        Logging.Log.App.Info($"Analysis: race {log} not kept: its video {Path.GetFileName(link.File)} dropped");
         RaceVideos.All.Save();
         string file = link.File;
         // (once the recorder has let go of it)
@@ -166,7 +172,7 @@ internal sealed class RaceVideo
         {
             for (int i = 0; i < 20 && File.Exists(file); i++)
             {
-                try { File.Delete(file); Logging.Log.Here.Info($"Analysis: race video dropped (no lap or race kept): {Path.GetFileName(file)}"); return; }
+                try { File.Delete(file); Logging.Log.App.Info($"Analysis: race video dropped (no lap or race kept): {Path.GetFileName(file)}"); return; }
                 catch { await Task.Delay(1000); }
             }
         });

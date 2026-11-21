@@ -325,6 +325,8 @@ internal static class ShareQueue
     // (the title bar's blue while a share goes; green or red when it's done)
     private const string Blue = "#58A6FF";
     private static bool waiting, held;
+    /// <summary>(since 4.18.14) Why sessions weren't shared by themselves when last considered ("" they were), logged when it changes.</summary>
+    private static string? lastWhy;
     private static int turn;
     /// <summary>(since 4.17.16) Several shared one after the other: which one's going, of how many (0: one alone).</summary>
     private static int batchAt, batchOf;
@@ -391,6 +393,7 @@ internal static class ShareQueue
         if (going.ContainsKey(item.Key)) return null;
         going[item.Key] = 0;
         failed.Remove(item.Key);
+        Logging.Log.App.Info($"Analysis: sharing {item.Key} (\"{title}\", video {RaceVideos.Of(item.Key)?.YouTube ?? "none"}, {(SessionShares.Of(item.Key) != null ? "shared before: its details sent again" : "new")})");
         Changed?.Invoke();
         Badge(T("Preparing"), title, Blue);
         try
@@ -405,7 +408,7 @@ internal static class ShareQueue
                 was.Description = description;
                 was.Video = link?.YouTube;
                 SessionShares.All.Save();
-                Logging.Log.Here.Info($"Analysis: {item.Key} on the server changed");
+                Logging.Log.App.Info($"Analysis: {item.Key} on the server changed");
                 Done(T("Share Complete"), title, TitleBadges.Green);
                 return null;
             }
@@ -431,14 +434,14 @@ internal static class ShareQueue
             string id = await SessionServer.Shared.UploadAsync(meta, text, progress);
             SessionShares.All.Shared[item.Key] = new SharedSession { Id = id, Title = title, Description = description, Shared = DateTime.Now, Video = link?.YouTube };
             SessionShares.All.Save();
-            Logging.Log.Here.Info($"Analysis: {item.Key} shared on the server ({id})");
+            Logging.Log.App.Info($"Analysis: {item.Key} shared on the server ({id})");
             Done(T("Share Complete"), title, TitleBadges.Green);
             return null;
         }
         catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException or InvalidOperationException)
         {
             failed[item.Key] = (SessionServer.Friendly(ex), DateTime.Now);
-            Logging.Log.Here.Warn($"Analysis: {item.Key} couldn't be shared: {ex.Message}");
+            Logging.Log.App.Warn($"Analysis: {item.Key} couldn't be shared: {ex.GetType().Name}: {ex.Message}");
             Done(T("Share Failed"), SessionServer.Friendly(ex), TitleBadges.Red);
             return SessionServer.Friendly(ex);
         }
@@ -526,7 +529,13 @@ internal static class ShareQueue
             // (not over a share going, or one just done)
             if (going.Count == 0 && !held) Idle();
         }
-        if (busy || !SessionServer.Leaderboard.Configured || MustSignIn) return;
+        string why = !SessionServer.Leaderboard.Configured ? "ForzaLeaderBoard isn't set up" : MustSignIn ? "not signed in to ForzaLeaderBoard" : "";
+        if (why != lastWhy)
+        {
+            lastWhy = why;
+            Logging.Log.App.Info(why.Length > 0 ? $"Analysis: sessions not shared by themselves: {why}" : $"Analysis: sessions shared by themselves {(SessionShares.All.Auto ? "from " + SessionShares.All.AutoSince.ToString("g") : "off")}");
+        }
+        if (busy || why.Length > 0) return;
         busy = true;
         try
         {

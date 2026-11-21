@@ -238,6 +238,9 @@ internal sealed class UploadsView : UserControl
     /// <summary>Sends what's left again: its video to YouTube, and the session (given the video's link once it's up).</summary>
     private async void Retry(SessionsView.Item item, bool video, bool share)
     {
+        var link = RaceVideos.Of(item.Key);
+        Logging.Log.App.Info($"Analysis: Retry on {item.Key}: video {(video ? "to upload" : "no")} (link {(link == null ? "none" : $"file {(link.HasFile ? link.File : link.File.Length == 0 ? "deleted" : "missing: " + link.File)}, YouTube {link.YouTube ?? "none"}, marked {link.Upload}")}, last failure {RaceUploads.Failure(item.Key) ?? "none"}), "
+            + $"share {(share ? "to send" : "no")} (last failure {ShareQueue.Failure(item.Key) ?? "none"}); YouTube signed in {YouTube.SignedIn}, ForzaLeaderBoard signed in {SessionServer.Leaderboard.SignedIn}");
         if (video)
         {
             if (YouTube.SignedIn) RaceUploads.Queue(new[] { item.Key });
