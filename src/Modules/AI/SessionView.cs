@@ -469,9 +469,9 @@ internal sealed class SessionView : UserControl
         {
             var row = new DockPanel { Margin = new Thickness(0, 0, 0, 3) };
             var now = new Button { Content = T("Send now"), Padding = new Thickness(8, 1, 8, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Send it at once: it's read as soon as it can be") };
-            var drop = new Button { Content = "\u2715", Padding = new Thickness(7, 1, 7, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Take it out of the queue") };
+            var drop = new Button { Content = "\u2715", Padding = new Thickness(7, 1, 7, 1), Margin = new Thickness(6, 0, 0, 0), ToolTip = T("Take it out of the queue, back into the box") };
             now.Click += (_, _) => { queued.Remove(item); ShowQueue(); Send(item.Text, bubble: true, item.Images, files: item.Files, voice: item.Voice); };
-            drop.Click += (_, _) => { queued.Remove(item); ShowQueue(); };
+            drop.Click += (_, _) => { queued.Remove(item); ShowQueue(); Unqueue(item.Text, item.Images, item.Files); };
             DockPanel.SetDock(drop, Dock.Right);
             DockPanel.SetDock(now, Dock.Right);
             row.Children.Add(drop);
@@ -484,6 +484,19 @@ internal sealed class SessionView : UserControl
             });
             queuePanel.Children.Add(row);
         }
+    }
+
+    /// <summary>A message taken out of the queue goes back into the box (its files back above it), to change or send again.</summary>
+    private void Unqueue(string text, List<ImageData> images, List<string> files)
+    {
+        if (files.Count > 0)
+        {
+            string line = Attachments.Line(files);
+            if (text.EndsWith(line)) text = text[..^line.Length].TrimEnd();
+            foreach (var f in files) if (!attached.Contains(f)) attached.Add(f);
+            ShowAttached();
+        }
+        input.Put(text, images);
     }
 
     /// <summary>The next message waiting, now the turn before is done.</summary>

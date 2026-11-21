@@ -195,33 +195,70 @@ internal static class Markdown
 
     private static IEnumerable<Inline> Inlines(string text)
     {
-        // `code`, **bold**, *italic* / _italic_, [text](url)
-        var pattern = new Regex(@"(`[^`]+`)|(\*\*[^*]+\*\*)|(\[[^\]]+\]\([^)\s]+\))|((?<![\w*])\*[^*\s][^*]*\*(?!\w))");
+        // `code`, **bold**, [text](url), <url>, a bare http(s) address, *italic*
+        var pattern = new Regex(@"(`[^`]+`)|(\*\*[^*]+\*\*)|(\[[^\]]+\]\([^)\s]+\))|(<https?://[^>\s]+>)|((?<![\w/])https?://\w[^\s<>`""'\[\]]*)|((?<![\w*])\*[^*\s][^*]*\*(?!\w))");
         int at = 0;
         foreach (Match m in pattern.Matches(text))
         {
             if (m.Index > at) yield return new Run(text[at..m.Index]);
             string v = m.Value;
-            if (m.Groups[1].Success) yield return new Run(v[1..^1]) { FontFamily = Look.Mono, FontSize = Look.CodeSize };
-            else if (m.Groups[2].Success) yield return new Bold(new Run(v[2..^2]));
+            int end = m.Index + m.Length;
+            if (m.Groups[1].Success)
+            {
+                var code = new Run(v[1..^1]) { FontFamily = Look.Mono, FontSize = Look.CodeSize };
+                // (an address in backticks is a link too)
+                yield return Regex.IsMatch(v[1..^1], @"^https?://\S+$") ? Link(code, v[1..^1]) : code;
+            }
+            else if (m.Groups[2].Success) yield return Spanned(new Bold(), v[2..^2]);
             else if (m.Groups[3].Success)
             {
                 var lm = Regex.Match(v, @"\[([^\]]+)\]\(([^)]+)\)");
-                var link = new Hyperlink(new Run(lm.Groups[1].Value)) { ToolTip = lm.Groups[2].Value };
-                if (Uri.TryCreate(lm.Groups[2].Value, UriKind.Absolute, out var uri) && (uri.Scheme == "https" || uri.Scheme == "http"))
-                {
-                    // (kept when it's copied, or pasted into the box)
-                    link.NavigateUri = uri;
-                    link.RequestNavigate += (_, e) => e.Handled = true;
-                }
-                if (uri != null && (uri.Scheme == "https" || uri.Scheme == "http"))
-                    link.Click += (_, _) => { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.ToString()) { UseShellExecute = true }); } catch { } };
-                yield return link;
+                yield return Link(new Run(lm.Groups[1].Value), lm.Groups[2].Value);
             }
-            else yield return new Italic(new Run(v[1..^1]));
-            at = m.Index + m.Length;
+            else if (m.Groups[4].Success) yield return Link(new Run(v[1..^1]), v[1..^1]);
+            else if (m.Groups[5].Success)
+            {
+                // (not the full stop or bracket after it)
+                string url = v.TrimEnd('.', ',', ';', ':', '!', '?', '*');
+                while (url.EndsWith(')') && url.Count(c => c == ')') > url.Count(c => c == '(')) url = url[..^1];
+                end = m.Index + url.Length;
+                yield return Link(new Run(url), url);
+            }
+            else yield return Spanned(new Italic(), v[1..^1]);
+            at = end;
         }
         if (at < text.Length) yield return new Run(text[at..]);
+    }
+
+    /// <summary>Bold or italic text, with any links in it still links.</summary>
+    private static Span Spanned(Span span, string text)
+    {
+        foreach (var inline in Inlines(text).ToList()) span.Inlines.Add(inline);
+        return span;
+    }
+
+    /// <summary>A link: a web page opens in the browser, a file or folder on this PC in Explorer.</summary>
+    private static Hyperlink Link(Inline content, string target)
+    {
+        var link = new Hyperlink(content) { ToolTip = target, Cursor = Cursors.Hand };
+        if (Uri.TryCreate(target, UriKind.Absolute, out var uri) && (uri.Scheme == "https" || uri.Scheme == "http"))
+        {
+            // (kept when it's copied, or pasted into the box)
+            link.NavigateUri = uri;
+            link.RequestNavigate += (_, e) => e.Handled = true;
+            link.Click += (_, _) => Ui.Open(uri.AbsoluteUri);
+            return link;
+        }
+        // a path (file:///…, C:\…), perhaps with a line after it (#L12, :12)
+        string path = uri is { IsFile: true } ? uri.LocalPath : Uri.UnescapeDataString(target.Replace('/', '\\'));
+        path = Regex.Replace(path, @"(#L\d+(-L?\d+)?|:\d+(:\d+)?)$", "");
+        if (System.IO.Path.IsPathFullyQualified(path))
+            link.Click += (_, _) =>
+            {
+                if (System.IO.Directory.Exists(path)) Ui.Open(path);
+                else if (System.IO.File.Exists(path)) Ui.ShowInExplorer(path);
+            };
+        return link;
     }
 }
 

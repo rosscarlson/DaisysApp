@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.13**
+- **AI**: links in the conversation open with a click: web addresses written out (not only Markdown links), in
+  `<…>` or backticks, inside bold or italic text; a link to a file or folder on this PC shows it in Explorer.
+- **AI**: a queued message's **✕** puts it back in the box (its images and files too) to change or send again; Ctrl+Z
+  takes it out.
+
 **4.18.12**
 - **Settings → Video → Recording**'s quality profiles: under the Profile line, the profile's settings are folded away
   in **Edit**, opened to change them. Changes wait for **Save** at the bottom (picking another profile drops them);

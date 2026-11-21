@@ -401,7 +401,7 @@
   "{0} messages wait: each is sent when the one before is done.": "{0} messages wait: each is sent when the one before is done.",
   "Send now": "Send now",
   "Send it at once: it's read as soon as it can be": "Send it at once: it's read as soon as it can be",
-  "Take it out of the queue": "Take it out of the queue",
+  "Take it out of the queue, back into the box": "Take it out of the queue, back into the box",
   "Pausing once this step is done…": "Pausing once this step is done…",
   "Paused. Resume carries on (it's told “{0}”); messages you send meanwhile wait in the queue, and Ctrl+Enter sends one at once.": "Paused. Resume carries on (it's told “{0}”); messages you send meanwhile wait in the queue, and Ctrl+Enter sends one at once.",
   "Paused by you: Resume carries on": "Paused by you: Resume carries on",

@@ -365,6 +365,33 @@ internal sealed class RichInput : RichTextBox
         return (text, images);
     }
 
+    /// <summary>A message put back (taken out of the queue): its Markdown drawn, its images where they were, after
+    /// anything already written; one step, so Ctrl+Z takes it out again.</summary>
+    public void Put(string md, IReadOnlyList<ImageData> images)
+    {
+        Flush();
+        CaretPosition = Document.ContentEnd;
+        if (!IsEmpty) { CaretPosition.InsertParagraphBreak(); CaretPosition = Document.ContentEnd; }
+        Selection.Select(CaretPosition, CaretPosition);
+        InsertMarkdown(md);
+        // (then each "[image n]" in it becomes its picture again)
+        var done = new HashSet<Run>();
+        while (Document.Blocks.SelectMany(Descendants).OfType<Run>().FirstOrDefault(r => !done.Contains(r) && Regex.IsMatch(r.Text, @"\[image \d+\]")) is { } run)
+        {
+            var m = Regex.Match(run.Text, @"\[image (\d+)\]");
+            int n = int.Parse(m.Groups[1].Value) - 1;
+            if (n < 0 || n >= images.Count || images[n].Bitmap() is not { } bmp) { done.Add(run); continue; }
+            var start = run.ContentStart.GetPositionAtOffset(m.Index)!;
+            new TextRange(start, run.ContentStart.GetPositionAtOffset(m.Index + m.Length)!).Text = "";
+            Selection.Select(start, start);
+            CaretPosition = start;
+            InsertImage(bmp);
+        }
+        CaretPosition = Document.ContentEnd;
+        Flush();
+        Focus();
+    }
+
     // ---------------------------------------------------------------- pasting
 
     private void OnPasting(object sender, DataObjectPastingEventArgs e)
@@ -704,7 +731,7 @@ internal static class FlowMarkdown
                     case Hyperlink h:
                         {
                             string text = new TextRange(h.ContentStart, h.ContentEnd).Text;
-                            string? uri = h.NavigateUri?.ToString() ?? h.ToolTip as string;
+                            string? uri = h.NavigateUri?.OriginalString ?? h.ToolTip as string;
                             bold = false;
                             pieces.Add(new(uri is { Length: > 0 } && uri != text ? $"[{text}]({uri})" : text, false, false, false, true));
                             break;

@@ -63,6 +63,11 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
 - **Antigravity (3.29.0, `AntigravityAgent.cs`):** Gemini on the user's Google AI plan (Gemini CLI lost those plans in
   June 2026), so a preset runs `agy.exe` (`%LOCALAPPDATA%\agy\bin`). No control channel: Stop/mode/model = restart
   with `--conversation`. Tested: `%TEMP%\agyharness`, `%TEMP%\agyscripts\drive.py`.
+- **Links (4.18.13):** `Markdown.Inlines` makes Hyperlinks of `[t](url)`, `<url>`, bare http(s) (trailing
+  punctuation and unbalanced `)` trimmed), a backticked URL; bold/italic recurse. Absolute paths: Explorer. The box's
+  `FlowMarkdown` writes a link whose `NavigateUri.OriginalString` is its text as plain text.
+- **Queue ✕ (4.18.13):** `Unqueue` → `RichInput.Put` (Markdown drawn, `[image n]` swapped for the picture, files
+  back in `attached`; one undo step).
 
 ## Testing
 
@@ -70,12 +75,13 @@ Claude Code reads this file only when it works in this folder. Keep it under abo
   to its window: `%TEMP%\tokui.ps1 -Click "AI|+" -Shot x.png -List`. Posted mouse messages don't reach WPF.
 - DaisysDev2 as a second PC on localhost for remote tabs; Python wire clients in `%TEMP%` (`renametest`,
   `accteditiles.py`), passphrase from DaisysDev's AI.json (DPAPI). Reflection harnesses on the built DLL
-  (`%TEMP%\accttest`, `promptstest`, `reqlogharness`, `imgsel`, `mdharness`, `voiceharness`).
+  (`%TEMP%\accttest`, `promptstest`, `reqlogharness`, `imgsel`, `mdharness`, `voiceharness`, `ailinkharness`: links and Put).
 
 ## Not tested yet (needs a real turn, a limit or a second account)
 
 - In a real turn: Auto-Compact, Conversation Mode/voice, the doing line, Compact after Release, Brief Replies, the
-  compacting counter and folded summary on screen; Alt+Enter/Enter (3.23.3).
+  compacting counter and folded summary on screen; Alt+Enter/Enter (3.23.3); a link clicked
+  and a queued message's ✕ on screen (4.18.13).
 - A real second Claude account (sign-in, `/usage`, a switch, a switch while waiting for a limit); mouse-only bits;
   Ctrl+Shift+T on a remote tab; Show All over 600 messages.
 

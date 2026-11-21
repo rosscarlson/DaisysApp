@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.18.13 (AI links, queue ✕):** a web address in Claude's reply (or your bubble) opens in the browser with a click;
+  a queued message's ✕ puts it back in the box with its images and files.
 - **4.18.11 (Copy/Cut freeze, on the Plex PC with Chrome Remote Desktop):** Notepad Copy and Cut are instant and
   paste elsewhere (and on the remote side); the AI tab's Sess ID copy. Log: no "Couldn't copy" lines.
 - **4.18.10 (new widgets click through):** Hardware → Performance and Zabbix: Make Widget starts with Click through

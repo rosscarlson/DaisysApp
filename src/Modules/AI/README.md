@@ -287,7 +287,8 @@ Each tab is a session with one AI.
   before), and **Send** (or **Alt+Enter**) sends. Slash commands work too, for example `/compact` (with a provider: `/compact`, `/clear` and `/rename`).
   - **The queue.** What you send while it's busy (or paused, or waiting for a limit) waits above the box, and is sent
     when it's done, one at a time: each once the turn before has finished (session notes wait until the queue's
-    empty). Each waiting message has **Send now** and **✕** (take it out). **Ctrl+Enter** sends at once instead: Claude
+    empty). Each waiting message has **Send now** and **✕**, which takes it out and puts it back in the box (its images and
+    files too, after anything written there; since 4.18.13), to change or send again. **Ctrl+Enter** sends at once instead: Claude
     reads it as soon as it can, in the middle of what it's doing. If a turn ends with an error or Stop, the queue waits
     for you: send something, or **Send now**.
   - **It's rich text.** Formatting pasted in is kept (from Word, Outlook, a web page, an editor, or the conversation
@@ -605,7 +606,8 @@ The same for any provider (below, "Claude" is whichever AI the tab uses).
 
 - **Your messages** are bubbles on the right, their formatting shown (as Markdown) and their images under them.
 - **Claude's text** streams in as it's written, then shows as Markdown (headings, lists, code blocks, tables,
-  `code`, **bold**, links). It can be selected and copied. It's what Claude tells you, so it stands out: at the left
+  `code`, **bold**, links). Links open with a click (since 4.18.13: web addresses written out too, not only Markdown
+  links; a file or folder on this PC shows in Explorer). It can be selected and copied. It's what Claude tells you, so it stands out: at the left
   edge, with an accent-coloured bar and a tint behind it, while the tool cards and the notes (a turn's summary, errors)
   are indented under it. When it was written is at its bottom right, in small type (with the date, if it wasn't
   today; read back from Claude Code's transcript for earlier replies; the agent's transcripts don't keep it). Only
