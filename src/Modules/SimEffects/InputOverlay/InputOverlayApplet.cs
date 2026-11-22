@@ -18,7 +18,7 @@ public static class OverlayKinds
     public static IEnumerable<string> All(bool analysis) =>
         new[] { Inputs, Dash, Radar }.Concat(analysis ? Blocks.All.Select(b => b.Id) : Enumerable.Empty<string>());
 
-    /// <summary>(since 4.17.9) The tab's boxes, in order, four across.</summary>
+    /// <summary>(since 4.17.9) The tab's boxes, in order, three across (four before 4.19.1).</summary>
     public static readonly string[] Boxes =
     {
         Dash, Inputs, Radar, Blocks.Performance.Id, Blocks.Tires.Id, Blocks.TrackMap.Id, Blocks.Position.Id, Blocks.Timing.Id, Blocks.Leaderboard.Id,

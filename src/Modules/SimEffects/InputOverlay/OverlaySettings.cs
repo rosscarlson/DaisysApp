@@ -69,6 +69,8 @@ public sealed class RadarSettings : IWidgetPlace
     public int Range { get; set; } = 30;
     /// <summary>Shown with no car near too (else it fades in and out).</summary>
     public bool Always { get; set; }
+    /// <summary>(since 4.19.1) The red wedges ahead, behind and to each side as a car comes near.</summary>
+    public bool Zones { get; set; } = true;
 }
 
 /// <summary>

@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.19.1**
+- **SimEffects → Overlays → Radar** (iRacing): red zones ahead, behind, left and right of your car, stronger the
+  closer the nearest car on that side, fading out as it moves away (**Zones**, on by default). They take the place of
+  the red edge for a car alongside.
+- **SimEffects → Overlays:** the boxes three across and three down.
+
 **4.19.0**
 - **Widgets and overlays** (every module's): one with **Click through** on (every new one) can be right-clicked
   to edit, move and stretch it or take Click through off; every other click still goes to what's under it. Before, a

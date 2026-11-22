@@ -13,7 +13,7 @@ namespace DaisysApp.Applets.SimEffects.InputOverlay;
 
 /// <summary>
 /// The Overlays tab (the Input Overlay's before 3.33.0). Top: on / off, its shortcut and what it's reading. Under it
-/// (since 4.17.9; a list and the one picked's settings before) a box per overlay, four across and two down
+/// (since 4.17.9; a list and the one picked's settings before) a box per overlay, three across and three down (four across before 4.19.1)
 /// (<see cref="OverlayKinds.Boxes"/>): its tick at the top left switches it on (and its settings with it), then its
 /// shortcut (show / hide), show / hide itself and Edit (place it); a picture of it (<see cref="OverlayPreviews"/>); and
 /// all its settings. Inputs: the overlay (history, background, traces), the speeds, and where the inputs come from (the
@@ -53,8 +53,8 @@ internal sealed class InputOverlayView : UserControl
         top.Children.Add(onOffKey);
         top.Children.Add(status);
 
-        for (int c = 0; c < 4; c++) boxes.ColumnDefinitions.Add(new ColumnDefinition { MinWidth = 240 });
-        for (int r = 0; r < (OverlayKinds.Boxes.Length + 3) / 4; r++) boxes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        for (int c = 0; c < 3; c++) boxes.ColumnDefinitions.Add(new ColumnDefinition { MinWidth = 240 });
+        for (int r = 0; r < (OverlayKinds.Boxes.Length + 2) / 3; r++) boxes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         var page = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
@@ -91,9 +91,9 @@ internal sealed class InputOverlayView : UserControl
         {
             string id = OverlayKinds.Boxes[i];
             var card = MakeBox(id);
-            card.Margin = new Thickness(0, 0, i % 4 < 3 ? 12 : 0, 12);
-            Grid.SetColumn(card, i % 4);
-            Grid.SetRow(card, i / 4);
+            card.Margin = new Thickness(0, 0, i % 3 < 2 ? 12 : 0, 12);
+            Grid.SetColumn(card, i % 3);
+            Grid.SetRow(card, i / 3);
             boxes.Children.Add(card);
         }
         ShowStates();
@@ -306,6 +306,7 @@ internal sealed class InputOverlayView : UserControl
         s.Children.Add(SimUi.Field(T("Range"), range, 100));
         s.Children.Add(SimUi.SliderRow(T("Background"), 0, 1, 0.05, r.Opacity, v => $"{v * 100:0}%",
             v => { r.Opacity = v; Redo(); }, T("How see-through the disc is")));
+        s.Children.Add(Tick(T("Zones"), r.Zones, v => { r.Zones = v; Redo(); }, T("Red ahead, behind and to each side as a car comes near")));
         s.Children.Add(Tick(T("Always show"), r.Always, v => { r.Always = v; Redo(); }, T("Off: fades in as a car comes near")));
         s.Children.Add(Ui.Note(T("iRacing only"), 6));
         return s;

@@ -40,7 +40,8 @@ internal sealed class RadarWindow : Widget
 
 /// <summary>
 /// The radar itself, in a 200 × 200 space: a disc its range across in each direction, a ring at half of it, your car
-/// in the middle and the others round it (red beside you, amber close, white further), each fading near the edge. The
+/// in the middle and the others round it (red beside you, amber close, white further), each fading near the edge; (since
+/// 4.19.1) a red wedge ahead, behind, left or right of yours, stronger the closer the nearest car on that side. The
 /// whole of it fades in while a car is within the range and out once none is (unless Always, or while edited).
 /// </summary>
 internal sealed class RadarView : FrameworkElement
@@ -49,7 +50,6 @@ internal sealed class RadarView : FrameworkElement
     private static readonly Color Red = Color.FromRgb(0xFF, 0x3B, 0x30), Amber = Color.FromRgb(0xFF, 0xB0, 0x1F), Far = Color.FromRgb(0xC8, 0xCC, 0xD2);
     private static readonly Pen Rim = Ui.Pen(Ui.Brush(Color.FromArgb(0x60, 0xFF, 0xFF, 0xFF)), 1);
     private static readonly Pen Ring = Ui.Pen(Ui.Brush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), 1);
-    private static readonly Pen Warn = Ui.Pen(Ui.Brush(Color.FromArgb(0xC0, 0xFF, 0x3B, 0x30)), 5);
 
     private const double R = 96, CarW = 1.9, CarL = 4.6;
 
@@ -57,6 +57,8 @@ internal sealed class RadarView : FrameworkElement
     private readonly Func<double> background;
     // each car's place across, eased (iRacing's side comes as a jump)
     private readonly Dictionary<int, double> across = new();
+    // each wedge's strength (ahead, right, behind, left), eased
+    private readonly double[] zones = new double[4];
     private double shown;
     private long last;
 
@@ -87,7 +89,7 @@ internal sealed class RadarView : FrameworkElement
         last = now;
         // (the game stopped: gone at once, not left half faded)
         shown = Still || (!Has && want == 0) ? want : want > shown ? Math.Min(want, shown + dt / 0.25) : Math.Max(want, shown - dt / 0.8);
-        if (shown <= 0.01) { across.Clear(); return; }
+        if (shown <= 0.01) { across.Clear(); Array.Clear(zones); return; }
 
         dc.PushTransform(new TranslateTransform((ActualWidth - 200 * scale) / 2, (ActualHeight - 200 * scale) / 2));
         dc.PushTransform(new ScaleTransform(scale, scale));
@@ -101,11 +103,9 @@ internal sealed class RadarView : FrameworkElement
         dc.DrawLine(Ring, new Point(c.X - R, c.Y), new Point(c.X + R, c.Y));
 
         double px = R / range;
-        // a car beside you: the disc's edge glows red on its side
-        if (cars.Any(k => k.Beside && k.Right < 0)) dc.DrawGeometry(null, Warn, Edge(c, 150, 210));
-        if (cars.Any(k => k.Beside && k.Right > 0)) dc.DrawGeometry(null, Warn, Edge(c, -30, 30));
-
         dc.PushClip(new EllipseGeometry(c, R - 1, R - 1));
+        if (settings.Zones) DrawZones(dc, c, cars, range, dt);
+
         var seen = new HashSet<int>();
         foreach (var k in cars)
         {
@@ -136,14 +136,51 @@ internal sealed class RadarView : FrameworkElement
         return new Rect(c.X + right * px - w / 2, c.Y - ahead * px - l / 2, w, l);
     }
 
-    private static Geometry Edge(Point c, double fromDeg, double toDeg)
+    /// <summary>
+    /// The wedges: the nearest car on each side (beside you left or right, else by where it is from yours) makes that
+    /// side's wedge show, faint at the half range and full within a car length, red fading out from your car.
+    /// </summary>
+    private void DrawZones(DrawingContext dc, Point c, IReadOnlyList<NearCar> cars, double range, double dt)
     {
-        Point At(double deg) => new(c.X + (R - 3) * Math.Cos(deg * Math.PI / 180), c.Y + (R - 3) * Math.Sin(deg * Math.PI / 180));
+        Span<double> want = stackalloc double[4];
+        double reach = range / 2;
+        foreach (var k in cars)
+        {
+            double x = across.TryGetValue(k.Id, out double was) ? was : k.Right;
+            int side = k.Beside || Math.Abs(x) > Math.Abs(k.Ahead) ? (x > 0 ? 1 : 3) : k.Ahead >= 0 ? 0 : 2;
+            double gap = Math.Max(0, Math.Sqrt(k.Ahead * k.Ahead + x * x) - CarL);
+            want[side] = Math.Max(want[side], k.Beside ? 1 : Math.Clamp(1 - gap / reach, 0, 1));
+        }
+        for (int i = 0; i < 4; i++)
+        {
+            zones[i] = Still ? want[i] : want[i] > zones[i] ? Math.Min(want[i], zones[i] + dt / 0.15) : Math.Max(want[i], zones[i] - dt / 0.5);
+            if (zones[i] <= 0.01) continue;
+            byte a = (byte)(200 * zones[i]);
+            var brush = new RadialGradientBrush
+            {
+                MappingMode = BrushMappingMode.Absolute, Center = c, GradientOrigin = c, RadiusX = R, RadiusY = R,
+                GradientStops =
+                {
+                    new GradientStop(Color.FromArgb(a, Red.R, Red.G, Red.B), 0.1),
+                    new GradientStop(Color.FromArgb((byte)(a / 2), Red.R, Red.G, Red.B), 0.55),
+                    new GradientStop(Color.FromArgb(0, Red.R, Red.G, Red.B), 1),
+                },
+            };
+            brush.Freeze();
+            dc.DrawGeometry(brush, null, Wedge(c, i * 90 - 90, 32));
+        }
+    }
+
+    /// <summary>A slice of the disc from its middle, <paramref name="half"/> degrees each side of <paramref name="deg"/> (0 right, clockwise).</summary>
+    private static Geometry Wedge(Point c, double deg, double half)
+    {
+        Point At(double d) => new(c.X + R * Math.Cos(d * Math.PI / 180), c.Y + R * Math.Sin(d * Math.PI / 180));
         var g = new StreamGeometry();
         using (var ctx = g.Open())
         {
-            ctx.BeginFigure(At(fromDeg), false, false);
-            ctx.ArcTo(At(toDeg), new Size(R - 3, R - 3), 0, false, SweepDirection.Clockwise, true, false);
+            ctx.BeginFigure(c, true, true);
+            ctx.LineTo(At(deg - half), false, false);
+            ctx.ArcTo(At(deg + half), new Size(R, R), 0, false, SweepDirection.Clockwise, false, false);
         }
         g.Freeze();
         return g;
