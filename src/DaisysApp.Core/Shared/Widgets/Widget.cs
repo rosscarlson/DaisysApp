@@ -21,8 +21,8 @@ public interface IWidgetPlace
     /// <summary>Its background's opacity, 0 (none: only what it shows) – 1 (since 3.32.0; before, the whole widget's).</summary>
     double Opacity { get; set; }
     bool Topmost { get; set; }
-    /// <summary>Clicks go through it to what's under it while it isn't being edited (since 3.32.0; Ctrl+Shift held
-    /// catches them again, to right-click it).</summary>
+    /// <summary>Clicks go through it to what's under it while it isn't being edited (since 3.32.0), but for a right-click,
+    /// which edits it (since 4.19.0; before, only with Ctrl+Shift held, which still catches every click).</summary>
     bool ClickThrough { get; set; }
 }
 
@@ -225,7 +225,7 @@ public class Widget : Window
             var topmost = new CheckBox { Content = T("On top"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.Topmost, ToolTip = T("Stay on top of other windows") };
             topmost.Click += (_, _) => { place.Topmost = topmost.IsChecked == true; Topmost = place.Topmost; };
             var through = new CheckBox { Content = T("Click through"), VerticalAlignment = VerticalAlignment.Center, IsChecked = place.ClickThrough || clickThrough,
-                IsEnabled = !clickThrough, ToolTip = T("Clicks go to what's under it; hold Ctrl+Shift to right-click it") };
+                IsEnabled = !clickThrough, ToolTip = T("Clicks go to what's under it; a right-click edits it") };
             void Through(bool on) { place.ClickThrough = on; Watch(true); save(); }
             through.Checked += (_, _) => Through(true);
             through.Unchecked += (_, _) => Through(false);
@@ -296,7 +296,7 @@ public class Widget : Window
             ApplyStyle();
             HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
         };
-        // (Ctrl+Shift held: click-through widgets catch the mouse again)
+        // (click-through widgets: a right-click edits it, Ctrl+Shift held catches the mouse again)
         Loaded += (_, _) => Watch(true);
         Closed += (_, _) => Watch(false);
         MouseRightButtonUp += (_, e) => { if (!editing && editStrip != null) { BeginEdit(); e.Handled = true; } };
@@ -487,11 +487,16 @@ public class Widget : Window
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(ex));
     }
 
-    // ---- Ctrl+Shift held: every click-through widget catches the mouse, so it can be right-clicked and edited ----
+    // ---- click-through widgets: a right-click edits one; Ctrl+Shift held, every one catches the mouse ----
 
     private static readonly List<Widget> watched = new();
     private static System.Windows.Threading.DispatcherTimer? keys;
     private static bool catching;
+
+    private IntPtr Hwnd => new WindowInteropHelper(this).Handle;
+
+    /// <summary>Showing, with clicks going through it now, and editable by a right-click.</summary>
+    private bool LetsThrough => ClickThrough && !editing && editStrip != null && IsVisible;
 
     private void Watch(bool on)
     {
@@ -499,19 +504,25 @@ public class Widget : Window
         else watched.Remove(this);
         if (keys == null)
         {
-            keys = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+            WidgetRightClick.Clicked += h => Application.Current?.Dispatcher.BeginInvoke(() =>
+                watched.FirstOrDefault(w => w.LetsThrough && w.Hwnd == h)?.BeginEdit());
+            keys = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
             keys.Tick += (_, _) =>
             {
                 bool held = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 && (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-                if (held == catching) return;
-                catching = held;
-                foreach (var w in watched) if (w.ClickThrough) w.ApplyStyle();
+                if (held != catching)
+                {
+                    catching = held;
+                    foreach (var w in watched) if (w.ClickThrough) w.ApplyStyle();
+                }
+                WidgetRightClick.Watch(!held && WidgetRightClick.Pointer(out var p)
+                    ? watched.Where(w => w.LetsThrough && WidgetRightClick.Over(w.Hwnd, p)).Select(w => w.Hwnd).ToArray() : Array.Empty<IntPtr>());
             };
         }
         // (polled only while a widget lets clicks through)
         bool any = watched.Any(w => w.ClickThrough);
         if (any && !keys.IsEnabled) keys.Start();
-        else if (!any && keys.IsEnabled) { keys.Stop(); catching = false; }
+        else if (!any && keys.IsEnabled) { keys.Stop(); catching = false; WidgetRightClick.Watch(Array.Empty<IntPtr>()); }
     }
 
     private void SaveBounds()

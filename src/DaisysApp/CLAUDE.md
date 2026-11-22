@@ -68,6 +68,8 @@ short (under ~8 KB): condense what's done.
 - **Widgets (3.7.0, 3.17.2, Core 0.35/0.41):** `Shared/Widgets/Widget` (`Aspect` via WM_SIZING, edit strip via
   WM_NCHITTEST, `MakeText`/`MenuItem`/`Offer`/`Menu`, `DeleteButton`, `ListCard`); B2KR's `PopOutWindow` is one.
   4.6.8: every strip in rows (`stacked` ignored); a new widget (`Width <= 0`, strip) starts `ClickThrough`. 4.18.10: modules leave a new place's size 0 (Performance, Zabbix pre-sized it, so never got it; Zabbix host's 260×190 is its `firstSize`).
+  4.19.0 (asked: no overlay could be right-clicked): `WidgetRightClick` edits a click-through one on a right-click (WH_MOUSE_LL
+  on its own thread, only while the pointer, shown, is over one: the 100 ms timer). Click-through stays the default.
   4.15.2: every widget not clicking through rests on the 1-alpha `CatchBrush` (card or not; before, card-less ones
   caught right-clicks only where their body drew), and so does a click-through one while Ctrl+Shift is held.
   4.18.8 (asked: a widget at the screen's bottom hid its strip): strip above (`PlaceStrip`) when it won't fit below

@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.19.0**
+- **Widgets and overlays** (every module's): one with **Click through** on (every new one) can be right-clicked
+  to edit, move and stretch it or take Click through off; every other click still goes to what's under it. Before, a
+  right-click went through too unless Ctrl+Shift was held. Over a game that hides the mouse pointer the right button
+  stays the game's (Ctrl+Shift and a right-click still works there).
+
 **4.18.14**
 - **SimEffects → Overlays → Radar** (new, iRacing): the cars round yours from above, yours in the middle and ahead up.
   It fades in as a car comes within its range (20–60 m ahead and behind) and out once none is (or **Always show**). A

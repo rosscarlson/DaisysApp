@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.19.0 (widgets):** right-click a click-through overlay (Inputs, Radar, Shaker meters), on the desktop and over a
+  game: its edit strip shows and nothing opens under it; left clicks and the wheel still go through; Done, then again.
 - **4.18.14 (SimEffects → Overlays → Radar, iRacing):** tested with a fake iRacing (shared memory, cars passing
   on both sides, `%LOCALAPPDATA%\Temp\radartest\fake_ir.py`). To try in a real race: Overlays on, Radar ticked; it fades in
   as a car comes near; a car alongside on the right side of the disc when the spotter calls it there; no cars from the

@@ -138,8 +138,8 @@ in its own colour.
 minutes, live, with the current value) to keep anywhere on the screen, like a Mini Mirror. When it's new, drag it into
 place and stretch it from any edge or corner; the strip at its bottom sets how see-through its
 **Background** is (since 3.32.0; the graph and its numbers stay solid, with a shadow when the background is faint), whether it
-stays **on top** of other windows (it costs nothing extra), **Click through** (clicks go to whatever is under it; hold
-Ctrl+Shift to right-click it again), and how much time it shows (1 to 10 minutes); **Done** fixes it. **Right-click**
+stays **on top** of other windows (it costs nothing extra), **Click through** (clicks go to whatever is under it,
+but for a right-click), and how much time it shows (1 to 10 minutes); **Done** fixes it. **Right-click**
 a widget to change it again. The **Widgets** card under Processes lists them, to change or delete each (the trash can turns into a red ✕: click it again to delete; the same in every
 module's widgets, Core's `Widget.DeleteButton`, since 3.17.2). They're saved,
 and come back where you left them when Daisy's App starts.
