@@ -116,7 +116,8 @@ internal sealed class OverlayReader : IDisposable
             return lastFrame;
         }
         if (reopen) { reopen = false; Close(); }
-        bool device = settings.Source == OverlaySource.Device;
+        // (since 4.20.0) a recording played: its pedals and wheel, whatever's read while driving
+        bool device = settings.Source == OverlaySource.Device && !SimData.Playback;
         // the module's telemetry (the profile in use's game): the speed, and in Game mode the pedals and wheel (it paces
         // the loop when there are no controllers to read)
         lease ??= SimData.Open();

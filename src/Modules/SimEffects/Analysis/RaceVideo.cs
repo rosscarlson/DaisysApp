@@ -82,6 +82,20 @@ internal sealed class RaceVideo
     /// <summary>The race (its log's file name) being recorded, or starting to be.</summary>
     private string? recording;
     private bool starting;
+
+    /// <summary>(since 4.20.0) A race's video is being recorded, or starting to be (SimEffects' Record waits).</summary>
+    public static bool Recording { get; private set; }
+    /// <summary><see cref="Recording"/> changed (on the UI thread).</summary>
+    public static event Action? RecordingChanged;
+
+    private void SetRecording(string? log)
+    {
+        recording = log;
+        if (Recording == (log != null)) return;
+        Recording = log != null;
+        RecordingChanged?.Invoke();
+    }
+
     /// <summary>Races dropped while their video was starting.</summary>
     private readonly HashSet<string> dropped = new(StringComparer.OrdinalIgnoreCase);
 
@@ -116,15 +130,16 @@ internal sealed class RaceVideo
         if (ScreenRecordings.Recorder is not { } r) { Logging.Log.App.Info("Analysis: race not recorded: Video → Recording is off"); return; }
         // (not r.Busy: the last race's video is still being saved when the next race begins, and Recording starts this
         // one after it; it says when it's busy with the user's own)
-        recording = log;
+        SetRecording(log);
         starting = true;
-        r.Start((started, error) =>
+        // (since 4.20.0: a session being recorded ends first)
+        Recordings.SimRecorder.MakeWay(() => r.Start((started, error) =>
         {
             starting = false;
             if (started == null)
             {
                 Logging.Log.App.Warn($"Analysis: the race's video couldn't start: {error}");
-                if (recording == log) recording = null;
+                if (recording == log) SetRecording(null);
                 return;
             }
             Logging.Log.App.Info($"Analysis: recording the race {log} to {started.File}");
@@ -132,13 +147,13 @@ internal sealed class RaceVideo
             RaceVideos.All.Save();
             // (ended, or dropped, while it started)
             if (recording != log) r.Stop(() => { if (dropped.Remove(log)) Dropped(log); });
-        });
+        }));
     }
 
     private void Ended(string log)
     {
         if (recording != log) return;
-        recording = null;
+        SetRecording(null);
         Logging.Log.App.Info($"Analysis: race {log} ended: its video {(starting ? "still starting (stopped once it has)" : "stopping")}");
         if (!starting) ScreenRecordings.Recorder?.Stop(() => Saved(log));
     }
@@ -187,6 +202,6 @@ internal sealed class RaceVideo
             // (uploaded at the next start, when it's kept)
             if (RaceVideos.All.YouTubeAuto && RaceVideos.Of(recording) is { YouTube: null } link) { link.Upload = true; RaceVideos.All.Save(); }
         }
-        recording = null;
+        SetRecording(null);
     }
 }

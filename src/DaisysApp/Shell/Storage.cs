@@ -46,6 +46,8 @@ internal static class Storage
             Logs, f => f.Name.StartsWith("usbmon_", StringComparison.OrdinalIgnoreCase), false),
         new Kind("forza", T("Race logs"), T("SimEffects → Analysis' log of each race kept, which its Race Analysis reads"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.DaisysAppName, "ForzaSessions"), _ => true, false),
+        new Kind("simrecordings", T("SimEffects recordings"), T("SimEffects → Recordings' telemetry (the videos stay in Video → Recording's folder)"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "SimRecordings"), _ => true, false),
         new Kind("ai", T("AI conversations"), T("The AI tab's conversations with Gemini, OpenAI, Ollama and other providers (Claude Code keeps its own, in your user folder's .claude)"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppPaths.ShortName, "AI sessions"), _ => true, false),
         new Kind("iracing", T("iRacing races"), T("Gaming → iRacing's copy of your races, ratings and totals (deleted, the next sync fetches them all again)"),

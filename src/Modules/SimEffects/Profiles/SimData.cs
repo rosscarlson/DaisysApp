@@ -10,7 +10,25 @@ public static class SimData
 {
     private static volatile Box current = new(null);
 
-    private sealed record Box((Game Game, int Port)? Key);
+    private sealed record Box((Game Game, int Port)? Key, Recorded? Playing = null);
+
+    /// <summary>(since 4.20.0) A recording read in place of the game (<see cref="Play"/>): its game, the game's version and its reader.</summary>
+    internal sealed record Recorded(Game Game, string? Edition, Func<ITelemetrySource> Source);
+
+    private static volatile Recorded? recorded;
+
+    /// <summary>(since 4.20.0) A recording is being played: every tool reads it, whatever the profile's game.</summary>
+    public static bool Playback => recorded != null;
+
+    /// <summary>(since 4.20.0) Every tool reads a recording as if its game were running, or (null) the game again.</summary>
+    internal static void Play(Recorded? r)
+    {
+        recorded = r;
+        if (followed is not { } p) return;
+        FollowVersion(p);
+        FollowGame(p);
+        SetGameRunning(running3s);
+    }
 
     /// <summary>The game being read and its port (null: the profile has none).</summary>
     public static (Game Game, int Port)? Game => current.Key;
@@ -32,7 +50,7 @@ public static class SimData
     /// <summary>The Forza being read (<see cref="CarNames.Edition"/>): the profile's version, or the one running.</summary>
     private static void FollowVersion(SimProfile p)
     {
-        string? edition = p.Game is { } g ? CarNames.Key(g, p.Version ?? running) : null;
+        string? edition = recorded is { } r ? r.Edition ?? CarNames.Key(r.Game, null) : p.Game is { } g ? CarNames.Key(g, p.Version ?? running) : null;
         if (edition == CarNames.Edition) return;
         CarNames.Edition = edition;
         if (edition != null) Logging.Log.Here.Info($"SimEffects: cars named as in {edition}{(p.Version == null ? " (the one running, or the newest)" : "")}");
@@ -43,8 +61,21 @@ public static class SimData
     {
         followed = p;
         FollowVersion(p);
+        FollowGame(p);
+    }
+
+    private static void FollowGame(SimProfile p)
+    {
+        if (recorded is { } r)
+        {
+            if (ReferenceEquals(current.Playing, r)) return;
+            current = new Box((r.Game, 0), r);
+            Logging.Log.Here.Info($"SimEffects: reading a recording of {r.Game}");
+            Changed?.Invoke();
+            return;
+        }
         (Game, int)? key = p.Game is { } g ? (g, Games.UsesPort(g) ? p.Port : 0) : null;
-        if (key == current.Key) return;
+        if (key == current.Key && current.Playing == null) return;
         current = new Box(key);
         Logging.Log.Here.Info(key is { } k ? $"SimEffects: reading {k.Item1}{(Games.UsesPort(k.Item1) ? $" on UDP {k.Item2}" : "")}" : "SimEffects: no game to read");
         Changed?.Invoke();
@@ -59,7 +90,7 @@ public static class SimData
     {
         if (Game is not { } g) return T("No game in this profile");
         if (source?.Problem is { } problem) return problem;
-        string game = Games.Title(g.Game);
+        string game = Playback ? F("{0} (recording)", Games.Title(g.Game)) : Games.Title(g.Game);
         if (receiving) return live ? F("{0}: driving", game) : F("{0}: not driving", game);
         return "";
     }
@@ -71,8 +102,13 @@ public static class SimData
     /// <summary><see cref="GameRunning"/> changed (on the UI thread).</summary>
     public static event Action? GameRunningChanged;
 
+    /// <summary>Its game really running, as last looked (a recording played counts as running).</summary>
+    private static bool running3s;
+
     internal static void SetGameRunning(bool on)
     {
+        running3s = on;
+        on |= Playback;
         if (on == GameRunning) return;
         GameRunning = on;
         Logging.Log.Here.Info($"SimEffects: the profile's game {(on ? "is running" : "isn't running")}");
@@ -95,7 +131,8 @@ public static class SimData
             if (!ReferenceEquals(want, leased))
             {
                 lease?.Dispose();
-                lease = want.Key is { } k ? TelemetryHub.Open(k.Game, k.Port) : null;
+                lease = want.Playing is { } r ? TelemetryHub.Open(r, $"a recording of {r.Game}", r.Source)
+                    : want.Key is { } k ? TelemetryHub.Open(k.Game, k.Port) : null;
                 leased = want;
             }
             if (lease == null) { Thread.Sleep(Math.Max(1, timeoutMs)); return false; }

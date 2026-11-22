@@ -51,12 +51,14 @@ internal sealed class GameSwitcher : IDisposable
             if (hit.p != null)
             {
                 played = hit.p;
+                // (a recording being played makes way for the game)
+                Recordings.SimPlayback.End("a game started", restore: false);
                 SimProfiles.Use(hit.p, $"{game}.exe started");
             }
             else if (played is { } p)
             {
                 played = null;
-                if (SimProfiles.Active == p && SimProfiles.Playing) SimProfiles.Play(false, $"{ended}.exe ended");
+                if (!Recordings.SimPlayback.GameEnded(p) && SimProfiles.Active == p && SimProfiles.Playing) SimProfiles.Play(false, $"{ended}.exe ended");
             }
         }
         catch (Exception ex) { Logging.ErrorLog.Write("SimEffects games", ex); }

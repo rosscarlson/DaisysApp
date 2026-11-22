@@ -11,7 +11,7 @@ public static class SimBadges
 {
     private const string Id = "SimEffects";
     /// <summary>The tools in the bubble's order, by their profile id.</summary>
-    private static readonly string[] order = { "BassShaker", "InputOverlay", "Fanatec", "AmbiLight", "Arduino" };
+    private static readonly string[] order = { "BassShaker", "InputOverlay", "Fanatec", "AmbiLight", "Arduino", "Recordings" };
     private static readonly object gate = new();
     private static readonly Dictionary<string, (string Text, string Tip)> parts = new(StringComparer.OrdinalIgnoreCase);
     private static bool following;

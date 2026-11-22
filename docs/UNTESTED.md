@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.20.0 (SimEffects → Recordings):** tested with a fake Forza. To try on the rig: Record (and its shortcut) in free roam,
+  Stop; Recordings → Play with the video popped out on the Shaker's tab: the shakers match what's seen (else Sync's buttons),
+  changes stay in the game's profile, Stop playback puts the profile back; iRacing / ACC too; a race starting while it
+  records (Record each race on) ends it and records the race.
 - **4.19.1 (Radar zones, Overlays 3 × 3):** in an iRacing race, the red zone on the side a car is: behind as one
   closes up, left or right when the spotter calls it alongside, ahead as you close on one; fades as it pulls away.
 - **4.19.0 (widgets):** right-click a click-through overlay (Inputs, Radar, Shaker meters), on the desktop and over a

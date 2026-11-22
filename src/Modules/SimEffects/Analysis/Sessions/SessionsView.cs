@@ -1517,7 +1517,7 @@ internal sealed class SessionsView
     /// 4.10.9 the window can have something under it, <paramref name="below"/> (the Video's timeline), each growing with it.</summary>
     private static int open;
 
-    private static FrameworkElement PopOut(string title, FrameworkElement content, Action<bool>? popped = null, FrameworkElement? below = null, double width = 720, double height = 480)
+    internal static FrameworkElement PopOut(string title, FrameworkElement content, Action<bool>? popped = null, FrameworkElement? below = null, double width = 720, double height = 480)
     {
         var slot = new Grid { MinHeight = 240 };
         var place = new Border { Child = content };

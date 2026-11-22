@@ -8,15 +8,21 @@ namespace DaisysApp.Applets.SimEffects.Telemetry;
 public static class TelemetryHub
 {
     private static readonly object gate = new();
-    private static readonly Dictionary<(Game, int), Feed> feeds = new();
+    private static readonly Dictionary<object, Feed> feeds = new();
 
     /// <summary>A lease on the game's telemetry (the port only counts for the games that use one). Dispose it when done.</summary>
     public static ITelemetrySource Open(Game game, int port)
     {
-        var key = (game, Games.UsesPort(game) ? port : 0);
+        int p = Games.UsesPort(game) ? port : 0;
+        return Open((game, p), $"{game}{(Games.UsesPort(game) ? $" on UDP {port}" : "")}", () => Games.Source(game, p));
+    }
+
+    /// <summary>(since 4.20.0) A lease on another source, shared by <paramref name="key"/> (a recording being played).</summary>
+    internal static ITelemetrySource Open(object key, string name, Func<ITelemetrySource> make)
+    {
         lock (gate)
         {
-            if (!feeds.TryGetValue(key, out var feed)) feeds[key] = feed = new Feed(key);
+            if (!feeds.TryGetValue(key, out var feed)) feeds[key] = feed = new Feed(key, name, make);
             feed.Users++;
             return new Lease(feed);
         }
@@ -35,7 +41,9 @@ public static class TelemetryHub
     /// <summary>A game's reader and its newest frame.</summary>
     private sealed class Feed
     {
-        public readonly (Game Game, int Port) Key;
+        public readonly object Key;
+        private readonly string name;
+        private readonly Func<ITelemetrySource> make;
         public int Users;
         private readonly TelemetryFrame latest = new();
         private long seq;
@@ -43,9 +51,11 @@ public static class TelemetryHub
         private readonly Thread thread;
         private ITelemetrySource? source;
 
-        public Feed((Game, int) key)
+        public Feed(object key, string name, Func<ITelemetrySource> make)
         {
             Key = key;
+            this.name = name;
+            this.make = make;
             thread = new Thread(Loop) { IsBackground = true, Name = "DaisysApp-Telemetry", Priority = ThreadPriority.AboveNormal };
             thread.Start();
         }
@@ -56,8 +66,8 @@ public static class TelemetryHub
         {
             try
             {
-                source = Games.Source(Key.Game, Key.Port);
-                Logging.Log.Here.Info($"Telemetry: listening for {Key.Game}{(Games.UsesPort(Key.Game) ? $" on UDP {Key.Port}" : "")}");
+                source = make();
+                Logging.Log.Here.Info($"Telemetry: listening for {name}");
                 var frame = new TelemetryFrame();
                 while (!stop)
                 {
@@ -74,7 +84,7 @@ public static class TelemetryHub
             finally
             {
                 source?.Dispose();
-                Logging.Log.Here.Info($"Telemetry: stopped listening for {Key.Game}");
+                Logging.Log.Here.Info($"Telemetry: stopped listening for {name}");
             }
         }
 

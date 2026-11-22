@@ -2,6 +2,17 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.20.0: Recordings (2026-11-22)
+
+- Asked: Record (between Play and its shortcut button, bindable) and a Recordings tab playing one as if the game ran, with its
+  video. Decided: a race with Record each race on ends a recording (kept); Record needs Video → Recording; Stop playback
+  restores the profile before; frames, not packets, recorded (every game, `FrameFile.cs`'s reflection); Loop, Sync, pop-out added.
+- A new reader of `SimData` must check `TelemetryFrame.Playback` before keeping or learning anything.
+- Tested in a copy (DaisysRec: only SimEffects and Video; fake Forza `%LOCALAPPDATA%\Temp\rectest\fake_fh.py`, `ui.ps1`
+  UIA): record, play from Desktop and back, loop, pause, seek, pop-out, Shaker meters, a race ending it, killed while
+  recording (its 20 s play), delete. Store Python writes to a virtual AppData: copy settings in with bash. Not run: a
+  real game, the shortcut, shakers' feel.
+
 ## 4.18.14: Overlays → Radar, iRacing (2026-11-22)
 
 - Asked: FH6-style radar fading in as drivers near. Forza sends no other cars; ACC/EVO give every car's world place

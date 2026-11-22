@@ -11,7 +11,8 @@ namespace DaisysApp.Shell;
 public sealed class SubTabs : UserControl
 {
     private readonly List<(string Id, RadioButton Button, FrameworkElement Page)> pages = new();
-    private readonly StackPanel strip = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
+    /// <summary>(since 4.20.0) The sub-tabs go on to a second line where they don't fit (cut off before).</summary>
+    private readonly WrapPanel strip = new() { Margin = new Thickness(0, 0, 0, 12) };
     private readonly Grid host = new();
 
     private readonly ContentControl right = new() { VerticalAlignment = VerticalAlignment.Center };

@@ -188,7 +188,7 @@ public sealed class LightsRunner
         else if (f == null || !f.Live) s = RevState.Off with { Game = game };
         else
         {
-            if (!demo) Learn(f);
+            if (!demo && !f.Playback) Learn(f);
             s = Work(f, game);
         }
         held = f != null && f.Live && !demo ? s : f == null ? null : held;

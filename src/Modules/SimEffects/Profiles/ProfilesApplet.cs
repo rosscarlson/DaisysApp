@@ -56,8 +56,8 @@ public sealed class ProfilesApplet : IApplet
 
 
     /// <summary>
-    /// "Profile:", a drop-down of the profiles, Play / Stop (the whole profile) and its shortcut, at the right of the
-    /// sub-tabs' row.
+    /// "Profile:", a drop-down of the profiles, Play / Stop (the whole profile), Record (since 4.20.0, with Recordings on)
+    /// and their shortcuts, at the right of the sub-tabs' row.
     /// </summary>
     public static FrameworkElement Picker()
     {
@@ -110,7 +110,14 @@ public sealed class ProfilesApplet : IApplet
         SimData.GameRunningChanged += ShowPlay;
         ShowPlay();
         row.Children.Add(play);
+        var record = Recordings.RecordingsApplet.Current != null ? Recordings.RecordingsApplet.RecordButton() : default;
+        if (record.Record != null) row.Children.Add(record.Record);
         row.Children.Add(key);
+        if (record.Key != null)
+        {
+            record.Key.Margin = new Thickness(2, 0, 0, 0);
+            row.Children.Add(record.Key);
+        }
         return row;
     }
 }

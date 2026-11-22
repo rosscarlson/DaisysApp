@@ -539,5 +539,7 @@
   "A shared session can't be opened here: SimEffects → Analysis is switched off.": "A shared session can't be opened here: SimEffects → Analysis is switched off.",
   "That link isn't one Daisy's App knows.": "That link isn't one Daisy's App knows.",
   "{0} isn't set up (Settings → General)": "{0} isn't set up (Settings → General)",
-  "Connected to {0} (not signed in)": "Connected to {0} (not signed in)"
+  "Connected to {0} (not signed in)": "Connected to {0} (not signed in)",
+  "SimEffects recordings": "SimEffects recordings",
+  "SimEffects → Recordings' telemetry (the videos stay in Video → Recording's folder)": "SimEffects → Recordings' telemetry (the videos stay in Video → Recording's folder)"
 }

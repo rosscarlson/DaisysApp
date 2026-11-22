@@ -69,6 +69,8 @@ public sealed class TelemetryFrame
 {
     /// <summary>Driving (not in a menu, paused or a replay).</summary>
     public bool Live;
+    /// <summary>(since 4.20.0) A recording played (Recordings), not the game: nothing is recorded or learned from it.</summary>
+    public bool Playback;
     /// <summary>Seconds since the frame before (0 when unknown).</summary>
     public float Dt;
     public float SpeedMs, Rpm, IdleRpm, MaxRpm, Throttle, Brake;
@@ -144,7 +146,7 @@ public sealed class TelemetryFrame
 
     public void CopyTo(TelemetryFrame o)
     {
-        o.Live = Live; o.Dt = Dt; o.SpeedMs = SpeedMs; o.Rpm = Rpm; o.IdleRpm = IdleRpm; o.MaxRpm = MaxRpm;
+        o.Live = Live; o.Playback = Playback; o.Dt = Dt; o.SpeedMs = SpeedMs; o.Rpm = Rpm; o.IdleRpm = IdleRpm; o.MaxRpm = MaxRpm;
         o.Throttle = Throttle; o.Brake = Brake; o.Clutch = Clutch; o.Handbrake = Handbrake; o.Steer = Steer; o.Gear = Gear; o.GearNo = GearNo;
         o.CarId = CarId; o.Car = Car; o.FirstRpm = FirstRpm; o.ShiftRpm = ShiftRpm; o.BlinkRpm = BlinkRpm; o.AccelX = AccelX; o.AccelY = AccelY; o.AccelZ = AccelZ;
         Array.Copy(SuspVel, o.SuspVel, 4);

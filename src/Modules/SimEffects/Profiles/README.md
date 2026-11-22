@@ -20,6 +20,8 @@ in use decides two things:
   running: stopped, white, or green with the game running; playing, blue with the game running, or red without it) and its
   shortcut button (a key or a controller button, in Settings → Shortcuts too): stopped, every sub-module goes dark at
   once, its own ON kept (shown greyed on its tab) for when it plays again. A profile picked by hand or by a game plays.
+- **Record** (since 4.20.0; right of Play, its shortcut's button right of Play's): see
+  [Recordings](../Recordings/README.md).
 - **Title bar** (since 4.17.18): one green bubble while any of the Shaker, Overlays, Wheel, AmbiLight or Arduino runs:
   the profile's **Short Name**, then each running, a line between them, e.g. **FH: Shaker | Overlay | Wheel**
   (clicking it opens Profiles). Before, the Shaker, Overlays, AmbiLight and Arduino had a bubble each; the Wheel none.

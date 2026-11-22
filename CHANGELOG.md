@@ -3,6 +3,15 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.20.0**
+- **SimEffects → Recordings** (new): record a session as you play and play it back as if the game were running, to
+  tune the Shaker, lights and overlays while watching. **Record** (right of Play, with its own shortcut) records every
+  frame of the game's telemetry and a video (Video → Recording, as it's set up); not while a race's video is being
+  recorded, and a race with **Record each race** on ends it. The **Recordings** tab lists them with the video beside:
+  play, pause, along it, loop, volume, sync, pop out (to watch on the Shaker's tab). While one plays every tool
+  reads it, with its profile in use; nothing is logged or learned from it. Stopped, the profile is as it was.
+- **Sub-tabs** (every module's) that don't fit go on to a second line; they were cut off.
+
 **4.19.1**
 - **SimEffects → Overlays → Radar** (iRacing): red zones ahead, behind, left and right of your car, stronger the
   closer the nearest car on that side, fading out as it moves away (**Zones**, on by default). They take the place of

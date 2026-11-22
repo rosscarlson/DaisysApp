@@ -273,7 +273,9 @@ public sealed class AnalysisApplet : IApplet
                     raceLog.Idle();
                     continue;
                 }
-                raceLog.Feed(frame);
+                // (since 4.20.0) a recording played: shown, not recorded
+                if (frame.Playback) raceLog.Idle();
+                else raceLog.Feed(frame);
                 lock (gate)
                 {
                     frame.CopyTo(latest);
@@ -306,10 +308,10 @@ public sealed class AnalysisApplet : IApplet
                     if (live) driven = true;
                     if (live && shown.HasRace) history.Add(shown);
                 }
-                tracker.Feed(latest, CarNames.Edition ?? LapStore.OldGame);
+                if (!latest.Playback) tracker.Feed(latest, CarNames.Edition ?? LapStore.OldGame);
                 // (since 4.13.4 not while a race's track says which map it is: the ground switched FH5 to Mexico
                 // halfway round Sierra Nueva's Cadcada Fuerte)
-                if (live) found = terrain.Feed(GameNow, latest);
+                if (live && !latest.Playback) found = terrain.Feed(GameNow, latest);
                 if (tracker.MapKnown) found = null;
             }
         }

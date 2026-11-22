@@ -49,6 +49,8 @@ public sealed class SimProfilesSettings
     public bool Playing { get; set; } = true;
     /// <summary>The Play / Stop shortcut.</summary>
     public string? PlayKey { get; set; }
+    /// <summary>(since 4.20.0) The Record / Stop shortcut (Recordings).</summary>
+    public string? RecordKey { get; set; }
 }
 
 /// <summary>
