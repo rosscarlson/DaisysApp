@@ -1088,5 +1088,13 @@
   "Open on the website": "Open on the website",
   "Uploaded": "Uploaded",
   "Right-click to upload": "Right-click to upload",
-  "Waiting for sign-in": "Waiting for sign-in"
+  "Waiting for sign-in": "Waiting for sign-in",
+  "Radar": "Radar",
+  "Range": "Range",
+  "{0} m": "{0} m",
+  "Always show": "Always show",
+  "How far ahead and behind it shows": "How far ahead and behind it shows",
+  "How see-through the disc is": "How see-through the disc is",
+  "Off: fades in as a car comes near": "Off: fades in as a car comes near",
+  "iRacing only": "iRacing only"
 }

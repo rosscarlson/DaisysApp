@@ -12,21 +12,21 @@ namespace DaisysApp.Applets.SimEffects.InputOverlay;
 /// <summary>The kinds of overlay: Inputs, Dash, and Analysis' blocks (by their ids).</summary>
 public static class OverlayKinds
 {
-    public const string Inputs = "Inputs", Dash = "Dash";
+    public const string Inputs = "Inputs", Dash = "Dash", Radar = "Radar";
 
     /// <summary>Every kind (the blocks only while Analysis is on).</summary>
     public static IEnumerable<string> All(bool analysis) =>
-        new[] { Inputs, Dash }.Concat(analysis ? Blocks.All.Select(b => b.Id) : Enumerable.Empty<string>());
+        new[] { Inputs, Dash, Radar }.Concat(analysis ? Blocks.All.Select(b => b.Id) : Enumerable.Empty<string>());
 
-    /// <summary>(since 4.17.9) The tab's boxes, in order: four across, two down.</summary>
+    /// <summary>(since 4.17.9) The tab's boxes, in order, four across.</summary>
     public static readonly string[] Boxes =
     {
-        Dash, Inputs, Blocks.Performance.Id, Blocks.Tires.Id, Blocks.TrackMap.Id, Blocks.Position.Id, Blocks.Timing.Id, Blocks.Leaderboard.Id,
+        Dash, Inputs, Radar, Blocks.Performance.Id, Blocks.Tires.Id, Blocks.TrackMap.Id, Blocks.Position.Id, Blocks.Timing.Id, Blocks.Leaderboard.Id,
     };
 
     public static string Name(string id) => id switch
     {
-        Inputs => T("Inputs"), Dash => T("Dash"), _ => Blocks.ById(id)?.Title ?? id,
+        Inputs => T("Inputs"), Dash => T("Dash"), Radar => T("Radar"), _ => Blocks.ById(id)?.Title ?? id,
     };
 }
 
@@ -34,7 +34,7 @@ public static class OverlayKinds
 /// SimEffects → Overlays (since 3.33.0; the Input Overlay before, ForzaWheel's until 3.17.0): widgets over the game,
 /// each switched on in its box on the tab (since 4.17.9; made in a list before; one switched off has no window, nor
 /// anything reading for it), then shown or hidden by its shortcut: <b>Inputs</b> (the pedals' and wheel's last few seconds, and the
-/// speed), the <b>Dash</b> (a tach, the gear and speed, TCS and ABS), and Analysis' blocks (Tires, Performance, Timing,
+/// speed), the <b>Dash</b> (a tach, the gear and speed, TCS and ABS), the <b>Radar</b> (the cars round yours, since 4.18.14), and Analysis' blocks (Tires, Performance, Timing,
 /// Position, Leaderboard; their widgets were made on the Analysis tab before, and still read from there). They show
 /// while the tool is on (kept per SimEffects profile, as its shortcut and title bar bubble say) and the profile plays,
 /// each one that's ticked. Keeps InputOverlay.json (the blocks' places stay in Analysis.json). See README.md.
@@ -44,12 +44,13 @@ public sealed class InputOverlayApplet : IApplet
     private readonly OverlaySettings settings = OverlaySettings.Load();
     private readonly OverlayReader reader;
     private readonly InputOverlayView view;
-    private readonly Hotkey hotkey, dashKey, inputsKey;
+    private readonly Hotkey hotkey, dashKey, inputsKey, radarKey;
     private readonly Dictionary<string, Hotkey> blockKeys = new();
     // a hidden window of its own, which DirectInput reads controllers in the background for
     private readonly HwndSource window = new(new HwndSourceParameters("DaisysApp Input Overlay") { Width = 0, Height = 0, WindowStyle = 0 });
     private OverlayWindow? overlay;
     private DashWindow? dash;
+    private RadarWindow? radar;
     private readonly Dictionary<string, (Widget Window, BlockView Body)> blocks = new();
     private AnalysisApplet? analysis;
 
@@ -72,6 +73,11 @@ public sealed class InputOverlayApplet : IApplet
             Id = "Overlays.Inputs", Module = T("Overlays"), Target = T("Inputs"), Name = T("Overlay on / off"),
             Get = () => settings.InputsKey, Set = v => { settings.InputsKey = v; settings.Save(); },
         }, () => Toggle(OverlayKinds.Inputs));
+        radarKey = Hotkeys.Add(new HotkeySpec
+        {
+            Id = "Overlays.Radar", Module = T("Overlays"), Target = T("Radar"), Name = T("Overlay on / off"),
+            Get = () => settings.Radar.Key, Set = v => { settings.Radar.Key = v; settings.Save(); },
+        }, () => Toggle(OverlayKinds.Radar));
         SimProfiles.Register(new ToolScope
         {
             Id = "InputOverlay", Title = T("Overlays"), Settings = settings, Props = OverlaySettings.Scoped,
@@ -120,7 +126,7 @@ public sealed class InputOverlayApplet : IApplet
     /// <summary>An overlay's show / hide shortcut.</summary>
     internal Hotkey? KeyOf(string id) => id switch
     {
-        OverlayKinds.Dash => dashKey, OverlayKinds.Inputs => inputsKey, _ => blockKeys.GetValueOrDefault(id),
+        OverlayKinds.Dash => dashKey, OverlayKinds.Inputs => inputsKey, OverlayKinds.Radar => radarKey, _ => blockKeys.GetValueOrDefault(id),
     };
 
     /// <summary>On or off (ON / OFF, the shortcut, the tray, the Profiles tab): kept in the profile in use.</summary>
@@ -181,6 +187,7 @@ public sealed class InputOverlayApplet : IApplet
     {
         OverlayKinds.Inputs => settings.Inputs,
         OverlayKinds.Dash => settings.Dash.Show,
+        OverlayKinds.Radar => settings.Radar.Show,
         _ => analysis?.Settings.Widgets.TryGetValue(id, out var w) == true && w.Show,
     };
 
@@ -188,6 +195,7 @@ public sealed class InputOverlayApplet : IApplet
     {
         if (id == OverlayKinds.Inputs) settings.Inputs = on;
         else if (id == OverlayKinds.Dash) settings.Dash.Show = on;
+        else if (id == OverlayKinds.Radar) settings.Radar.Show = on;
         else if (analysis != null) { analysis.Settings.Widget(id).Show = on; analysis.Settings.Save(); }
         settings.Save();
         Logging.Log.Here.Info($"Overlays: {id} {(on ? "ticked" : "unticked")}");
@@ -228,6 +236,7 @@ public sealed class InputOverlayApplet : IApplet
     internal void Redraw(string id)
     {
         if (id == OverlayKinds.Inputs) { overlay?.Changed(); return; }
+        if (id == OverlayKinds.Radar) { radar?.Changed(); return; }
         if (id == OverlayKinds.Dash)
         {
             if (dash == null) return;
@@ -261,6 +270,7 @@ public sealed class InputOverlayApplet : IApplet
     {
         OverlayKinds.Inputs => overlay,
         OverlayKinds.Dash => dash,
+        OverlayKinds.Radar => radar,
         _ => blocks.TryGetValue(id, out var b) ? b.Window : null,
     };
 
@@ -271,6 +281,7 @@ public sealed class InputOverlayApplet : IApplet
         Widget made;
         if (id == OverlayKinds.Inputs) made = overlay = new OverlayWindow(settings, reader, settings.Save, () => Delete(id));
         else if (id == OverlayKinds.Dash) made = dash = new DashWindow(settings, reader, settings.Save, () => Delete(id));
+        else if (id == OverlayKinds.Radar) made = radar = new RadarWindow(settings, reader, settings.Save, () => Delete(id));
         else if (analysis != null && Blocks.ById(id) is { } block) made = MakeBlock(block, analysis);
         else return null;
         made.Showing = false;
@@ -305,6 +316,7 @@ public sealed class InputOverlayApplet : IApplet
     {
         if (id == OverlayKinds.Inputs) { overlay?.Close(); overlay = null; }
         else if (id == OverlayKinds.Dash) { dash?.Close(); dash = null; }
+        else if (id == OverlayKinds.Radar) { radar?.Close(); radar = null; }
         else if (blocks.Remove(id, out var b)) b.Window.Close();
     }
 
@@ -329,7 +341,7 @@ public sealed class InputOverlayApplet : IApplet
     {
         bool Shown(Widget? w) => w != null && (w.IsVisible || w.Editing);
         // (the tab reads only for an overlay that's on: one off reads nothing)
-        reader.Wanted = (view.IsVisible && (IsOn(OverlayKinds.Inputs) || IsOn(OverlayKinds.Dash))) || Shown(overlay) || Shown(dash);
+        reader.Wanted = (view.IsVisible && (IsOn(OverlayKinds.Inputs) || IsOn(OverlayKinds.Dash))) || Shown(overlay) || Shown(dash) || Shown(radar);
         analysis?.Reading();
     }
 
@@ -408,6 +420,7 @@ public sealed class InputOverlayApplet : IApplet
         hotkey.Dispose();
         dashKey.Dispose();
         inputsKey.Dispose();
+        radarKey.Dispose();
         foreach (var k in blockKeys.Values) k.Dispose();
         if (analysis != null)
         {

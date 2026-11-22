@@ -51,6 +51,26 @@ public sealed class DashSettings : IWidgetPlace
     public DashLook Look { get; set; }
 }
 
+/// <summary>(since 4.18.14) The Radar overlay: the cars round yours, fading in as one comes near. Its place and look are
+/// the same in every profile.</summary>
+public sealed class RadarSettings : IWidgetPlace
+{
+    public bool Show { get; set; }
+    public int X { get; set; } = 160;
+    public int Y { get; set; } = 160;
+    public int Width { get; set; }
+    public int Height { get; set; }
+    /// <summary>The disc's background, 0 (none) – 1 (Core's Background slider).</summary>
+    public double Opacity { get; set; } = 0.55;
+    public bool Topmost { get; set; } = true;
+    public bool ClickThrough { get; set; } = true;
+    public string? Key { get; set; }
+    /// <summary>How far ahead and behind it shows, metres.</summary>
+    public int Range { get; set; } = 30;
+    /// <summary>Shown with no car near too (else it fades in and out).</summary>
+    public bool Always { get; set; }
+}
+
 /// <summary>
 /// Saved in %APPDATA%\DaisysApp\InputOverlay.json: the Overlays tool (since 3.33.0; the Input Overlay before): on /
 /// off and its shortcut, the overlays made (<see cref="Overlays"/>), the Inputs overlay's place, where it reads from
@@ -81,6 +101,7 @@ public sealed class OverlaySettings : IWidgetPlace
     public bool Inputs { get; set; } = true;
 
     public DashSettings Dash { get; set; } = new();
+    public RadarSettings Radar { get; set; } = new();
 
     /// <summary>On, and the SimEffects profile is playing (<see cref="DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing"/>): what runs.</summary>
     [System.Text.Json.Serialization.JsonIgnore] public bool On => Enabled && DaisysApp.Applets.SimEffects.Profiles.SimProfiles.Playing;

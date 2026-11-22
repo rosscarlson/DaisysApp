@@ -107,6 +107,8 @@ public sealed class TelemetryFrame
     public int LapNumber, RacePosition;
     /// <summary>Every car in the race, in order (since 3.28.2; iRacing's: Forza sends only your place), or null.</summary>
     public Standings? Field;
+    /// <summary>(since 4.18.14) The cars near yours, for the Radar (iRacing's), or null where the game doesn't say.</summary>
+    public IReadOnlyList<NearCar>? Nearby;
     /// <summary>(since 4.10.0) The track, where the game names it (iRacing, the Assetto Corsas, Forza Motorsport (2023)'s
     /// number): its id within the game ("" in Horizon, which doesn't say), its name and a lap's length in metres (0:
     /// not known).</summary>
@@ -152,7 +154,7 @@ public sealed class TelemetryFrame
         o.Cylinders = Cylinders; o.CarGroup = CarGroup; o.Power = Power; o.Torque = Torque; o.Boost = Boost; o.Fuel = Fuel;
         o.Distance = Distance; o.PosX = PosX; o.PosY = PosY; o.PosZ = PosZ; Array.Copy(TireTemp, o.TireTemp, 4);
         o.BestLap = BestLap; o.LastLap = LastLap; o.CurrentLap = CurrentLap; o.RaceTime = RaceTime;
-        o.LapNumber = LapNumber; o.RacePosition = RacePosition; o.Field = Field;
+        o.LapNumber = LapNumber; o.RacePosition = RacePosition; o.Field = Field; o.Nearby = Nearby;
         o.TrackKey = TrackKey; o.TrackName = TrackName; o.TrackLength = TrackLength; o.TrackEast = TrackEast; o.TrackNorth = TrackNorth;
         o.Sessions = Sessions; o.Session = Session; o.Checkered = Checkered; o.LapInvalid = LapInvalid;
         o.SessionLaps = SessionLaps; o.FieldSize = FieldSize; o.CarClassName = CarClassName;
@@ -168,6 +170,10 @@ public sealed record Racer(int Place, string Number, string Name, float Interval
 /// on track, the gaps the time between one car and the next; outside one (practice, qualifying) by the game's places,
 /// the gaps between best laps.</summary>
 public sealed record Standings(IReadOnlyList<Racer> Racers, bool Race);
+
+/// <summary>A car near yours (the Radar): the game's number for it, metres ahead (− behind) and to the right (− left);
+/// <see cref="Beside"/> when the game's spotter says it's alongside (its side then known, not its distance across).</summary>
+public sealed record NearCar(int Id, float Ahead, float Right, bool Beside);
 
 /// <summary>Where telemetry comes from: read on the engine's thread.</summary>
 public interface ITelemetrySource : IDisposable

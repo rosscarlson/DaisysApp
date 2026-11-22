@@ -247,6 +247,7 @@ internal sealed class AccSource : ITelemetrySource
         f.CarPi = f.Drivetrain = f.Cylinders = 0;
         f.CarGroup = 0;
         f.Field = null;
+        f.Nearby = null;
         // (on track while live or paused; back in the pits outside a race starts another run)
         bool onTrack = status is 2 or 3 && !(inPit && f.Session != SessionKind.Race);
         stint.Step(f, $"{session}|{trackKey}|{car}", onTrack);

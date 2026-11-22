@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.18.14**
+- **SimEffects → Overlays → Radar** (new, iRacing): the cars round yours from above, yours in the middle and ahead up.
+  It fades in as a car comes within its range (20–60 m ahead and behind) and out once none is (or **Always show**). A
+  car beside you is red and the disc's edge glows on that side, one close amber, the rest white. iRacing says where
+  each car is on the lap and which side its spotter sees one on, not how far across: a car alongside goes in that
+  lane and stays in it as it drops back or pulls ahead. Its own shortcut, Background and place, as the Dash's.
+
 **4.18.13**
 - **AI**: links in the conversation open with a click: web addresses written out (not only Markdown links), in
   `<…>` or backticks, inside bold or italic text; a link to a file or folder on this PC shows it in Explorer.

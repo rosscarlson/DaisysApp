@@ -39,6 +39,18 @@ internal static class OverlayPreviews
         return view;
     }
 
+    /// <summary>The Radar with a car beside you on the left, one close behind on the right and one ahead.</summary>
+    public static FrameworkElement Radar(OverlaySettings settings)
+    {
+        var view = new RadarView(settings.Radar, () => Math.Max(settings.Radar.Opacity, 0.6)) { Still = true, Has = true, Width = 200, Height = 200 };
+        float lane = Telemetry.IRacingSource.LaneMetres;
+        view.Frame.Nearby = new[]
+        {
+            new NearCar(1, -1.5f, -lane, true), new NearCar(2, -9, lane, false), new NearCar(3, 17, 0, false),
+        };
+        return view;
+    }
+
     public static FrameworkElement Inputs(OverlaySettings settings)
     {
         var trace = new OverlayWindow.Trace(settings) { Width = 480, Height = 140 };

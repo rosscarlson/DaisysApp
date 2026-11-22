@@ -2,6 +2,14 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.18.14: Overlays → Radar, iRacing (2026-11-22)
+
+- Asked: FH6-style radar fading in as drivers near. Forza sends no other cars; ACC/EVO give every car's world place
+  (`carCoordinates`) but not done: the heading's sign wasn't checkable here (offer it). iRacing: `IRacingSource.Near`
+  (lap pct × track length; `CarLeftRight` sides to the nearest overlapping cars, lane kept to 30 m) → `TelemetryFrame.Nearby`.
+- Tested in DaisysDev with `%LOCALAPPDATA%\Temp\radartest\fake_ir.py` (a fake irsdk memory map; `shot`/`crop.ps1`):
+  pass on the left, alongside on the right, drop back, fade out; the tab's box. Not run in iRacing.
+
 ## 4.18.9: the app's tracks only (2026-11-19)
 
 - The user: clients use the current tracks, no track editing (asked: lock app tracks vs. no editing at all → none).
@@ -121,7 +129,7 @@ Read only when working in this folder. Current state and lessons; history is in 
 - **Shaker:** effects per wheel, `ShakerOutput` (BigHz for BST-300EX resonance, 32 Hz), `DeviceVolumes`,
   `SpectrumMeter` (a marker per column always, on its right; the master's red left of the first device, 4.18.7), Highlight / Effect ± keys, Level Wizard keys only while it's open.
 - Arduino: SimHub's sketch (ARQ) or DaisysSim; Wheel: Fanatec HID `01 F8 09 08 hi lo`, Moza serial (untested, no
-  Moza here). AmbiLight: Govee LAN `razer` stream, DXGI duplication. Overlays: 8 boxes, Dash layouts.
+  Moza here). AmbiLight: Govee LAN `razer` stream, DXGI duplication. Overlays: 9 boxes, Dash layouts.
 
 ## Test fixtures and tools
 

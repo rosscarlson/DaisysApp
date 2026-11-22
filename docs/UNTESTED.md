@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.18.14 (SimEffects → Overlays → Radar, iRacing):** tested with a fake iRacing (shared memory, cars passing
+  on both sides, `%LOCALAPPDATA%\Temp\radartest\fake_ir.py`). To try in a real race: Overlays on, Radar ticked; it fades in
+  as a car comes near; a car alongside on the right side of the disc when the spotter calls it there; no cars from the
+  pit lane; how it looks at 30 m. Tell me if a car's lane is wrong or its distance jumps.
 - **4.18.13 (AI links, queue ✕):** a web address in Claude's reply (or your bubble) opens in the browser with a click;
   a queued message's ✕ puts it back in the box with its images and files.
 - **4.18.11 (Copy/Cut freeze, on the Plex PC with Chrome Remote Desktop):** Notepad Copy and Cut are instant and

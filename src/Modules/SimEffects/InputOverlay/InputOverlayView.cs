@@ -17,7 +17,8 @@ namespace DaisysApp.Applets.SimEffects.InputOverlay;
 /// (<see cref="OverlayKinds.Boxes"/>): its tick at the top left switches it on (and its settings with it), then its
 /// shortcut (show / hide), show / hide itself and Edit (place it); a picture of it (<see cref="OverlayPreviews"/>); and
 /// all its settings. Inputs: the overlay (history, background, traces), the speeds, and where the inputs come from (the
-/// game, or an axis of a controller each), the SimEffects profile in use's; the Dash: its dials and look; a block: its
+/// game, or an axis of a controller each), the SimEffects profile in use's; the Dash: its dials and look; the Radar: its
+/// range and background; a block: its
 /// rows, title and background.
 /// </summary>
 internal sealed class InputOverlayView : UserControl
@@ -53,8 +54,7 @@ internal sealed class InputOverlayView : UserControl
         top.Children.Add(status);
 
         for (int c = 0; c < 4; c++) boxes.ColumnDefinitions.Add(new ColumnDefinition { MinWidth = 240 });
-        boxes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        boxes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        for (int r = 0; r < (OverlayKinds.Boxes.Length + 3) / 4; r++) boxes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         var page = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
@@ -112,7 +112,7 @@ internal sealed class InputOverlayView : UserControl
         Ui.OnToggle(on, v => { if (!filling) applet.Enable(id, v); });
         var body = new StackPanel();
         var analysis = applet.Analysis;
-        bool block = id is not (OverlayKinds.Inputs or OverlayKinds.Dash);
+        bool block = id is not (OverlayKinds.Inputs or OverlayKinds.Dash or OverlayKinds.Radar);
         if (block && analysis == null)
         {
             on.IsEnabled = false;
@@ -138,6 +138,7 @@ internal sealed class InputOverlayView : UserControl
         {
             OverlayKinds.Dash => () => OverlayPreviews.Dash(settings),
             OverlayKinds.Inputs => () => OverlayPreviews.Inputs(settings),
+            OverlayKinds.Radar => () => OverlayPreviews.Radar(settings),
             _ => () => OverlayPreviews.Block(Blocks.ById(id)!, analysis!.Settings),
         };
         var preview = OverlayPreviews.Frame(picture());
@@ -146,6 +147,7 @@ internal sealed class InputOverlayView : UserControl
         {
             OverlayKinds.Dash => DashOptions(),
             OverlayKinds.Inputs => InputsOptions(),
+            OverlayKinds.Radar => RadarOptions(),
             _ => BlockOptions(Blocks.ById(id)!, analysis!),
         };
         body.Children.Add(options);
@@ -290,6 +292,22 @@ internal sealed class InputOverlayView : UserControl
         s.Children.Add(Tick(T("TCS and ABS lights"), d.Lights, v => { d.Lights = v; Redo(); },
             T("TCS: the wheels spinning under power; ABS: a wheel locking under braking")));
         s.Children.Add(Tick(T("Flash the gear at the shift point"), d.ShiftFlash, v => { d.ShiftFlash = v; Redo(); }, T("Red and flashing")));
+        return s;
+    }
+
+    private FrameworkElement RadarOptions()
+    {
+        var r = settings.Radar;
+        var s = new StackPanel();
+        void Redo() { settings.Save(); Changed(OverlayKinds.Radar); }
+        var range = Ui.Choice(new[] { 20, 30, 40, 60 }.Select(m => (F("{0} m", m), m)), r.Range, v => { r.Range = v; Redo(); }, 90);
+        range.HorizontalAlignment = HorizontalAlignment.Left;
+        range.ToolTip = T("How far ahead and behind it shows");
+        s.Children.Add(SimUi.Field(T("Range"), range, 100));
+        s.Children.Add(SimUi.SliderRow(T("Background"), 0, 1, 0.05, r.Opacity, v => $"{v * 100:0}%",
+            v => { r.Opacity = v; Redo(); }, T("How see-through the disc is")));
+        s.Children.Add(Tick(T("Always show"), r.Always, v => { r.Always = v; Redo(); }, T("Off: fades in as a car comes near")));
+        s.Children.Add(Ui.Note(T("iRacing only"), 6));
         return s;
     }
 
