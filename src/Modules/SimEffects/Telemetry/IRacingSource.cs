@@ -20,7 +20,8 @@ internal sealed partial class IRacingSource : ITelemetrySource
     private MemoryMappedFile? map;
     private MemoryMappedViewAccessor? view;
     private DateTime nextOpen;
-    private readonly Dictionary<string, int> offsets = new();
+    // where each variable is in a buffer, and how many values it has
+    private readonly Dictionary<string, int> offsets = new(), counts = new();
     private int lastTick = -1, sessionUpdate = -1, tickRate = 60;
     private float redline = 8000, idle = 800, first, shift, blink;
     private string carId = "", car = "", carClass = "";
@@ -38,7 +39,8 @@ internal sealed partial class IRacingSource : ITelemetrySource
     private int playerIdx = -1;
     private Standings? field;
     private int fieldTick = int.MinValue, fieldSession = -1;
-    private const int Cars = 64;
+    // (the CarIdx arrays: 64 until iRacing made them 72)
+    private const int Cars = 72;
     // each car's lap and place on it at the last field (to mend a lap count a moment late at the line)
     private readonly int[] lastLap = new int[Cars];
     private readonly float[] lastPct = new float[Cars];
@@ -99,6 +101,7 @@ internal sealed partial class IRacingSource : ITelemetrySource
     private void ReadVars()
     {
         offsets.Clear();
+        counts.Clear();
         int count = view!.ReadInt32(24), at = view.ReadInt32(28);
         var name = new byte[32];
         for (int i = 0; i < count; i++)
@@ -106,7 +109,9 @@ internal sealed partial class IRacingSource : ITelemetrySource
             long h = at + i * 144L;
             view.ReadArray(h + 16, name, 0, 32);
             int len = Array.IndexOf(name, (byte)0);
-            offsets[Encoding.ASCII.GetString(name, 0, len < 0 ? 32 : len)] = view.ReadInt32(h + 4);
+            string key = Encoding.ASCII.GetString(name, 0, len < 0 ? 32 : len);
+            offsets[key] = view.ReadInt32(h + 4);
+            counts[key] = view.ReadInt32(h + 8);
         }
     }
 
@@ -178,79 +183,56 @@ internal sealed partial class IRacingSource : ITelemetrySource
             field = Field(v, buf);
         }
         f.Field = field;
-        f.Nearby = Near(v, buf, f.Live);
+        f.Nearby = Near(v, buf, f.Live, dt);
     }
 
     /// <summary>
     /// (since 4.18.14, the Radar) The cars within <see cref="NearMetres"/> of yours along the track: each one's place on
-    /// the lap (CarIdxLapDistPct) less yours, times the track's length. iRacing gives no place across the track, only its
-    /// spotter's CarLeftRight (a car left, right, both, or two on a side): the nearest cars overlapping get those sides,
-    /// a car keeping the side it had until it's well clear (it's still in that lane as it drops back). The rest are in
-    /// line. Cars in their pit stall, not in the world, or on pit road while you aren't, are left out.
+    /// the lap (CarIdxLapDistPct) less yours, times the track's length, and to the side as <see cref="CarsAcross"/> works
+    /// it out. Cars in their pit stall, not in the world, or on pit road while you aren't, are left out.
     /// </summary>
-    private IReadOnlyList<NearCar>? Near(MemoryMappedViewAccessor v, int buf, bool live)
+    private IReadOnlyList<NearCar>? Near(MemoryMappedViewAccessor v, int buf, bool live, float dt)
     {
-        if (!live || trackLength < 100 || !offsets.TryGetValue("CarIdxLapDistPct", out int pctAt)) return null;
         int Int(string name) => offsets.TryGetValue(name, out int o) ? v.ReadInt32(buf + o) : 0;
         int me = offsets.ContainsKey("PlayerCarIdx") ? Int("PlayerCarIdx") : playerIdx;
-        if (me is < 0 or >= Cars) return null;
-        float mine = v.ReadSingle(buf + pctAt + me * 4);
-        if (mine < 0) return null;
+        int count = Math.Min(Cars, counts.GetValueOrDefault("CarIdxLapDistPct"));
+        if (!live || trackLength < 100 || me < 0 || me >= count) { across.Reset(); return null; }
+        int pctAt = offsets["CarIdxLapDistPct"];
         offsets.TryGetValue("CarIdxTrackSurface", out int surfaceAt);
         offsets.TryGetValue("CarIdxOnPitRoad", out int pitAt);
+        offsets.TryGetValue("CarIdxSteer", out int steerAt);
+        offsets.TryGetValue("CarIdxClass", out int classAt);
         bool Pits(int i) => pitAt > 0 && v.ReadByte(buf + pitAt + i) != 0;
         bool inPits = Pits(me);
-        var near = new List<(int Idx, float Ahead)>();
-        for (int i = 0; i < Cars; i++)
+        Array.Fill(carPct, -1);
+        Array.Clear(carCounts);
+        for (int i = 0; i < count; i++)
         {
-            if (i == me) continue;
-            float pct = v.ReadSingle(buf + pctAt + i * 4);
-            // (irsdk_TrkLoc: -1 not in the world, 1 in its pit stall)
+            // (irsdk_TrkLoc: -1 not in the world, 0 off track, 1 in its pit stall, 2 nearing the pits, 3 on track)
             int surface = surfaceAt > 0 ? v.ReadInt32(buf + surfaceAt + i * 4) : 3;
-            if (pct < 0 || surface is -1 or 1 || (Pits(i) && !inPits)) { nearSide[i] = 0; continue; }
-            float d = pct - mine;
-            if (d > 0.5f) d -= 1;
-            else if (d < -0.5f) d += 1;
-            float ahead = d * trackLength;
-            if (Math.Abs(ahead) > NearMetres) { nearSide[i] = 0; continue; }
-            // (well clear ahead or behind, past the radar's usual range: back in line)
-            if (Math.Abs(ahead) > 30) nearSide[i] = 0;
-            near.Add((i, ahead));
+            carPct[i] = v.ReadSingle(buf + pctAt + i * 4);
+            carSteer[i] = steerAt > 0 ? v.ReadSingle(buf + steerAt + i * 4) : float.NaN;
+            carClassId[i] = classAt > 0 ? v.ReadInt32(buf + classAt + i * 4) : 0;
+            carOnTrack[i] = surface == 3;
+            carCounts[i] = carPct[i] >= 0 && surface is not (-1 or 1) && (inPits || !Pits(i));
         }
-        // irsdk_CarLeftRight: 0 off, 1 clear, 2 a car left, 3 right, 4 both, 5 two left, 6 two right
-        int lr = Int("CarLeftRight");
-        int left = lr switch { 2 or 4 => 1, 5 => 2, _ => 0 }, right = lr switch { 3 or 4 => 1, 6 => 2, _ => 0 };
-        // the cars overlapping, nearest first; one that had a side keeps it
-        var overlap = near.Where(c => Math.Abs(c.Ahead) < 8).OrderBy(c => Math.Abs(c.Ahead)).Select(c => c.Idx).ToList();
-        var beside = new Dictionary<int, int>();
-        void Fill(int side, int count)
+        if (carPct[me] < 0) { across.Reset(); return null; }
+        across.Step(me, trackLength, dt, carPct, carSteer, carClassId, carOnTrack, carCounts, Int("CarLeftRight"));
+        var cars = new List<NearCar>();
+        for (int i = 0; i < count; i++)
         {
-            foreach (int i in overlap.Where(i => nearSide[i] == side && !beside.ContainsKey(i)).Concat(overlap.Where(i => nearSide[i] == 0 && !beside.ContainsKey(i))).ToList())
-            {
-                if (beside.Count(b => b.Value == side) >= count) break;
-                // (a second car on a side is a lane further out)
-                beside[i] = side * (1 + beside.Count(b => b.Value == side));
-            }
-        }
-        Fill(-1, left);
-        Fill(1, right);
-        foreach (var (i, lane) in beside) nearSide[i] = lane;
-        var cars = new List<NearCar>(near.Count);
-        foreach (var (i, ahead) in near)
-        {
-            // (a car that had a side keeps it, behind or ahead of you in that lane; one in line and not beside can't be
-            // where your car is: its place on the lap is a little out, so it's a car's length off)
-            int lane = beside.TryGetValue(i, out int l) ? l : nearSide[i];
-            float at = lane == 0 && Math.Abs(ahead) < CarMetres ? (ahead < 0 ? -CarMetres : CarMetres) : ahead;
-            cars.Add(new NearCar(i, at, lane * LaneMetres, beside.ContainsKey(i)));
+            if (i != me && carCounts[i] && Math.Abs(across.Ahead(i)) <= NearMetres)
+                cars.Add(new NearCar(i, across.Ahead(i), across.Right(i), across.Beside(i)));
         }
         return cars;
     }
 
-    /// <summary>How far along the track a car counts as near (the Radar's widest range), a lane's width, a car's length.</summary>
-    public const float NearMetres = 60, LaneMetres = 3.4f, CarMetres = 4.8f;
-    // each car's lane (− left, + right, 0 in line) as last known, for the Radar
-    private readonly int[] nearSide = new int[Cars];
+    /// <summary>How far along the track a car counts as near (the Radar's widest range).</summary>
+    public const float NearMetres = 60;
+    private readonly CarsAcross across = new(Cars);
+    private readonly float[] carPct = new float[Cars], carSteer = new float[Cars];
+    private readonly int[] carClassId = new int[Cars];
+    private readonly bool[] carOnTrack = new bool[Cars], carCounts = new bool[Cars];
 
     /// <summary>The race data (since 4.10.0, for Analysis): the track, the session, the laps, the place, the line.</summary>
     private void Race(TelemetryFrame f, Func<string, float> Float, Func<string, int> Int, Func<string, bool> Bool, float dt)

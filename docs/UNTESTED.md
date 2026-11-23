@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.20.1 (Radar, iRacing):** tested on a recorded real session and live with no window, not seen on screen. In a race:
+  a car coming past pulls out to its side before it's alongside (from the second lap on; often not in corners), no jump,
+  and drifts back in line once past. Tell me if it goes to the wrong side often, or swerves with nobody moving.
 - **4.20.0 (SimEffects → Recordings):** tested with a fake Forza. To try on the rig: Record (and its shortcut) in free roam,
   Stop; Recordings → Play with the video popped out on the Shaker's tab: the shakers match what's seen (else Sync's buttons),
   changes stay in the game's profile, Stop playback puts the profile back; iRacing / ACC too; a race starting while it

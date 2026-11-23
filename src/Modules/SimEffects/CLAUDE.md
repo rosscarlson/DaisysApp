@@ -2,6 +2,18 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.20.1: the Radar's cars to the side (2026-11-22)
+
+- The user: a car stays behind, pops to the side as it passes, then back in front; better position data? iRacing has no
+  place across for other cars (327 variables looked at live on GAMER11; Lat/Lon only in .ibt). Lap pct is exact at 60 Hz;
+  `CarLeftRight` fires at about 3.9 m (Ray FF1600). `CarIdxSteer` is sent for every car: `CarsAcross`.
+- Measured on his AI practice (Navarra, 18 alongside moments; read-only capture and scripts in `%LOCALAPPDATA%\Temp\radarlive`,
+  `rep.py` replays it through the class): 0.1 s before the spotter, right side by > 0.7 m 12, wrong 0, neither 6; left to
+  move 1.36 m of 3. Tuned on the same moments, so optimistic. His own steering carries most of it (alone 11/2); the
+  others' alone 8/4, and on the AI race (not tuned on, he wasn't driving) no better than chance at the moment of overlap,
+  so it counts half (`Theirs`). Steering past 0.4 rad: useless. Not seen on screen in the game; other cars' steering online untested.
+- The CarIdx arrays are 72 now (was 64 here).
+
 ## 4.20.0: Recordings (2026-11-22)
 
 - Asked: Record (between Play and its shortcut button, bindable) and a Recordings tab playing one as if the game ran, with its

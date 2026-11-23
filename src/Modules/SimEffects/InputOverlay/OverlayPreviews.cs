@@ -43,7 +43,7 @@ internal static class OverlayPreviews
     public static FrameworkElement Radar(OverlaySettings settings)
     {
         var view = new RadarView(settings.Radar, () => Math.Max(settings.Radar.Opacity, 0.6)) { Still = true, Has = true, Width = 200, Height = 200 };
-        float lane = Telemetry.IRacingSource.LaneMetres;
+        float lane = Telemetry.CarsAcross.LaneMetres;
         view.Frame.Nearby = new[]
         {
             new NearCar(1, -1.5f, -lane, true), new NearCar(2, -9, lane, false), new NearCar(3, 17, 0, false),

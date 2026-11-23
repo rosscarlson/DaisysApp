@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.20.1**
+- **SimEffects → Overlays → Radar** (iRacing): the other cars move smoothly to the side. iRacing doesn't send where a
+  car is across the track, only each car's steering and its spotter's *car left / right* once it overlaps yours: a
+  car pulling out, or you moving over, is now followed from its steering and yours against what cars usually steer at
+  that place, learned as they drive (from the second lap), and it drifts back in line over a few seconds once past. Before, it
+  stayed in line, jumped a lane as the spotter called it, and was pushed a car's length off while in line.
+- **Radar:** cars past the 64th are shown (iRacing now has 72).
+
 **4.20.0**
 - **SimEffects → Recordings** (new): record a session as you play and play it back as if the game were running, to
   tune the Shaker, lights and overlays while watching. **Record** (right of Play, with its own shortcut) records every

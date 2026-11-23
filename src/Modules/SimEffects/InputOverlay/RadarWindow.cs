@@ -55,7 +55,7 @@ internal sealed class RadarView : FrameworkElement
 
     private readonly RadarSettings settings;
     private readonly Func<double> background;
-    // each car's place across, eased (iRacing's side comes as a jump)
+    // each car's place across, lightly eased (in a recording made before 4.20.1 it jumps)
     private readonly Dictionary<int, double> across = new();
     // each wedge's strength (ahead, right, behind, left), eased
     private readonly double[] zones = new double[4];
@@ -110,7 +110,7 @@ internal sealed class RadarView : FrameworkElement
         foreach (var k in cars)
         {
             seen.Add(k.Id);
-            double x = across.TryGetValue(k.Id, out double was) && !Still ? was + (k.Right - was) * Math.Min(1, dt * 10) : k.Right;
+            double x = across.TryGetValue(k.Id, out double was) && !Still ? was + (k.Right - was) * Math.Min(1, dt * 20) : k.Right;
             across[k.Id] = x;
             double dist = Math.Sqrt(k.Ahead * k.Ahead + x * x);
             double fade = Math.Clamp((range - dist) / (range * 0.25), 0, 1);
