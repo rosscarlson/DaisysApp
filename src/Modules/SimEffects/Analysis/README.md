@@ -40,7 +40,9 @@ small window since 4.13.1, from the compass on the Session card's title row (its
   left before its finish (quit, restarted) has its session and video deleted; off, it's kept and its session's name in
   the Session card ends "INCOMPLETE" (in AnalysisIncomplete.jsonl, in no table or stat). Only a race against others
   (Rivals, time trials and practice aren't) past its first 5 s, and not one that drove all of its track's known laps
-  (a finish missed); in iRacing and the Assetto Corsas, a race session left (not a tow).
+  (a finish missed; since 4.20.2 known before this race, so the first race on a track, quit, counts); in iRacing and
+  the Assetto Corsas, a race session left (not a tow). Since 4.20.2 the app closing in a race ends it as the data
+  stopping would (finished, or left).
   Since 4.13.3 **Left Foot Braking** under it (off at first): throttle and brake together only count (the time split's
   Both, a brake zone's "throttle on too", the Both pedals mark) when both are over 40%; less is braking with the left
   foot. Switching it analyses the session shown again.
@@ -413,7 +415,10 @@ not; those older files aren't listed (they name no race), and stay in the folder
   - **Share each session automatically** (the button between Refresh and Close at the bottom right since 4.17.4, blue
     while on; a tick box at the top before): each race kept from then on is shared by itself a minute after it ends,
     and when its video is going to YouTube (Upload each race's video), only once it's there, so it's shared with the
-    link.
+    link. Since 4.20.2 only once the race is decided: never while it's still being driven (paused over a minute, the
+    game closed mid-race), and never one left before its finish (incomplete; by hand too: *Incomplete race*); one
+    shared and then left (a pause, then quit) is taken off the server. A share says whether the finish was seen
+    (`finished`: false for a run of laps with none, Rivals, a time trial, practice).
   - (Since 4.17.6) a share shows in the title bar: **Analysis: Preparing**, **Uploading n%** (blue), then **Share
     Complete** (green) or **Share Failed** (red) for 10 seconds; **Waiting for YouTube** while a race to share by
     itself waits for its video. Clicking it opens Analysis.

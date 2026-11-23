@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.20.2**
+- **SimEffects → Analysis, sessions shared (ForzaLeaderBoard):** only a whole race is shared. A race still being
+  driven isn't, however long its log has been still (paused over a minute, or the game closed mid-race: it was shared
+  then, part of it); a race left before its finish isn't, by itself or by hand (*Incomplete race*); one shared and
+  then left is taken off the server. The first race on a track, quit, now counts as left (its own laps made it look
+  as if it had driven all of the track's), and the app closing in a race ends it as the data stopping would. A share
+  says whether its finish was seen (`finished`).
+
 **4.20.1**
 - **SimEffects → Overlays → Radar** (iRacing): the other cars move smoothly to the side. iRacing doesn't send where a
   car is across the track, only each car's steering and its spotter's *car left / right* once it overlaps yours: a

@@ -194,6 +194,9 @@ public sealed class LapTracker
     private float prevLapStart, prevLapEnd;
     private int lastLap, racers, lapsEnded, startPos, lastPos, recorded;
     private bool madeHere, finished;
+    /// <summary>(since 4.20.2) This race drove more laps than any before it on its track: the track's laps are its own,
+    /// so they say nothing of where it would have finished.</summary>
+    private bool lapsRaised;
     private float startLastLap, lapLastLap;
     private long stillSince, lastLiveAt;
     private readonly TelemetryFrame lastRace = new();
@@ -316,8 +319,27 @@ public sealed class LapTracker
     /// file name returned for the record.</summary>
     public Func<DateTime, string?>? Claim { get; set; }
 
-    /// <summary>(since 4.10.14) The race started then was left before its finish: its session log (and video) deleted.</summary>
-    public Action<DateTime>? Drop { get; set; }
+    /// <summary>(since 4.10.14) The race started then was left before its finish: its session log (and video) deleted;
+    /// (since 4.20.2) its file's name returned (null: none).</summary>
+    public Func<DateTime, string?>? Drop { get; set; }
+
+    /// <summary>(since 4.20.2) A race left before its finish: its session log's name (deleted, or kept marked incomplete),
+    /// so a share of it can be taken off the server.</summary>
+    public event Action<string>? Left;
+
+    /// <summary>(since 4.20.2) When the race (or run) being driven started, while how it ends isn't known yet (null:
+    /// none): its session isn't shared until it's finished, left or over.</summary>
+    public DateTime? Undecided => inRace && !finished ? raceAt : null;
+
+    /// <summary>(since 4.20.2) The app closing: a race still being driven ends as if its data had stopped (finished, or
+    /// left before its finish), so its session isn't shared at the next start as if it were whole.</summary>
+    public void Close()
+    {
+        if (!inRace) return;
+        if (lastRace.Sessions) EndRun("the app closing");
+        else if (!finished) { Logging.Log.Here.Info("Analysis: the app closing in a race"); Stopped(Environment.TickCount64); }
+        inRace = false;
+    }
 
     /// <summary>Recording (the tool's on): otherwise races are followed, but no lap is kept and no track added.</summary>
     public bool Recording { get; set; }
@@ -395,7 +417,7 @@ public sealed class LapTracker
             racers = 0;
             startPos = lastPos = f.RacePosition;
             lapsEnded = recorded = 0;
-            finished = false;
+            finished = lapsRaised = false;
             startLastLap = lapLastLap = f.LastLap;
             stillSince = 0;
             furthestDriven = 0;
@@ -629,7 +651,7 @@ public sealed class LapTracker
             settings.Save();
         }
         bool learnt = false;
-        if (lapNo > Track.Laps) { Track.Laps = lapNo; learnt = true; }
+        if (lapNo > Track.Laps) { Track.Laps = lapNo; learnt = lapsRaised = true; }
         if (racers > Track.Racers) { Track.Racers = racers; learnt = true; }
         if (learnt) settings.Save();
         var lap = new LapRecord
@@ -688,15 +710,16 @@ public sealed class LapTracker
     /// <summary>(since 4.10.14) A race left before its finish (quit, restarted, the game closed): its session deleted, or
     /// kept marked incomplete, as <see cref="AnalysisSettings.DeleteIncomplete"/> says. Only a race against others (a
     /// field seen: not Rivals, a time trial, practice) that ran past its first seconds, and not one that drove all of
-    /// its known laps (a finish missed, not a quit).</summary>
+    /// its known laps (a finish missed, not a quit; since 4.20.2 known before it: the first race on a track, quit, set
+    /// them).</summary>
     private void Unfinished(TelemetryFrame f, int laps, float time)
     {
         if (!Recording || time <= 5 || racers <= 1) return;
-        if (Track is { Laps: > 1 } t && laps >= t.Laps) return;
+        if (!lapsRaised && Track is { Laps: > 1 } t && laps >= t.Laps) return;
         if (settings.DeleteIncomplete)
         {
             Logging.Log.Here.Info($"Analysis: race left before its finish ({laps} laps, {time:0.0} s): its session deleted");
-            Drop?.Invoke(raceAt);
+            if (Drop?.Invoke(raceAt) is { } dropped) Left?.Invoke(dropped);
             return;
         }
         var race = new RaceRecord
@@ -705,7 +728,9 @@ public sealed class LapTracker
             Laps = laps, Time = time, Start = startPos, Finish = lastPos, Racers = Racers, Session = Claim?.Invoke(raceAt),
         };
         Logging.Log.Here.Info($"Analysis: race left before its finish ({laps} laps, {time:0.0} s): kept, incomplete");
-        if (race.Session != null) store.AddUnfinished(race);
+        if (race.Session == null) return;
+        store.AddUnfinished(race);
+        Left?.Invoke(race.Session);
     }
 
     private static float[]? EntryOf(Track t) => t.Entry is { Length: 3 } e ? e : t.Length <= 0 ? new[] { t.X, t.Y, t.Z } : null;
@@ -839,7 +864,7 @@ public sealed class LapTracker
         lapLastLap = f.LastLap;
         lapStartDistance = raceStartDistance = f.Distance;
         racers = startPos = lastPos = lapsEnded = fullLaps = 0;
-        finished = checkered = lapCut = fromLine = false;
+        finished = checkered = lapCut = fromLine = lapsRaised = false;
         lapsTime = 0;
         waiting = null;
         Track = ByKey(f, game) ?? (Recording ? AddKeyed(f) : null);
@@ -895,7 +920,7 @@ public sealed class LapTracker
         if (Track.Length <= 0) { Track.Length = length; learnt = true; }
         if (f.Session == SessionKind.Race)
         {
-            if (lapNo > Track.Laps) { Track.Laps = lapNo; learnt = true; }
+            if (lapNo > Track.Laps) { Track.Laps = lapNo; learnt = lapsRaised = true; }
             if (racers > Track.Racers) { Track.Racers = racers; learnt = true; }
         }
         if (learnt) settings.Save();

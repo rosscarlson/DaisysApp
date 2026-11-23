@@ -110,6 +110,9 @@ internal sealed class SessionsView
         /// <summary>The best lap's (or the race's) time, seconds; 0: none.</summary>
         public float Best { get; init; }
         public bool Incomplete { get; init; }
+        /// <summary>(since 4.20.2) Its race's finish was seen (a result kept): false for a run of laps with none (Rivals, a
+        /// time trial, practice).</summary>
+        public bool Finished { get; init; }
         /// <summary>(since 4.13.0) Its race video is there (an icon after its title).</summary>
         public bool HasVideo { get; init; }
         /// <summary>Where it starts (read once, for a race with no track).</summary>
@@ -213,7 +216,7 @@ internal sealed class SessionsView
                 TrackKey = names.Tracks.FirstOrDefault(t => t.Id == track)?.Key,
                 Game = game, TrackName = names.TrackName(track), CarName = names.CarName(game, car),
                 ClassName = className,
-                Laps = laps, Best = best, Incomplete = unfinished.ContainsKey(g.Key),
+                Laps = laps, Best = best, Incomplete = unfinished.ContainsKey(g.Key), Finished = race != null && !unfinished.ContainsKey(g.Key),
                 HasVideo = VideoThere(g.Key),
                 LapTimes = g.Laps.Where(l => l.Lap > 0).GroupBy(l => l.Lap).ToDictionary(l => l.Key, l => l.First().Time),
                 LapsTag = laps > 1 && fastest != null ? $" ({fastest.Lap}/{laps})" : "",

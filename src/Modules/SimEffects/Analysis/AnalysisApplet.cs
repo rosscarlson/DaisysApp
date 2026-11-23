@@ -77,6 +77,8 @@ public sealed class AnalysisApplet : IApplet
         tracker.Recording = raceLog.On = settings.On;
         tracker.Claim = raceLog.Claim;
         tracker.Drop = raceLog.Drop;
+        // (since 4.20.2) a race shared, then left before its finish: taken off the server
+        tracker.Left += Sessions.ShareQueue.Withdraw;
         raceVideo = new RaceVideo(raceLog, settings);
         // (since 4.13.4) a track found on another map: the car's on it
         tracker.MapSeen += (g, m) => seenMap = (g, m);
@@ -352,6 +354,8 @@ public sealed class AnalysisApplet : IApplet
         OpenFiles.Links.Remove("session");
         quit = true;
         wake.Set();
+        // (since 4.20.2 a race still being driven judged first: left, its log goes with the others not kept)
+        lock (gate) tracker.Close();
         raceVideo.Dispose();
         raceLog.Dispose();
         terrain.Save();

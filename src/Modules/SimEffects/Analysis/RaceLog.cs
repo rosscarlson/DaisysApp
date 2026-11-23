@@ -104,17 +104,18 @@ internal sealed class RaceLog : IDisposable
     }
 
     /// <summary>(since 4.10.14) The race the tracker started at <paramref name="raceAt"/> was left before its finish: its
-    /// file (and video) deleted once it's ended, even with laps kept.</summary>
-    public void Drop(DateTime raceAt)
+    /// file (and video) deleted once it's ended, even with laps kept; (since 4.20.2) its name returned (null: none).</summary>
+    public string? Drop(DateTime raceAt)
     {
         lock (gate)
         {
             var e = entries.Where(x => Math.Abs((x.Started - raceAt).TotalSeconds) <= 5).MaxBy(x => x.Started);
-            if (e == null) return;
+            if (e == null) return null;
             e.Unwanted = true;
             e.Kept = false;
             if (e.Ended && e.SettleAt == long.MaxValue) e.SettleAt = Environment.TickCount64;
             SettleLocked(Environment.TickCount64);
+            return Path.GetFileName(e.Path);
         }
     }
 

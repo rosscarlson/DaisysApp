@@ -1126,5 +1126,7 @@
   "Not recording: {0}": "Not recording: {0}",
   "The session is being recorded": "The session is being recorded",
   "No telemetry came: only the video was recorded": "No telemetry came: only the video was recorded",
-  "Session recording stopped: a race began": "Session recording stopped: a race began"
+  "Session recording stopped: a race began": "Session recording stopped: a race began",
+  "Incomplete race": "Incomplete race",
+  "Race still running": "Race still running"
 }

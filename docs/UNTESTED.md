@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.20.2 (only whole races shared):** tested with a harness feeding the tracker (quit, app closed, finished). To try
+  with sharing on: a race against others quit halfway (not on the website, log: "race left before its finish"); one
+  paused over a minute then finished (shared after the finish, whole); one paused over a minute then quit (if it went,
+  "taken off the server").
 - **4.20.1 (Radar, iRacing):** tested on a recorded real session and live with no window, not seen on screen. In a race:
   a car coming past pulls out to its side before it's alongside (from the second lap on; often not in corners), no jump,
   and drifts back in line once past. Tell me if it goes to the wrong side often, or swerves with nobody moving.

@@ -2,6 +2,15 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.20.2: only whole races shared (2026-11-23)
+
+- Asked: verify a session is complete before upload, or delete incomplete uploads; client-side preferred. Done: the
+  tracker's `Undecided` (race not finished or left) keeps it out of `ShareQueue.Wanted` and `Share`; `Left` (quit,
+  incomplete) → `ShareQueue.Withdraw` unshares; `Close()` at Dispose judges a race in progress; `lapsRaised`: a race
+  that set its track's `Laps` can't be "a finish missed". Meta `finished` sent (server can check).
+- Not covered: a Forza race led from P1 the whole way then quit (`racers` stays 1, looks like Rivals); a first race
+  whose finish wasn't detected now counts as left. Harness: `%LOCALAPPDATA%\Temp\da-verify-tools\TrkVerify`.
+
 ## 4.20.1: the Radar's cars to the side (2026-11-22)
 
 - The user: a car stays behind, pops to the side as it passes, then back in front; better position data? iRacing has no
