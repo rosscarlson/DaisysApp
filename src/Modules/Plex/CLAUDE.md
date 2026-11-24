@@ -53,7 +53,7 @@ Past work on this module (Claude Code reads this file only when it works in this
   `D:\Temp\ffm\t`, deleted after: copy an episode and a 4K clip there again; FFmpeg 7.1 in `D:\Temp\ffm`), all passed;
   test app copy `%TEMP%\DaisysPlex` (settings were copied from DaisysDev, then deleted; `ui.ps1` drives it by UIA): Duplicates, Space, seasons, queue, Get FFmpeg. **Not tested:** deleting
   or transcoding library files, a remote server, QSV/AMF.
-- **Now:** 4.16.0 released. **Next:** the user tries `docs/UNTESTED.md`'s 4.16.0 and 4.14.0 entries. Ideas not done:
+- Ideas not done:
   a saved queue; more Scanner tools (missing episodes, files Plex doesn't know, bit-rate outliers); delete uploaded
   banner images; Tautulli graphs.
 - **4.21.0 (asked 2026-11-23, watching 3 Body Problem 4K DV, 12.6 Mbps Direct Play, on the Fire TV Stick 4K (AFTKM,
@@ -71,3 +71,5 @@ Past work on this module (Claude Code reads this file only when it works in this
 - **Tested (4.21.0):** harness `%LOCALAPPDATA%\Temp\plexstall` (10 made-up streams through StreamTrack/Stall by
   reflection: every cause, start and seek not counted; ALL PASSED); DaisysDev on the live server (the Fire TV and a
   remote Plex Web transcode: graphs, pings, Watch in background). **Not tested:** a real stall listed.
+- **Now (2026-11-23):** 4.21.0 released (v4.21.0, Release run passed; DaisysDev left running with it, recording). **Next:** the user
+  tries Streams when the Fire TV buffers (advised: Ethernet adapter or 5 GHz); `docs/UNTESTED.md`'s 4.21.0, 4.16.0, 4.14.0.
