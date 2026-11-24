@@ -444,6 +444,15 @@ internal static class ShareQueue
             Done(T("Share Complete"), title, TitleBadges.Green);
             return null;
         }
+        catch (ServerException ex) when (SessionShares.Of(item.Key) is { } was && ex.Message.Contains("isn't on the server any more", StringComparison.OrdinalIgnoreCase))
+        {
+            // (since 4.20.3 forgotten, as Unshare does: its video link was sent again every 10 minutes, refused each time)
+            SessionShares.All.Shared.Remove(item.Key);
+            SessionShares.All.Save();
+            Logging.Log.App.Info($"Analysis: {item.Key} isn't on the server any more ({was.Id}): no longer shared");
+            Done(T("Share Failed"), SessionServer.Friendly(ex), TitleBadges.Red);
+            return SessionServer.Friendly(ex);
+        }
         catch (Exception ex) when (ex is ServerException or IOException or OperationCanceledException or InvalidOperationException)
         {
             failed[item.Key] = (SessionServer.Friendly(ex), DateTime.Now);

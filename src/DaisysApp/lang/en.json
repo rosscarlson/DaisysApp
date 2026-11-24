@@ -541,5 +541,7 @@
   "{0} isn't set up (Settings → General)": "{0} isn't set up (Settings → General)",
   "Connected to {0} (not signed in)": "Connected to {0} (not signed in)",
   "SimEffects recordings": "SimEffects recordings",
-  "SimEffects → Recordings' telemetry (the videos stay in Video → Recording's folder)": "SimEffects → Recordings' telemetry (the videos stay in Video → Recording's folder)"
+  "SimEffects → Recordings' telemetry (the videos stay in Video → Recording's folder)": "SimEffects → Recordings' telemetry (the videos stay in Video → Recording's folder)",
+  "YouTube's upload limit for this channel: verify it at youtube.com/verify, or wait a day": "YouTube's upload limit for this channel: verify it at youtube.com/verify, or wait a day",
+  "YouTube's daily limit reached: uploads go on tomorrow": "YouTube's daily limit reached: uploads go on tomorrow"
 }

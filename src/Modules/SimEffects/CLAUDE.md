@@ -158,6 +158,9 @@ Read only when working in this folder. Current state and lessons; history is in 
   (`SessionShares.cs`: `SessionServer`, `ShareQueue`, `ShareWindow` with ticked sessions, "n of m" badge). The app's
   YouTube OAuth client is the `YOUTUBE_CLIENT` GitHub secret → Core metadata; not in source. (4.18.5: the secret has a UTF-8 BOM; Core strips it, so 4.15.1–4.18.4 had no app client. Check: the installed exe's `YouTubeClient` metadata decodes.) `Tracks.json` ships the
   user's FH4/5/6 tracks (merged once per hash, never deletes).
+- **YouTube limits (4.20.3):** the friend's channel (unverified) took 9 uploads, then `uploadLimitExceeded` on every
+  one; it looked signed in with nothing going. Core's `YouTubeLimitException` (that and `quotaExceeded`) holds
+  `RaceUploads` an hour (amber bubble, a notification a day). A share whose server copy is gone is forgotten.
 - **Shaker:** effects per wheel, `ShakerOutput` (BigHz for BST-300EX resonance, 32 Hz), `DeviceVolumes`,
   `SpectrumMeter` (a marker per column always, on its right; the master's red left of the first device, 4.18.7), Highlight / Effect ± keys, Level Wizard keys only while it's open.
 - Arduino: SimHub's sketch (ARQ) or DaisysSim; Wheel: Fanatec HID `01 F8 09 08 hi lo`, Moza serial (untested, no

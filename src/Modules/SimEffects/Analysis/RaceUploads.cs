@@ -19,7 +19,14 @@ internal static class RaceUploads
     private static CancellationTokenSource? cancel;
     /// <summary>The upload going's last few seconds (when, bytes sent), for its speed.</summary>
     private static readonly Queue<(long Ms, double Bytes)> recent = new();
-    private const string BadgeId = "YouTubeUpload";
+    private const string BadgeId = "YouTubeUpload", LimitBadgeId = "YouTubeLimit";
+    /// <summary>(since 4.20.3) YouTube's limit reached (<see cref="YouTubeLimitException"/>): no upload tried until
+    /// then (they stay marked; tried again then), its message, and the timer that resumes them.</summary>
+    private static DateTime heldUntil;
+    private static string heldWhy = "";
+    private static DateTime notified;
+    private static System.Windows.Threading.DispatcherTimer? retry;
+    private static readonly TimeSpan HoldFor = TimeSpan.FromHours(1);
 
     static RaceUploads()
     {
@@ -94,6 +101,13 @@ internal static class RaceUploads
                     going.Remove(log);
                     continue;
                 }
+                if (DateTime.Now < heldUntil)
+                {
+                    Logging.Log.App.Info($"Analysis: {going.Count} race videos wait for YouTube's limit until {heldUntil:t}");
+                    foreach (var k in going.Keys) failed[k] = heldWhy;
+                    going.Clear();
+                    break;
+                }
                 if (!YouTube.SignedIn)
                 {
                     Logging.Log.App.Warn($"Analysis: {log}'s video couldn't go to YouTube: not signed in ({going.Count} waiting)");
@@ -127,6 +141,14 @@ internal static class RaceUploads
                     if (RaceVideos.All.YouTubeDeleteLocal) DeleteFiles(new[] { log });
                 }
                 catch (OperationCanceledException) { }
+                catch (YouTubeLimitException ex)
+                {
+                    // (the rest not tried: each would be refused too)
+                    Hold(ex);
+                    Logging.Log.App.Warn($"Analysis: {log}'s video couldn't go to YouTube: {ex.Reason}, {going.Count - 1} more waiting; tried again at {heldUntil:t}");
+                    foreach (var k in going.Keys) failed[k] = ex.Message;
+                    going.Clear();
+                }
                 catch (Exception ex)
                 {
                     failed[log] = ex.Message;
@@ -143,6 +165,29 @@ internal static class RaceUploads
             }
         }
         finally { pumping = false; TitleBadges.Set(BadgeId, null); }
+    }
+
+    /// <summary>YouTube's limit reached: uploads held for an hour (then tried again), an amber bubble and a notification
+    /// (once a day) saying why (a friend's said nothing: signed in, nothing uploading).</summary>
+    private static void Hold(YouTubeLimitException ex)
+    {
+        bool first = notified != DateTime.Today;
+        notified = DateTime.Today;
+        heldUntil = DateTime.Now + HoldFor;
+        heldWhy = ex.Message;
+        TitleBadges.Set(LimitBadgeId, T("YT: limit"), ex.Message, TitleBadges.Amber, "SimEffects/" + SimEffectsApplet.Analysis);
+        if (first) Notifications.Show(T("YouTube"), ex.Message);
+        retry?.Stop();
+        retry = new System.Windows.Threading.DispatcherTimer { Interval = HoldFor + TimeSpan.FromSeconds(5) };
+        retry.Tick += (_, _) =>
+        {
+            retry?.Stop();
+            retry = null;
+            TitleBadges.Set(LimitBadgeId, null);
+            Logging.Log.App.Info("Analysis: trying YouTube again after its limit");
+            Resume();
+        };
+        retry.Start();
     }
 
     /// <summary>The title bar's bubble for the upload going: how far, how fast (bits a second, over the last 8 s) and

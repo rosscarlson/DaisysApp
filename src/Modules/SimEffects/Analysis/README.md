@@ -232,7 +232,9 @@ not; those older files aren't listed (they name no race), and stay in the folder
     (those with a file not up yet; not signed in, it opens the window), **Delete Video Files (kept on YouTube)** (those
     on YouTube with a file; Confirm?), **Open on YouTube** (one). A Google project that YouTube hasn't audited has its
     uploads made private, which can't play in the app; Google's sign-in for a project in testing runs out after a week
-    (sign in again).
+    (sign in again). When YouTube won't take more for now (since 4.20.3: the channel's own upload limit, a few a day
+    until it's verified at youtube.com/verify, or the day's quota), the rest wait: an amber **YT: limit** bubble and a
+    notification say why, and they're tried again each hour.
 - **A click** on a row of the All Sessions table, or a time on a Best Times tile, opens its race here with that lap
   in Compare's **Session 1** (a race: its best lap). Since 4.13.0 the table's rows leave the page where it is, and since 4.13.2 the table
   is held in its place on screen while the cards above change height as the session loads (a Best Times tile still

@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.20.3**
+- **SimEffects → Analysis, YouTube uploads:** when YouTube won't take more for now (the channel's own upload limit:
+  an unverified channel gets only a few a day, until it's verified at youtube.com/verify; or the day's quota), the
+  rest wait instead of each failing in turn: an amber **YT: limit** bubble and a notification say why, and they're
+  tried again each hour. Before, it said signed in and nothing went.
+- **Sessions shared:** one taken off the server isn't sent again every 10 minutes (its video link); it's forgotten.
+
 **4.20.2**
 - **SimEffects → Analysis, sessions shared (ForzaLeaderBoard):** only a whole race is shared. A race still being
   driven isn't, however long its log has been still (paused over a minute, or the game closed mid-race: it was shared

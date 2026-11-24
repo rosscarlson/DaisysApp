@@ -15,6 +15,14 @@ namespace DaisysApp.Shared.Network;
 /// <summary>Who can watch a video uploaded: YouTube's privacy status.</summary>
 public enum YouTubePrivacy { Unlisted, Private, Public }
 
+/// <summary>(since 4.20.3) YouTube won't take more uploads for now: the channel's own limit (uploadLimitExceeded:
+/// unverified channels get few a day) or the app's day of API quota (quotaExceeded). Uploads wait and try again later.</summary>
+public sealed class YouTubeLimitException(string reason, string message) : IOException(message)
+{
+    /// <summary>YouTube's reason: uploadLimitExceeded or quotaExceeded.</summary>
+    public string Reason { get; } = reason;
+}
+
 /// <summary>(since Core 0.62, 4.15.0) The YouTube account the app uploads with: the app's own Google OAuth client
 /// (since 4.15.1; <see cref="YouTube.AppClient"/>) or the user's own (a Desktop app client of a Google Cloud project
 /// with the YouTube Data API on; <see cref="ClientId"/> "" = the app's), and the sign-in it gave.
@@ -248,7 +256,7 @@ public static class YouTube
         start.Headers.Add("X-Upload-Content-Type", Mime(file));
         Log.App.Info("YouTube: asking for an upload address");
         using var begun = await Send(start, cancel);
-        if (!begun.IsSuccessStatusCode) throw new IOException(await Problem(begun, "the upload address"));
+        if (!begun.IsSuccessStatusCode) throw await Problem(begun, "the upload address");
         var session = begun.Headers.Location ?? throw new IOException(T("YouTube gave no upload address"));
         Log.App.Info($"YouTube: uploading {Path.GetFileName(file)} ({total / 1048576.0:0.0} MB, {privacy})");
 
@@ -300,7 +308,7 @@ public static class YouTube
                     sent = await Received(session, total, cancel) ?? sent;
                     continue;
                 }
-                throw new IOException(await Problem(answer, $"sending at {sent / 1048576.0:0.0} MB"));
+                throw await Problem(answer, $"sending at {sent / 1048576.0:0.0} MB");
             }
         }
     }
@@ -346,7 +354,7 @@ public static class YouTube
     {
         string id = IdOf(video) ?? video;
         using var answer = await Send(new HttpRequestMessage(HttpMethod.Delete, "https://www.googleapis.com/youtube/v3/videos?id=" + Uri.EscapeDataString(id)), cancel);
-        if (!answer.IsSuccessStatusCode && answer.StatusCode != HttpStatusCode.NotFound) throw new IOException(await Problem(answer, "deleting " + id));
+        if (!answer.IsSuccessStatusCode && answer.StatusCode != HttpStatusCode.NotFound) throw await Problem(answer, "deleting " + id);
         Log.App.Info($"YouTube: deleted {id}");
     }
 
@@ -462,19 +470,27 @@ public static class YouTube
     }
 
     /// <summary>What a refusal says: YouTube's own message, else its status. (since 4.18.14) Logged whole: the status
-    /// and YouTube's answer (its reason, such as quotaExceeded or uploadLimitExceeded).</summary>
-    private static async Task<string> Problem(HttpResponseMessage answer, string doing)
+    /// and YouTube's answer (its reason, such as quotaExceeded or uploadLimitExceeded). (since 4.20.3) Those two a
+    /// <see cref="YouTubeLimitException"/>: a friend's channel stopped taking uploads after 9 in a day.</summary>
+    private static async Task<IOException> Problem(HttpResponseMessage answer, string doing)
     {
         string text;
         try { text = await answer.Content.ReadAsStringAsync(); } catch (Exception ex) { text = $"(unreadable: {ex.Message})"; }
         Log.App.Warn($"YouTube: {doing} refused: {(int)answer.StatusCode} {answer.ReasonPhrase}: {(text.Length > 3000 ? text[..3000] + "…" : text)}");
+        string message = $"{(int)answer.StatusCode} {answer.ReasonPhrase}", reason = "";
         try
         {
             var json = JsonNode.Parse(text);
-            if (json?["error"]?["message"]?.GetValue<string>() is { Length: > 0 } m) return m;
+            if (json?["error"]?["message"]?.GetValue<string>() is { Length: > 0 } m) message = m;
+            reason = json?["error"]?["errors"]?[0]?["reason"]?.GetValue<string>() ?? "";
         }
         catch { }
-        return $"{(int)answer.StatusCode} {answer.ReasonPhrase}";
+        return reason switch
+        {
+            "uploadLimitExceeded" => new YouTubeLimitException(reason, T("YouTube's upload limit for this channel: verify it at youtube.com/verify, or wait a day")),
+            "quotaExceeded" => new YouTubeLimitException(reason, T("YouTube's daily limit reached: uploads go on tomorrow")),
+            _ => new IOException(message),
+        };
     }
 
     private static Dictionary<string, string> Query(string pathAndQuery)
