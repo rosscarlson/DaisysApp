@@ -7,8 +7,8 @@ Admin tools for your [Plex Media Server](https://www.plex.tv/), for when somethi
 watching and how, what's wrong with the server, its libraries and maintenance jobs, its database checked, repaired and
 backed up on a schedule, a 4K / HDR / Dolby Vision banner on many posters at once,
 [Tautulli](https://tautulli.com/)'s statistics, and files found and made smaller (duplicates, space by show,
-transcoding on the graphics card). Six sub-tabs: **Now Playing**, **Server**, **Database**, **Posters**, **Tautulli**
-and **Scanner** (since 4.16.0).
+transcoding on the graphics card), and why a stream stalls. Seven sub-tabs: **Now Playing**, **Streams** (since
+4.21.0), **Server**, **Database**, **Posters**, **Tautulli** and **Scanner** (since 4.16.0).
 
 The database tools work on the server's own PC (run Daisy's App there); everything else works from any PC that can
 reach the server.
@@ -46,6 +46,33 @@ Every stream on the server, asked every 5 seconds while the tab shows:
 The header says how many streams, how many transcode and the total bandwidth. **Server busy:** lists what the server is
 doing (library scans, optimising, analysing… with how far). With Tautulli set up, **Recent Plays** lists its last 50:
 when, who, what, on which player, how long, how it played, and from where.
+
+## Streams
+
+Why a stream stops to buffer. Every 2 seconds, for each video stream: the player's state and how far in, the file's
+bit rate (or how fast a transcode goes), what Plex sent the player each second (the same numbers as Plex's dashboard,
+`/statistics/bandwidth`), and a ping to the player. Each stream shows its last 5 minutes:
+
+- the player, local or remote, its address, the file's average bit rate, a transcode's speed;
+- **Sent** (the last 10 s), **Peak** (the most a second carried: at least what the path to the player can take),
+  **Ping** and the **Last minute**'s slowest ping and how many were lost;
+- a graph of what was sent, red where the player buffered, the file's bit rate dashed; under it the ping, lost ones
+  in red.
+
+**Stalls** lists each time a player buffered while it was playing (not as it starts, or just after a seek): when,
+what, on which player, how long, how much was sent in the 30 s before and during it, the pings, and the likely cause:
+
+| Seen | Likely cause |
+|---|---|
+| A transcode slower than 1× | the server (its processor or graphics card) |
+| Nothing sent, pings slow or lost | the player's network (Wi-Fi, usually) |
+| Nothing sent, pings fine | the player stopped asking (its app) |
+| Less sent than the file needs | the network, the server's disk, or (remote) the internet between |
+| Data kept coming | the player itself (its app or decoder) |
+
+Each stall is written to the module's log too. **Watch in background** (on by default) keeps it recording while
+other tabs show: every 15 seconds while no video plays. A player that doesn't answer pings (most remote ones) is judged
+on the data alone.
 
 ## Server
 
@@ -192,18 +219,19 @@ Tools that look through the libraries' files (since 4.16.0), in three parts. A l
 | *backup folder*`\Before repair …`, `\Before restore …` | the database as it was before a repair or restore |
 | `%LOCALAPPDATA%\DaisysApp\ffmpeg\` | FFmpeg, when Scanner → Transcode downloaded it |
 | `%APPDATA%\DaisysApp\VideoProfiles.json` | the video profiles, shared with Video → Recording |
-| `%LOCALAPPDATA%\DaisysApp\logs\Plex-MM-dd-yy.log` | the module's log: connections, jobs started, stops, banners, repairs, files deleted, each transcode (with its FFmpeg command) |
+| `%LOCALAPPDATA%\DaisysApp\logs\Plex-MM-dd-yy.log` | the module's log: connections, jobs started, stops, banners, repairs, files deleted, each transcode (with its FFmpeg command), each stall and its likely cause |
 
 ## Code
 
 | File | What it does |
 |---|---|
-| `PlexApplet.cs` | The tab (`AppletGroup`) and its six sub-tabs (`PlexTool`); the first one made has the setup step and Settings page and connects |
+| `PlexApplet.cs` | The tab (`AppletGroup`) and its seven sub-tabs (`PlexTool`); the first one made has the setup step and Settings page and connects |
 | `PlexSettings.cs` | The settings (`PlexServer.json`), the banner's style, the posters with a banner |
 | `PlexService.cs` | The connection: which server (name, version, identifier), whether it's this PC's, the clients; libraries and counts |
 | `PlexClient.cs` | Plex Media Server's HTTP API (JSON), and plex.tv's: the PIN sign-in and the account's servers; reading answers |
 | `TautulliClient.cs` | Tautulli's API v2 |
 | `PlexLocal.cs` | The server on this PC: its folders and program, Plex SQLite, its token, stopping and starting it (by process id: Plex SQLite runs a `Plex Media Server.exe` of its own), running programs; Tautulli's `config.ini` |
+| `Streams/StreamMonitor.cs` | Streams' recording: sessions, bytes sent a second, pings; each stream (`StreamTrack`), its stalls (`Stall`) and their likely causes |
 | `Database/Backups.cs` | The backups' list, the backup script, and its task in Task Scheduler |
 | `Database/DbTools.cs` | Check, Repair and Restore |
 | `Posters/PosterTools.cs` | Finding 4K / HDR / Dolby Vision titles, drawing the banner, uploading it and taking it off |
@@ -211,6 +239,7 @@ Tools that look through the libraries' files (since 4.16.0), in three parts. A l
 | `Scanner/Ffmpeg.cs` | FFmpeg: found, downloaded, its version; the graphics card's encoder for a codec (tried once); FFprobe's view of a file |
 | `Scanner/Transcoder.cs` | The transcode queue: what's skipped, the size estimate, FFmpeg's arguments, running one file (progress, checks, replacing) |
 | `Views/ActivityView.cs` | Now Playing (and `SessionCard`, one stream) |
+| `Views/StreamsView.cs` | Streams (and `StreamPanel`, one stream and its graphs) |
 | `Views/ServerView.cs` | Server: state, checks, libraries, maintenance, this PC |
 | `Views/DatabaseView.cs` | Database |
 | `Views/PostersView.cs` | Posters |

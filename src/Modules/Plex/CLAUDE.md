@@ -56,3 +56,18 @@ Past work on this module (Claude Code reads this file only when it works in this
 - **Now:** 4.16.0 released. **Next:** the user tries `docs/UNTESTED.md`'s 4.16.0 and 4.14.0 entries. Ideas not done:
   a saved queue; more Scanner tools (missing episodes, files Plex doesn't know, bit-rate outliers); delete uploaded
   banner images; Tautulli graphs.
+- **4.21.0 (asked 2026-11-23, watching 3 Body Problem 4K DV, 12.6 Mbps Direct Play, on the Fire TV Stick 4K (AFTKM,
+  Wi-Fi) with 15 s+ pauses: look now, or build something as a Plex sub-tab):** found live: the stick "buffering" 2+
+  minutes with 0 bytes sent (`/statistics/bandwidth?timespan=6`) and D: idle; pings 1 ms → 390–540 ms with drops
+  during its bursts (60–110 Mbps): its Wi-Fi, not Plex. PMS's log is warnings only (no requests). Built sub-tab
+  `Streams` (E9D2) = `Views/StreamsView` over `Streams/StreamMonitor` (module-level, made in `PlexApplet`, so
+  **Watch in background**, on by default, records on other tabs; 15 s idle). Decisions (mine): no disk counters (PDH is
+  in `DaisysApp.Shared`, Plex depends only on Core); causes from sent-before/during, pings, transcode speed (see the
+  README's table); stalls in the first 10 s or within 10 s of a seek (offset jump > 15 s) not counted.
+- **Lessons (4.21.0):** `timespan=6` = per-second points, about 2.5 minutes kept, seconds with nothing sent missing
+  (filled with 0 up to the newest second any device has); Device `clientIdentifier` = Player `machineIdentifier`;
+  `timespan` is a code (6 s, 4 hour, 3 day…), not seconds. `tools/strings.py` (even `--help`) rewrites every
+  module's en.json: keep only the Plex one.
+- **Tested (4.21.0):** harness `%LOCALAPPDATA%\Temp\plexstall` (10 made-up streams through StreamTrack/Stall by
+  reflection: every cause, start and seek not counted; ALL PASSED); DaisysDev on the live server (the Fire TV and a
+  remote Plex Web transcode: graphs, pings, Watch in background). **Not tested:** a real stall listed.

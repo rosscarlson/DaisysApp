@@ -55,6 +55,11 @@ public sealed class PlexSettings
     /// <summary>The library picked last on the Posters tab.</summary>
     public string? PosterLibrary { get; set; }
 
+    // ---- Streams
+
+    /// <summary>Streams records stalls while other tabs show too (every 15 s while nothing plays).</summary>
+    public bool WatchStreams { get; set; } = true;
+
     // ---- Tautulli's tab
 
     public int StatsDays { get; set; } = 30;

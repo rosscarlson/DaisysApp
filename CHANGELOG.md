@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.0**
+- **Plex → Streams** (new): why a stream stops to buffer. Each video stream's last 5 minutes: what Plex sent the
+  player each second (red where it buffered, the file's bit rate dashed) and a ping to the player; each stall listed
+  with what was sent before and during it, the pings, and its likely cause (the player's Wi-Fi, the player's app, not
+  enough bandwidth, a transcode too slow, or the player itself), also in the log. **Watch in background** keeps it
+  recording on other tabs.
+
 **4.20.3**
 - **SimEffects → Analysis, YouTube uploads:** when YouTube won't take more for now (the channel's own upload limit:
   an unverified channel gets only a few a day, until it's verified at youtube.com/verify; or the day's quota), the
