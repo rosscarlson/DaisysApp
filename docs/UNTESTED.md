@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.3 (restarts, track names):** tested by replaying the rig's 2026-11-25 logs through the tracker (a restart
+  at 93 s then a whole run; Takashiro's two laps with the app stalled 5.9 s), not in the game. To try: a Horizon Rivals
+  run restarted halfway then finished: only the whole run kept and shared; Stadium Cross Country Circuit and Takashiro
+  Cross Country named right; Soni Highlands Cross Country (its start a guess) named right when driven.
+
 - **4.21.2 (Forza's race times):** tested on Nacho's logs against his videos and a replay in DaisysDev, not in the game.
   To try: a Horizon sprint and a circuit; the time kept (Laps, the lap box) is the results screen's **Your Time** to
   the millisecond; old laps were mended at the first start (log: "lap 1: 2:06.945 → …").

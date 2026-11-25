@@ -84,6 +84,12 @@ internal static class KnownTracks
                 added++;
             }
             t.Name = e.Name; t.Map = e.Map; t.Type = e.Type; t.Found = e.Found == default ? t.Found : e.Found;
+            // (since 4.21.3) a lap learnt here short of a whole one (a restart or quit taken for a finish) isn't kept
+            if (e.Length <= 0 && t.Length > 0 && t.Length < LapTracker.HorizonWhole)
+            {
+                Logging.Log.Here.Info($"Analysis: {e.Name}'s lap of {t.Length:0} m is short of a whole one: learnt again");
+                t.Length = 0;
+            }
             // (a place in the file, with no race yet, whose first race was driven here: its start and lap learnt here kept)
             if (e.Length > 0 || t.Length <= 0)
             {

@@ -230,6 +230,10 @@ public sealed class LapTracker
     private const long GapMs = 1500;
     /// <summary>How much of a known sprint has to be driven for a stop to be its finish (not the race quit).</summary>
     private const float FinishShare = 0.85f;
+    /// <summary>(since 4.21.3) Horizon's distance is progress, not metres: a whole lap or sprint reads about 5,950 m on
+    /// every track, so a sprint (or a first lap, its track's length not known) stopping short of this didn't finish (a
+    /// restart or quit taken for a finish set a track's lap at half its length, and its whole runs then fitted no track).</summary>
+    public const float HorizonWhole = 5000;
 
     private readonly AnalysisSettings settings;
     private readonly LapStore store;
@@ -543,8 +547,9 @@ public sealed class LapTracker
             Logging.Log.Here.Info($"Analysis: race started at {startX:0}, {startY:0}, {startZ:0} ({(Track != null ? "on " + settings.TrackName(Track.Id) : nearCount + " tracks start here")}{(entry != null ? $", entered at {entry[0]:0}, {entry[1]:0}, {entry[2]:0}{(byEntry ? "" : ", no track's")}" : "")})");
         }
         // (since 3.30.3) back after a gap, the clock as it was but the car somewhere else: the race is over (the next
-        // one loading), judged on the furthest frame; these frames are no part of it
-        else if (!finished && now - lastLiveAt >= GapMs && rt >= lastRaceTime - 1
+        // one loading), judged on the furthest frame; these frames are no part of it. (since 4.21.3) Not with the clock
+        // run on: the app missed frames (busy), the race went on
+        else if (!finished && now - lastLiveAt >= GapMs && rt >= lastRaceTime - 1 && rt < lastRaceTime + 1
             && (lastRace.Distance - f.Distance > 100 || Dist(f.PosX - lastRace.PosX, f.PosY - lastRace.PosY, f.PosZ - lastRace.PosZ) > SeriesRadius))
         {
             Logging.Log.Here.Info($"Analysis: back after {(now - lastLiveAt) / 1000.0:0.0} s somewhere else ({lastRace.Distance - f.Distance:0} m less driven): the race is over");
@@ -571,7 +576,7 @@ public sealed class LapTracker
             lastPos = f.RacePosition;
             if (startPos == 0) startPos = f.RacePosition;
         }
-        if (lapsEnded == 0 && f.LapNumber == lastLap && rt > 5 && f.Distance - lapStartDistance > 100)
+        if (lapsEnded == 0 && f.LapNumber == lastLap && rt > 5 && f.Distance - lapStartDistance > 100 && Whole(f.Distance - lapStartDistance))
         {
             if (f.LastLap > 0 && f.LastLap != startLastLap && Math.Abs(f.LastLap - rt) < 2) { Finish(f, f.LastLap, "LastLap set"); return; }
             if (stillSince != 0 && now - stillSince >= FinishMs) { Finish(f, rt, "the race clock stopped"); return; }
@@ -673,9 +678,13 @@ public sealed class LapTracker
         if (!gap) { Logging.Log.Here.Info($"Analysis: not a finish, the data didn't stop ({why})"); return; }
         if (Track is { Length: > 0 } known && driven < known.Length * FinishShare)
             Logging.Log.Here.Info($"Analysis: not a finish ({driven:0} m of {settings.TrackName(known.Id)}'s {known.Length:0} m)");
+        else if (!Whole(driven)) Logging.Log.Here.Info($"Analysis: not a finish ({driven:0} m: short of a whole run, {HorizonWhole:0})");
         // (since 4.21.2) the frame that crossed the line wasn't sent: a frame on from the last one
         else Finish(f, AFrameOn(f.RaceTime), $"the data stopped, the last frame sent {f.RaceTime:0.000} s, a frame {FrameStep * 1000:0.0} ms");
     }
+
+    /// <summary>(since 4.21.3) As far as a whole sprint or lap goes (Horizon: <see cref="HorizonWhole"/>; any in the others).</summary>
+    private bool Whole(float driven) => !game.StartsWith("FH", StringComparison.OrdinalIgnoreCase) || driven >= HorizonWhole;
 
     /// <summary>A circuit's last lap ended (the finish): recorded, nothing more until the next race.</summary>
     private void LastLap(TelemetryFrame f, float time, string why)

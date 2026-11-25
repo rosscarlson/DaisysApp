@@ -2,6 +2,16 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.3: restarts and short laps (2026-11-25)
+
+- Rig: a Rivals restart (back at the start, clock as it was) was "back somewhere else" → finish → half-lap first race
+  set the place's Length; the whole run after fitted nothing (dropped, log and video deleted). A 5.9 s UI stall with the
+  clock running on also ended a race. Fix: `LapTracker.HorizonWhole` (5,000; FH Distance is progress, ~5,950 a lap)
+  for data-stop and clock-stop finishes; "back somewhere else" needs the clock as it was; `KnownTracks.Merge` drops
+  learnt FH lengths under it. Tracks.json: the user said the place named Stadium XC was Takashiro XC and Soni
+  Highlands' was Stadium XC; Soni got Takashiro's old place (a guess). Short lengths zeroed, rig's FH6 lengths added.
+- Tested: `%LOCALAPPDATA%\Temp\lapreplay` (replays a session csv through LapTracker; settings in `%APPDATA%\LapReplay`).
+
 ## 4.21.2: Forza's race times exact (2026-11-25)
 
 - The user: Wind Farm (Nacho's, 2:06.945 kept) showed 2:37.000 in the lap box, and "2:07.144 in the video". 2:07.144

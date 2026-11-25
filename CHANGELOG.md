@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.3**
+- **SimEffects → Analysis**: a Forza Horizon run restarted or quit partway is no longer kept as a finished race. The
+  game puts the car back at the start with the race clock as it was, which looked like a finish; the run (half a lap)
+  was kept and shared, its track's lap set from it, and the whole run after it then fitted no track and was thrown
+  away. Horizon's distance counts progress, about 5,950 m for any whole lap or sprint, so a run short of 5,000 m is no
+  longer a finish, and a lap learnt shorter than that is learnt again. A race isn't ended when the app misses its
+  data for a few seconds (busy) while the race clock runs on: a two-lap race was kept as 50 seconds of its first lap.
+- **The app's Forza Horizon tracks**: Takashiro Cross Country and Stadium Cross Country Circuit had each other's
+  start (Soni Highlands Cross Country moved to the one left); 24 lap lengths too short to be whole ones dropped, to be
+  learnt again; 32 Horizon 6 lap lengths learnt on the rig added.
+
 **4.21.2**
 - **SimEffects → Analysis**: Forza Horizon's and Motorsport's race times are now the game's own, to the millisecond. A
   sprint's time, and a circuit's last lap, were up to 0.17 s short: Forza stops sending at the finish line, and the
