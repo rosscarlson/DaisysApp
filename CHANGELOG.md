@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.8**
+- **SimEffects → Analysis**: a Forza Horizon race on a track whose lap length is known is no longer thrown away when
+  its run is a little longer or shorter. Horizon's distance counts progress (about 5,950 m any whole lap or sprint, but
+  5,400–6,100 m seen), so the length tells nothing apart; Festival Sprint's run of 5,734 m didn't fit the 5,399 m
+  learnt and was dropped. In Horizon any whole run on the track starting there is its.
+
 **4.21.7**
 - **SimEffects → Analysis**: a Forza Horizon event picked from the map isn't taken for the one whose marker the car
   was at. The app matches the place the car last was in free roam with where each event is entered; Edo Circuit,

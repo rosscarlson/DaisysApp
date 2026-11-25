@@ -852,7 +852,10 @@ public sealed class LapTracker
     /// few hundred metres from the marker).</summary>
     public const float EntryReach = 2000;
 
-    private static bool Fits(Track t, float length) => Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack);
+    /// <summary>A lap as long as the track's (since 4.21.8 in Horizon any whole one: its distance is progress, ~5,950 m any
+    /// lap, and Festival Sprint's run of 5,734 m didn't fit the 5,399 learnt).</summary>
+    private bool Fits(Track t, float length) => Known && t.Key == null ? Whole(length)
+        : Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack);
 
     private Track? Find(float length)
     {

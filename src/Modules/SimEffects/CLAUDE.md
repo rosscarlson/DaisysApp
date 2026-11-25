@@ -2,6 +2,12 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.8: Horizon's Fits (2026-11-25)
+
+- Festival Sprint 17:29 (4.21.5): 5,734 m vs its 5,399 (an online race's, Tracks.json): over `LengthSlack` → no track,
+  dropped. `Fits` is now per instance: in `KnownTracks.Games` any `Whole` lap fits (start decides). Other FH file
+  lengths 5,000–5,900: Panoramica Sprint (FH5), Irokawa Circuit, Oyashirazu Trail (FH6).
+
 ## 4.21.7: entries far from the start (2026-11-25)
 
 - Edo Circuit 17:21 kept as The Gauntlet: the car sat at The Gauntlet's marker (Length 0: `EntryOf` = its marker),
