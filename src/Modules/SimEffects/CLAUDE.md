@@ -2,6 +2,13 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.9: nothing deleted, for now (2026-11-25)
+
+- The user checks FH6 tracks one race at a time: `RaceLog.KeepAll` (true) leaves a race not kept in ForzaSessions and
+  its video in the folder (link removed, so not uploaded); fix by hand (records, `RaceVideos` link) and share from
+  Uploads. Set it false when that's done. 17:35 (4.21.7) "Festival Sprint" kept as Nangan Cross Country: started 41 m
+  from Irokawa Circuit's start, 6,013 m vs its 5,534 → Nangan (Length 0); 4.21.8's replay keeps it as Irokawa.
+
 ## 4.21.8: Horizon's Fits (2026-11-25)
 
 - Festival Sprint 17:29 (4.21.5): 5,734 m vs its 5,399 (an online race's, Tracks.json): over `LengthSlack` → no track,

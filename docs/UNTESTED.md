@@ -2,6 +2,8 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.9 (nothing deleted, for now):** built, not tried. To try: a race not kept leaves its log in ForzaSessions and
+  its video in Videos\Daisy's App (not uploaded). Turn back off (`RaceLog.KeepAll`) once the user's track run is done.
 - **4.21.8 (Horizon's lengths don't decide):** tested by replaying a race made like Festival Sprint's, not in the game.
   To try: Festival Sprint kept.
 

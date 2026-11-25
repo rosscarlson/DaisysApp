@@ -179,9 +179,11 @@ internal sealed class RaceVideo
     {
         if (starting && recording == log) { dropped.Add(log); return; }
         if (!RaceVideos.All.Videos.Remove(log, out var link)) return;
-        Logging.Log.App.Info($"Analysis: race {log} not kept: its video {Path.GetFileName(link.File)} dropped");
+        Logging.Log.App.Info($"Analysis: race {log} not kept: its video {Path.GetFileName(link.File)} {(RaceLog.KeepAll ? "left in the folder" : "dropped")}");
         RaceVideos.All.Save();
         string file = link.File;
+        // (since 4.21.9 the file stays, its link gone: not uploaded)
+        if (RaceLog.KeepAll) return;
         // (once the recorder has let go of it)
         Task.Run(async () =>
         {

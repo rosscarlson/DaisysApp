@@ -15,6 +15,8 @@ internal sealed class RaceLog : IDisposable
     /// <summary>How long after the data comes back a race's file waits for the tracker to keep it.</summary>
     private const long SettleMs = 15_000;
     private const long StopMs = 5_000, GapMs = 1_500;
+    /// <summary>(since 4.21.9) A race not kept keeps its file (and video) all the same, for now.</summary>
+    public static readonly bool KeepAll = true;
 
     private readonly SessionRecorder recorder = new() { Manual = true };
     private readonly object gate = new();
@@ -135,7 +137,11 @@ internal sealed class RaceLog : IDisposable
             var e = entries[i];
             if (!e.Ended || now < e.SettleAt) continue;
             entries.RemoveAt(i);
-            if (!e.Kept) { Delete(e.Path, e.Unwanted); Dropped?.Invoke(e.Path); }
+            if (e.Kept) continue;
+            // (since 4.21.9, while the tracks are checked: left in the folder, to be put right and shared by hand)
+            if (KeepAll) Logging.Log.Here.Info($"Analysis: race log not kept, left in the folder ({(e.Unwanted ? "the race left before its finish" : "no lap or race kept")}): {Path.GetFileName(e.Path)}");
+            else Delete(e.Path, e.Unwanted);
+            Dropped?.Invoke(e.Path);
         }
     }
 

@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.9**
+- **SimEffects → Analysis**: for now, a race the app doesn't keep (no track fits it, or it's left before a whole lap)
+  keeps its race log and video in their folders instead of deleting them, so one recorded wrong can be put right
+  without driving it again. Its video isn't uploaded.
+
 **4.21.8**
 - **SimEffects → Analysis**: a Forza Horizon race on a track whose lap length is known is no longer thrown away when
   its run is a little longer or shorter. Horizon's distance counts progress (about 5,950 m any whole lap or sprint, but
