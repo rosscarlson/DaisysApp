@@ -255,6 +255,9 @@ public sealed class LapTracker
     private bool lapsRaised;
     private float startLastLap, lapLastLap;
     private long stillSince, lastLiveAt;
+    /// <summary>(since 4.21.5) When the game last sent a frame not driving (a menu, the results): a gap with these isn't
+    /// the app missing frames.</summary>
+    private long notLiveAt;
     private readonly TelemetryFrame lastRace = new();
     /// <summary>(since 3.30.3) The frame furthest into this lap: a finish is judged on it, as Forza sends a few frames
     /// after the finish (the next race loading) with the clock as it was and the distance back near 0.</summary>
@@ -425,7 +428,7 @@ public sealed class LapTracker
     {
         this.game = game;
         if (f.Sessions) { FeedSessions(f); return; }
-        if (!f.HasRace || !f.Live) return;
+        if (!f.HasRace || !f.Live) { if (f.HasRace) notLiveAt = Environment.TickCount64; return; }
         float rt = f.RaceTime;
         long now = Environment.TickCount64;
         if (rt <= 0)
@@ -553,9 +556,13 @@ public sealed class LapTracker
         }
         // (since 3.30.3) back after a gap, the clock as it was but the car somewhere else: the race is over (the next
         // one loading), judged on the furthest frame; these frames are no part of it. (since 4.21.3) Not with the clock
-        // run on: the app missed frames (busy), the race went on
-        else if (!finished && now - lastLiveAt >= GapMs && rt >= lastRaceTime - 1 && rt < lastRaceTime + 1
-            && (lastRace.Distance - f.Distance > 100 || Dist(f.PosX - lastRace.PosX, f.PosY - lastRace.PosY, f.PosZ - lastRace.PosZ) > SeriesRadius))
+        // run on: the app missed frames (busy), the race went on. (since 4.21.5) The clock run on after the game sent frames
+        // not driving in the gap (Bandai Asuma's results: 35 s, the clock 29 s on), or after a whole Horizon sprint, is
+        // over too, wherever the car is
+        else if (!finished && now - lastLiveAt >= GapMs && rt >= lastRaceTime - 1
+            && (rt < lastRaceTime + 1
+                ? lastRace.Distance - f.Distance > 100 || Dist(f.PosX - lastRace.PosX, f.PosY - lastRace.PosY, f.PosZ - lastRace.PosZ) > SeriesRadius
+                : notLiveAt > lastLiveAt || (lapsEnded == 0 && game.StartsWith("FH", StringComparison.OrdinalIgnoreCase) && Whole(furthestDriven))))
         {
             Logging.Log.Here.Info($"Analysis: back after {(now - lastLiveAt) / 1000.0:0.0} s somewhere else ({lastRace.Distance - f.Distance:0} m less driven): the race is over");
             Stopped(now);

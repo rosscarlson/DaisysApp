@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.5**
+- **SimEffects → Analysis**: a Forza Horizon race that ends on a results screen is kept again. 4.21.3 stopped ending a
+  race when its data came back after a gap with the race clock run on (the app had missed frames while busy), but the
+  results screen does the same: the game sends frames not driving, then the clock comes back on, and the race (Bandai
+  Asuma) was thrown away as unfinished. A gap the game filled with frames not driving, or one after a whole sprint, now
+  ends the race again.
+
 **4.21.4**
 - **SimEffects → Analysis**: a Forza Horizon race on a track not raced yet is found again when the Start radius setting
   is small. The app's Horizon tracks are placed at the events' markers, and a race can start a few hundred metres

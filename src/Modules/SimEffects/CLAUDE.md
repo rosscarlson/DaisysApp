@@ -2,6 +2,13 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.5: the results screen's gap (2026-11-25)
+
+- 4.21.3's "clock run on = app missed frames" lost Bandai Asuma 16:47 (4.21.4): finish 136.96 s, 35 s of !Live frames
+  (results), then 2.5 s Live with the clock at 165.8, then free roam: no gap at the end → "not a finish". Fix: `notLiveAt`
+  (Feed's !Live frames); a gap with the clock run on ends the race if the game sent !Live frames in it, or after a
+  whole FH sprint (`Whole(furthestDriven)`), wherever the car is. lapreplay scenarios `touge`, `touge2`.
+
 ## 4.21.4: Horizon's start radius floor (2026-11-25)
 
 - Rig's StartRadius is 50: places (Tracks.json, Length 0) are event markers, races start 120–615 m off, so six races

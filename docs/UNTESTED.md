@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.5 (a race ending on its results screen):** tested by replaying a race made like Bandai Asuma's of 16:47 (35 s
+  of frames not driving, then the clock 29 s on), not in the game. To try: a Horizon sprint finished, its results
+  screen, back to free roam: the race kept.
+
 - **4.21.4 (Horizon's tracks not raced yet):** tested by replaying a race made like Bandai Asuma's (the start radius 50,
   its start 120 m from the place, the event entered near Takashiro), not in the game. To try: Bandai Asuma, and
   another track not raced yet, kept under their names with the radius left at 50.
