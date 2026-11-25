@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.4**
+- **SimEffects → Analysis**: a Forza Horizon race on a track not raced yet is found again when the Start radius setting
+  is small. The app's Horizon tracks are placed at the events' markers, and a race can start a few hundred metres
+  away, so with the radius set to 50 m no track was found and the race, its log and its video were thrown away (six
+  on the rig in one afternoon, Bandai Asuma among them). In Horizon a track's start is now looked for at least 500 m
+  away, and a track not raced yet 750 m away.
+
 **4.21.3**
 - **SimEffects → Analysis**: a Forza Horizon run restarted or quit partway is no longer kept as a finished race. The
   game puts the car back at the start with the race clock as it was, which looked like a finish; the run (half a lap)

@@ -216,14 +216,19 @@ public sealed class LapTracker
     /// <summary>How far apart two starts of the same track can be, metres: the setting (since 3.30.2, 500 at first; 750
     /// in 3.27.1, which found another event's start 700 m away; 150 before: a grid, the event's marker and its start
     /// line can be hundreds of metres apart).</summary>
-    private float StartRadius => settings.StartRadius;
+    private float StartRadius => Known ? Math.Max(settings.StartRadius, AnalysisSettings.DefaultStartRadius) : settings.StartRadius;
+    /// <summary>(since 4.21.4) The game's tracks are the app's (Horizon): their places are the events' markers, its races
+    /// starting up to hundreds of metres away (Bandai Asuma 120 m), so a setting under the default isn't used for them.</summary>
+    private bool Known => KnownTracks.Games.Contains(game);
     /// <summary>How far from this race's start the next one of a series starts (a new race straight after the finish).</summary>
     private const float SeriesRadius = 150;
     /// <summary>How much a lap's length can differ on the same track: the share, or this many metres if more.</summary>
     public const float LengthTolerance = 0.06f, LengthSlack = 250;
     /// <summary>How far from a named place (where the event's started) its race can start, metres: the nearest wins
-    /// (since 3.30.2 the start radius; 750 in 3.27.1, 300 before).</summary>
-    private float PlaceRadius => settings.StartRadius;
+    /// (since 3.30.2 the start radius; 750 in 3.27.1, 300 before)
+    /// (since 4.21.4 in Horizon at least <see cref="KnownPlaceRadius"/>: a race 2026-11-25 started 615 m from the nearest, Cedar Run).</summary>
+    private float PlaceRadius => Known ? Math.Max(StartRadius, KnownPlaceRadius) : settings.StartRadius;
+    private const float KnownPlaceRadius = 750;
     /// <summary>How long the race clock has to stand still, while the car sends, for a sprint to have finished.</summary>
     private const long FinishMs = 1000;
     /// <summary>How long the data has to stop mid-race, then come back in free roam, for a sprint to have finished.</summary>
@@ -781,10 +786,11 @@ public sealed class LapTracker
         .OrderBy(Apart).FirstOrDefault();
 
     /// <summary>(since 4.10.12) The track whose event is entered nearest <paramref name="e"/>, within
-    /// <see cref="StartRadius"/>: its <see cref="Track.Entry"/>, or a named place with no race yet.</summary>
+    /// the setting's radius: its <see cref="Track.Entry"/>, or a named place with no race yet (since 4.21.4 not Horizon's
+    /// floor: an event picked from the map is entered wherever the car was, Bandai Asuma's next to Takashiro's).</summary>
     private Track? Entered(float[] e) => settings.Tracks.Where(t => OnMap(t, game, raceMap) && EntryOf(t) != null)
         .Select(t => (t, m: EntryOf(t)!)).Select(x => (x.t, d: Flat(x.m[0] - e[0], x.m[2] - e[2])))
-        .Where(x => x.d <= StartRadius).OrderBy(x => x.d).Select(x => x.t).FirstOrDefault();
+        .Where(x => x.d <= settings.StartRadius).OrderBy(x => x.d).Select(x => x.t).FirstOrDefault();
 
     /// <summary>(since 4.10.13) Back in the race after a rewind (<paramref name="rt"/> its clock): past its first seconds,
     /// at most <see cref="RewindSecs"/> back, less far driven (since 4.10.14 also back over the line), away from the start.</summary>

@@ -2,6 +2,14 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.4: Horizon's start radius floor (2026-11-25)
+
+- Rig's StartRadius is 50: places (Tracks.json, Length 0) are event markers, races start 120–615 m off, so six races
+  (Bandai Asuma twice, likely Shikisai Sprint, Ruriko-ji XC, Cedar Run) fitted nothing: log and video deleted. Fix: in
+  `KnownTracks.Games` StartRadius at least the default (500), PlaceRadius at least 750; `Entered` stays on the setting
+  (a floor matched Bandai's race to Takashiro: the event was picked from the map near Takashiro's entry). Open: an
+  entered track whose known start is km from the race's (Shimanoyama Charge 15:19 started 9.8 km from its start).
+
 ## 4.21.3: restarts and short laps (2026-11-25)
 
 - Rig: a Rivals restart (back at the start, clock as it was) was "back somewhere else" → finish → half-lap first race

@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.4 (Horizon's tracks not raced yet):** tested by replaying a race made like Bandai Asuma's (the start radius 50,
+  its start 120 m from the place, the event entered near Takashiro), not in the game. To try: Bandai Asuma, and
+  another track not raced yet, kept under their names with the radius left at 50.
+
 - **4.21.3 (restarts, track names):** tested by replaying the rig's 2026-11-25 logs through the tracker (a restart
   at 93 s then a whole run; Takashiro's two laps with the app stalled 5.9 s), not in the game. To try: a Horizon Rivals
   run restarted halfway then finished: only the whole run kept and shared; Stadium Cross Country Circuit and Takashiro
