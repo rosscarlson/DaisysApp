@@ -79,3 +79,15 @@ ptest`, out/nptest.exe; `MODE=reg`), DaisysDev (--open cold/warm ~1 s, rule, mig
   there):** `ScreenApplet.KeyButton` returns the joystick + a TextBlock (`Hotkey.Text`, `TextSecondaryBrush` when
   unbound, follows `Hotkeys.Changed` while loaded); `Card` row is a DockPanel. Seen in DaisysDev (Screen.json backed
   up and restored).
+- **4.21.1 Keyboard (asked 2026-11-25: remap any key; the Sculpt's F Lock F2 back to Rename, the laptop's Copilot key
+  as Right Ctrl; a small wizard, the tab a list):** `Keyboard/` (namespace `Keyboards`, class `KeyNames`: `Keyboard`
+  and `Keys` would hide WPF's in every Tools file). `Remapper`: LL hook on its own thread only while a remap is on or a
+  key is captured; matches vk + extended (+ scan for 0xFF), modifiers ⊆ held; Win kept back 60 ms (thread timer) when
+  a remap needs it, so Win + Shift + F23 never reaches Windows; modifiers already sent let go after dummy vk 0xE8;
+  sent keys marked (`dwExtraInfo`). `KeyNames.List` is lazy (its `T()` mustn't run on the hook thread). Harness
+  `%LOCALAPPDATA%\Temp\kbharness` (Remapper by reflection, `output` swapped, no real input) ALL PASSED: Copilot held
+  with C, slow Copilot (Win already sent), Win + Shift + S, Win tap, plain and modified remaps, Nothing, capture. Seen
+  in a copy named DaisysKb (`%LOCALAPPDATA%\Temp\DaisysKb`, only Tools on; DaisysDev was another session's): the
+  list, Edit's window, Save, Add's first step and Cancel, by UIA. Not tested: real keys (the Sculpt, the Copilot key),
+  elevated windows (nothing sent there; documented). Lesson: `ToolsApplet`'s icon strings are PUA glyphs; an edit
+  matching `""` silently missed.

@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.1**
+- **Tools → Keyboard** (new): any key made to send another. **Add…** opens a small window: press the key (nothing
+  reaches Windows meanwhile), see what it sends, then keep it or pick what it sends instead: a key from the list or
+  pressed, with Win, Ctrl, Alt or Shift held with it, or nothing. It goes by what the key sends, so the **Copilot key**
+  (Win + Shift + F23) can be **Right Ctrl** and never open Copilot, and an F key that a keyboard's F Lock turns into a
+  media key can be F2 (Rename) again. The tab lists the remaps, each with a box to switch it off, Edit and Delete, and
+  On / Off for them all.
+
 **4.21.0**
 - **Plex → Streams** (new): why a stream stops to buffer. Each video stream's last 5 minutes: what Plex sent the
   player each second (red where it buffered, the file's bit rate dashed) and a ping to the player; each stall listed

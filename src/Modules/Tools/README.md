@@ -2,7 +2,7 @@
 
 *A module of [Daisy's App](../../../README.md): the Tools tab. Switch it on or off in Settings → General → Modules. Its code is in this folder; it's installed to `modules\Tools\` next to `DaisysApp.exe`.*
 
-Seven tools, each on its own sub-tab at the top of the tab (the one you used last opens next time):
+Eight tools, each on its own sub-tab at the top of the tab (the one you used last opens next time):
 
 | Tool | What it does | Guide |
 |---|---|---|
@@ -13,11 +13,12 @@ Seven tools, each on its own sub-tab at the top of the tab (the one you used las
 | **Notepad** | Notes in tabs shared between your PCs (since 3.0.0; tabs since 3.0.6): one Daisy's App hosts them and the others connect, over the AI module's remote control (its port and passphrase); what's typed on any shows on all at once; Bold, Italic, Underline; `---` drawn as a line; pops out into its own window; can be Windows' app for text files (Settings → Tools → Notepad) | [Notepad/README.md](Notepad/README.md) |
 | **Terminal** | CMD, PowerShell and WSL sessions in tabs (since 3.1.7), each the real shell in Windows Terminal's own control, with Windows' console colours and font; + opens the default kind (Settings → Tools → Terminal), right-click a tab to rename it | [Terminal/README.md](Terminal/README.md) |
 | **Screen** | Tools for the desktop's windows (since 3.27.0): **Spacebar Drag**, hold the spacebar and drag any window from anywhere on it, as some X window managers did, and **Always on top** (since 3.37.1), in every window's title bar menu, and **Black screens** (since 4.10.4), every monitor (or those picked) black at a press of its shortcut; a card each, On / Off and shortcuts | [Screen/README.md](Screen/README.md) |
+| **Keyboard** | Any key made to send another (since 4.21.1): press it, see what it sends, keep it or pick a key (with Ctrl, Shift, Alt or Win) or nothing; the Copilot key as Right Ctrl, an F key a keyboard's F Lock made a media key back to F2; a list of the remaps, each switched off, edited or deleted | [Keyboard/README.md](Keyboard/README.md) |
 
-Each tool keeps its own settings file in `%APPDATA%\DaisysApp\`: `FileSync.json`, `DiskUsage.json`, `DiskMark.json`, `Renamer.json`, `Notepad.json`, `Terminal.json` and `Screen.json`; `Tools.json`
+Each tool keeps its own settings file in `%APPDATA%\DaisysApp\`: `FileSync.json`, `DiskUsage.json`, `DiskMark.json`, `Renamer.json`, `Notepad.json`, `Terminal.json`, `Screen.json` and `Keyboard.json`; `Tools.json`
 remembers which tool was showing. Their log is `Tools-<date>.log`.
 
 **Code:** `ToolsApplet.cs` (the tab: an `AppletGroup` from DaisysApp.Core); each tool's code is in its folder,
-`FileSync/`, `DiskUsage/`, `DiskMark/` (its own unbuffered I/O), `Renamer/`, `Notepad/`, `Terminal/` (which brings NuGet's `CI.Microsoft.Terminal.Wpf`) and `Screen/`, and what they share is in `Shared/`: `FastWalk` (a folder tree read with several threads,
+`FileSync/`, `DiskUsage/`, `DiskMark/` (its own unbuffered I/O), `Renamer/`, `Notepad/`, `Terminal/` (which brings NuGet's `CI.Microsoft.Terminal.Wpf`) `Screen/` and `Keyboard/`, and what they share is in `Shared/`: `FastWalk` (a folder tree read with several threads,
 FindFirstFileEx with large fetches), `Native` (Windows' calls: listing, copying with progress, the Recycle Bin, a
-drive's raw reads), `Sizes` and `Ui` (the last two also built into Support for its Tools sub-tab). The translations for all seven are in `lang/`. Logs and Tools moved to the [Support](../Support/README.md) tab in 3.24.9.
+drive's raw reads), `Sizes` and `Ui` (the last two also built into Support for its Tools sub-tab). The translations for all eight are in `lang/`. Logs and Tools moved to the [Support](../Support/README.md) tab in 3.24.9.

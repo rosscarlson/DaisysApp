@@ -2,6 +2,11 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.1 (Tools → Keyboard):** tested with a harness and the window by UIA, not with real keys. To try: on the
+  laptop, Add… and press the Copilot key (shows *Copilot key (Win + Shift + F23)*), Make it send Right Ctrl, Save; then
+  Copilot + C copies, Copilot never opens; Win + Shift + S and Win alone still work. On the Sculpt with F Lock on
+  media: Add…, press the F2 key (what does it show?), Make it send F2; F2 renames in Explorer. Tell me if a key shows
+  nothing when pressed.
 - **4.21.0 (Plex → Streams):** seen in DaisysDev on this server's live streams (the Fire TV, a remote Plex Web
   transcode): graphs, pings, Watch in background. Not seen yet: a stall listed with its cause. To try: watch on the
   Fire TV; when it pauses to buffer, Plex → Streams → Stalls says why (or the Plex log, "Plex stall:").
