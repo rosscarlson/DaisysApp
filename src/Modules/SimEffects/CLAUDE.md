@@ -2,6 +2,14 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.6: races left with whole laps shared (2026-11-25)
+
+- The user: a race not finished is still uploaded (the server shows only whole laps in leaderboards/analysis, the whole
+  session on the driver's page); "3 laps, quit after 2" is shared. Done: `Unfinished` deletes (DeleteIncomplete) only
+  with 0 laps; `Share`/`Wanted` take Incomplete (`finished` false; `lapTimes` are only ended laps); `Withdraw` gone.
+  Open, asked: a race left with no whole lap (Wanted needs Laps > 0; solo runs with no lap still dropped as "no lap or
+  race kept"), and whether the server hides `finished: false` from leaderboards per lap (the Server agent's).
+
 ## 4.21.5: the results screen's gap (2026-11-25)
 
 - 4.21.3's "clock run on = app missed frames" lost Bandai Asuma 16:47 (4.21.4): finish 136.96 s, 35 s of !Live frames

@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.6 (a race left with whole laps shared):** built, not run. To try: a race against others quit after a lap or
+  two: kept, shared as not finished, its whole laps on the server.
+
 - **4.21.5 (a race ending on its results screen):** tested by replaying a race made like Bandai Asuma's of 16:47 (35 s
   of frames not driving, then the clock 29 s on), not in the game. To try: a Horizon sprint finished, its results
   screen, back to free roam: the race kept.

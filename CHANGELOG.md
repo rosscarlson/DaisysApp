@@ -3,6 +3,13 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.6**
+- **SimEffects → Analysis**: a race left before its finish with a whole lap driven (two laps of three, then quit) is
+  kept and shared, marked not finished, with only its whole laps' times: the server shows it on the driver's page and
+  its laps in the leaderboards. Before, it was deleted (Delete Incomplete Race, on by default), or kept and never
+  shared, and taken off the server if it had been. Delete Incomplete Race now deletes only a race left with no whole
+  lap.
+
 **4.21.5**
 - **SimEffects → Analysis**: a Forza Horizon race that ends on a results screen is kept again. 4.21.3 stopped ending a
   race when its data came back after a gap with the race clock run on (the app had missed frames while busy), but the

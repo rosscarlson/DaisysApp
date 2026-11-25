@@ -391,11 +391,12 @@ internal static class ShareQueue
     public static async Task<string?> Share(SessionsView.Item item, string title, string description, string driver)
     {
         if (going.ContainsKey(item.Key)) return null;
-        // (since 4.20.2) only a race that's over and wasn't left before its finish
-        if (SessionShares.Of(item.Key) == null && (item.Incomplete || Running(item)))
+        // (since 4.20.2) only a race that's over; (since 4.21.6) one left before its finish too, as not finished: the server
+        // shows it on the driver's page, its whole laps (the only ones sent) in the leaderboards
+        if (SessionShares.Of(item.Key) == null && Running(item))
         {
-            Logging.Log.App.Info($"Analysis: {item.Key} not shared: {(item.Incomplete ? "left before its finish" : "its race still running")}");
-            return item.Incomplete ? T("Incomplete race") : T("Race still running");
+            Logging.Log.App.Info($"Analysis: {item.Key} not shared: its race still running");
+            return T("Race still running");
         }
         going[item.Key] = 0;
         failed.Remove(item.Key);
@@ -523,26 +524,14 @@ internal static class ShareQueue
         return null;
     }
 
-    /// <summary>A session that would be shared by itself: one of this PC's, finished, from when that was switched on.</summary>
-    private static bool Wanted(SessionsView.Item i) => !i.Imported && !i.Incomplete && !Running(i) && (i.Laps > 0 || i.Best > 0) && i.Started >= SessionShares.All.AutoSince;
+    /// <summary>A session that would be shared by itself: one of this PC's, over (since 4.21.6 left before its finish too)
+    /// with a whole lap, from when that was switched on.</summary>
+    private static bool Wanted(SessionsView.Item i) => !i.Imported && !Running(i) && (i.Laps > 0 || i.Best > 0) && i.Started >= SessionShares.All.AutoSince;
 
     /// <summary>(since 4.20.2) Its race is still being driven, how it ends not known yet (paused over a minute, the game
     /// closed mid-race): shared once it's finished, or not at all if it's left.</summary>
     private static bool Running(SessionsView.Item i) =>
         !i.Imported && AnalysisApplet.Current?.Tracker.Undecided is DateTime at && Math.Abs((i.Started - at).TotalSeconds) <= 5;
-
-    /// <summary>(since 4.20.2) A race left before its finish (<see cref="LapTracker.Left"/>): taken off the server if it
-    /// was shared (paused mid-race, its log then idle long enough to go).</summary>
-    public static async void Withdraw(string key)
-    {
-        if (SessionShares.Of(key) is not { } s) return;
-        Logging.Log.App.Info($"Analysis: {key} left before its finish: taken off the server ({s.Id})");
-        if (await Unshare(s.Id) is { } problem)
-        {
-            Logging.Log.App.Warn($"Analysis: {key} couldn't be taken off the server: {problem}");
-            Done(T("Share Failed"), problem, TitleBadges.Red);
-        }
-    }
 
     /// <summary>Its race video is going to YouTube, or waiting to (not failed): shared once it's there, with its link.</summary>
     private static bool WaitsForYouTube(string key) =>

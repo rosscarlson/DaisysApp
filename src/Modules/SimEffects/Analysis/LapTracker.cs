@@ -815,7 +815,7 @@ public sealed class LapTracker
     private const float RestartSecs = 3, RewindSecs = 60;
 
     /// <summary>(since 4.10.14) A race left before its finish (quit, restarted, the game closed): its session deleted, or
-    /// kept marked incomplete, as <see cref="AnalysisSettings.DeleteIncomplete"/> says. Only a race against others (a
+    /// kept marked incomplete, as <see cref="AnalysisSettings.DeleteIncomplete"/> says (since 4.21.6 kept with a whole lap). Only a race against others (a
     /// field seen: not Rivals, a time trial, practice) that ran past its first seconds, and not one that drove all of
     /// its known laps (a finish missed, not a quit; since 4.20.2 known before it: the first race on a track, quit, set
     /// them).</summary>
@@ -823,7 +823,8 @@ public sealed class LapTracker
     {
         if (!Recording || time <= 5 || racers <= 1) return;
         if (!lapsRaised && Track is { Laps: > 1 } t && laps >= t.Laps) return;
-        if (settings.DeleteIncomplete)
+        // (since 4.21.6 not one with a whole lap: it's shared, not finished, its laps counted)
+        if (settings.DeleteIncomplete && laps == 0)
         {
             Logging.Log.Here.Info($"Analysis: race left before its finish ({laps} laps, {time:0.0} s): its session deleted");
             if (Drop?.Invoke(raceAt) is { } dropped) Left?.Invoke(dropped);
