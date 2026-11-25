@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.7 (events picked from the map):** tested by replaying a race made like Edo Circuit's (picked at The Gauntlet's
+  marker) and merging the rig's tracks, not in the game. To try: Edo Circuit kept as Edo Circuit; an event picked
+  from the map while parked at another's marker.
+
 - **4.21.6 (a race left with whole laps shared):** built, not run. To try: a race against others quit after a lap or
   two: kept, shared as not finished, its whole laps on the server.
 

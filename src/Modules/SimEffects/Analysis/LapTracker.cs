@@ -794,8 +794,10 @@ public sealed class LapTracker
 
     /// <summary>(since 4.10.12) The track whose event is entered nearest <paramref name="e"/>, within
     /// the setting's radius: its <see cref="Track.Entry"/>, or a named place with no race yet (since 4.21.4 not Horizon's
-    /// floor: an event picked from the map is entered wherever the car was, Bandai Asuma's next to Takashiro's).</summary>
-    private Track? Entered(float[] e) => settings.Tracks.Where(t => OnMap(t, game, raceMap) && EntryOf(t) != null)
+    /// floor: an event picked from the map is entered wherever the car was, Bandai Asuma's next to Takashiro's). (since
+    /// 4.21.7) Only a track starting within <see cref="EntryReach"/> of this race's start: Edo Circuit's, picked from the
+    /// map at The Gauntlet's place 12 km away, was taken for The Gauntlet's.</summary>
+    private Track? Entered(float[] e) => settings.Tracks.Where(t => OnMap(t, game, raceMap) && EntryOf(t) != null && Flat(t.X - startX, t.Z - startZ) <= EntryReach)
         .Select(t => (t, m: EntryOf(t)!)).Select(x => (x.t, d: Flat(x.m[0] - e[0], x.m[2] - e[2])))
         .Where(x => x.d <= settings.StartRadius).OrderBy(x => x.d).Select(x => x.t).FirstOrDefault();
 
@@ -841,7 +843,14 @@ public sealed class LapTracker
         Left?.Invoke(race.Session);
     }
 
-    private static float[]? EntryOf(Track t) => t.Entry is { Length: 3 } e ? e : t.Length <= 0 ? new[] { t.X, t.Y, t.Z } : null;
+    /// <summary>Where a track's event is entered (since 4.21.7 not an entry further than <see cref="EntryReach"/> from its
+    /// start: where the car was when the event was picked from the map, or the last race's finish).</summary>
+    private static float[]? EntryOf(Track t) => t.Entry is { Length: 3 } e && Flat(e[0] - t.X, e[2] - t.Z) <= EntryReach ? e
+        : t.Length <= 0 ? new[] { t.X, t.Y, t.Z } : null;
+
+    /// <summary>(since 4.21.7) How far from a track's start its event can be entered, metres (Horizon's grids are up to a
+    /// few hundred metres from the marker).</summary>
+    public const float EntryReach = 2000;
 
     private static bool Fits(Track t, float length) => Math.Abs(t.Length - length) <= Math.Max(t.Length * LengthTolerance, LengthSlack);
 
@@ -1047,7 +1056,8 @@ public sealed class LapTracker
     {
         if (KnownTracks.Games.Contains(game)) return null;
         // (since 4.10.12 where its event was entered: the next race entered there is on it)
-        var t = new Track { Game = game, Map = raceMap, X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length), Entry = entry };
+        var t = new Track { Game = game, Map = raceMap, X = startX, Y = startY, Z = startZ, Length = Math.Max(0, length),
+            Entry = entry != null && Flat(entry[0] - startX, entry[2] - startZ) <= EntryReach ? entry : null };
         settings.Tracks.Add(t);
         settings.Save();
         madeHere = true;

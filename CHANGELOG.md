@@ -3,6 +3,14 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.7**
+- **SimEffects → Analysis**: a Forza Horizon event picked from the map isn't taken for the one whose marker the car
+  was at. The app matches the place the car last was in free roam with where each event is entered; Edo Circuit,
+  picked at The Gauntlet's marker 12 km away, was kept as The Gauntlet's first race. Now only a track starting within
+  2 km of the race's start is matched that way, and an entry learnt further from its track's start is ignored.
+- **The app's Forza Horizon tracks**: Edo Circuit's lap added; The Gauntlet back to its own place (a start learnt
+  where another track starts is learnt again); 5 entries learnt kilometres from their tracks' starts dropped.
+
 **4.21.6**
 - **SimEffects → Analysis**: a race left before its finish with a whole lap driven (two laps of three, then quit) is
   kept and shared, marked not finished, with only its whole laps' times: the server shows it on the driver's page and

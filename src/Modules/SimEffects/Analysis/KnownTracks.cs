@@ -90,6 +90,14 @@ internal static class KnownTracks
                 Logging.Log.Here.Info($"Analysis: {e.Name}'s lap of {t.Length:0} m is short of a whole one: learnt again");
                 t.Length = 0;
             }
+            // (since 4.21.7) a start learnt here where another of the file's tracks starts, its lap known: that track's race
+            // taken for this place's first (Edo Circuit's for The Gauntlet's), learnt again
+            if (e.Length <= 0 && t.Length > 0 && tracks.Any(o => o != e && o.Game == e.Game && o.Map == e.Map && o.Length > 0
+                && Math.Abs(o.X - t.X) < 50 && Math.Abs(o.Z - t.Z) < 50) && !(Math.Abs(e.X - t.X) < 50 && Math.Abs(e.Z - t.Z) < 50))
+            {
+                Logging.Log.Here.Info($"Analysis: {e.Name}'s start is another track's: learnt again");
+                t.Length = 0;
+            }
             // (a place in the file, with no race yet, whose first race was driven here: its start and lap learnt here kept)
             if (e.Length > 0 || t.Length <= 0)
             {

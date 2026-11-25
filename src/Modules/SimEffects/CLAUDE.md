@@ -2,6 +2,14 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.7: entries far from the start (2026-11-25)
+
+- Edo Circuit 17:21 kept as The Gauntlet: the car sat at The Gauntlet's marker (Length 0: `EntryOf` = its marker),
+  Edo picked from the map 12 km away, `Entered` matched by the entry alone. Fix: `Entered` only tracks within
+  `EntryReach` (2 km) of the race's start; `EntryOf` ignores an Entry further than that from its track; `Add` keeps
+  only a near one. `KnownTracks.Merge`: a learnt start (file Length 0) on another file track's known start is learnt
+  again. Tracks.json: Edo's lap (5981.6), far Entries dropped. Rig's jsonl: the race moved to Edo (`edo-bak`).
+
 ## 4.21.6: races left with whole laps shared (2026-11-25)
 
 - The user: a race not finished is still uploaded (the server shows only whole laps in leaderboards/analysis, the whole
