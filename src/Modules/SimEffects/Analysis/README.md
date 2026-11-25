@@ -494,7 +494,11 @@ an application or a release. Its time is 10% to 90% of the way; its smoothness i
 by 20% or more within 0.3 s.
 
 **Laps** (`Sessions/SessionData.cs`): a run of the same lap number; complete when the next one follows and it started
-at the line. Its time is the game's time into it at its end, plus what was left across the line. Since 4.17.11 the
+at the line. Its time is the game's time into it at its last row, plus a frame (since 4.21.2: the frame that crosses
+the line comes with no time into the lap, or at the finish isn't sent at all; the clock's step over the last 5 frames,
+to the millisecond: the game's own times, checked against its results screen); a lap the tracker kept has the kept time.
+A lap ends at its last row with a time (since 4.21.2: before, the gap after a finish and the next race's loading frames
+counted, so the lap box read 2:37.000 for a 2:07 race). Since 4.17.11 the
 last one is complete too when the log stops in it (a race's log ends as the finish line's crossed) and the game
 recorded that lap (its time then the game's), or it's within 2% as long as a complete lap.
 
@@ -612,7 +616,9 @@ set to the race's time, or (since 3.24.7) the data stopping: Forza sends nothing
 guide says so), so a race whose data stops for 1.5 s and comes back in free roam (or in another race starting
 elsewhere: a series) finished at its last race time, if over 100 m were driven and, once the track's length is known,
 at least 85% of it (less is a race quit from the pause menu). It's recorded as lap 1 with the race's time and the
-distance driven as its length. A circuit's last lap ends the same way (since 3.24.7), recorded with its current lap time
+distance driven as its length. Since 4.21.2 that time is the last frame sent's plus a frame (Forza never sends the frame
+that crosses the line; each frame is seen, `LapTracker.See`, not only the 10-a-second tick, which lost up to 0.1 s):
+the game's own time to the millisecond; laps kept before were mended once from their logs (`LapStore.ShortLaps`). A circuit's last lap ends the same way (since 3.24.7), recorded with its current lap time
 when most of a lap was driven; since 3.28.0 also when the race clock goes straight back to 0 at the line, stops, or
 LastLap takes the lap's time without the lap number moving on (a race of 3 laps recorded only 2). Since 3.30.3 a
 finish is judged on the frame furthest into the lap, not the last one: after the finish Forza sends a few frames (the

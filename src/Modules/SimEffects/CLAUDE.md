@@ -2,6 +2,22 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.2: Forza's race times exact (2026-11-25)
+
+- The user: Wind Farm (Nacho's, 2:06.945 kept) showed 2:37.000 in the lap box, and "2:07.144 in the video". 2:07.144
+  was the **Rival** (CMDRExigeous) on the results screen; Nacho's own was 2:07.056. Checked on 3 videos (yt-dlp +
+  ffmpeg in `%LOCALAPPDATA%\Temp\ytv`, clips in `ytclips`): game time = last frame sent + one frame (the 5-frame
+  average step, rounded to ms) exactly, at 90 Hz and 60 Hz; middle laps too (`LastLap` = last row + a frame).
+- Causes: tracker fed by the 10/s tick (`furthest` up to 0.1 s old) → `LapTracker.See` every frame from the reading
+  thread (under `gate`) and `AFrameOn`; `FindLaps` ran a lap over the post-finish gap and loading frames (lap 1, or the
+  same lap with no time) → trimmed to its last timed row, raw `ends` (time, step) per lap. One-time `ShortLaps`/`Mend`
+  (`LastLapsMended`): last laps 0.0005–0.25 s short of their log. `Blocks.LapTime`/`LapClock` truncated floats.
+- Data: the rig's sign-ins had all expired (remote copy failed); Nacho's 139 shared sessions fetched anonymously from
+  ForzaLeaderBoard (`%LOCALAPPDATA%\Temp\da-flb`: `flbfetch list|get`, `cmp.py`). Tested in DaisysDev: the mend
+  (128.637 → 128.705) and a replay of the race (`da-fakefheplay.py`, port 8123, Playing on) → 127.056.
+- Not done: sessions already on the server keep their old `lapTimes`/`best` (no op to change them; the user has the
+  server's session on it). Old records far from their logs (0.4.x, some 4.18) left alone.
+
 ## 4.20.2: only whole races shared (2026-11-23)
 
 - Asked: verify a session is complete before upload, or delete incomplete uploads; client-side preferred. Done: the

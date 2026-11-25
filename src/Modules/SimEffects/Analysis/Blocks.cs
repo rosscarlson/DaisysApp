@@ -133,7 +133,8 @@ public static class Blocks
     public static string LapTime(float s)
     {
         if (!(s > 0)) return None;
-        var t = TimeSpan.FromSeconds(s);
+        // (since 4.21.2 to the nearest millisecond: a float's 127.056 is 127.05599…, which read 2:07.055)
+        var t = TimeSpan.FromMilliseconds(Math.Round(s * 1000.0));
         return t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss\.fff", CultureInfo.InvariantCulture) : $"{(int)t.TotalMinutes}:{t.Seconds:00}.{t.Milliseconds:000}";
     }
 

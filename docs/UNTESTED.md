@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.2 (Forza's race times):** tested on Nacho's logs against his videos and a replay in DaisysDev, not in the game.
+  To try: a Horizon sprint and a circuit; the time kept (Laps, the lap box) is the results screen's **Your Time** to
+  the millisecond; old laps were mended at the first start (log: "lap 1: 2:06.945 → …").
 - **4.21.1 (Tools → Keyboard):** tested with a harness and the window by UIA, not with real keys. To try: on the
   laptop, Add… and press the Copilot key (shows *Copilot key (Win + Shift + F23)*), Make it send Right Ctrl, Save; then
   Copilot + C copies, Copilot never opens; Win + Shift + S and Win alone still work. On the Sculpt with F Lock on

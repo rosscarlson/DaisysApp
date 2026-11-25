@@ -10,7 +10,12 @@ internal sealed record Lap(int Number, int Start, int End, double Seconds, doubl
     public string Text => Complete ? F("Lap {0}  {1}", Number + 1, LapClock(Seconds)) : F("Lap {0} (part)", Number + 1);
 
     /// <summary>"1:42.315".</summary>
-    public static string LapClock(double s) => double.IsNaN(s) ? "–" : $"{(int)(s / 60)}:{s % 60:00.000}";
+    public static string LapClock(double s)
+    {
+        if (double.IsNaN(s)) return "–";
+        long ms = (long)Math.Round(s * 1000);
+        return $"{ms / 60000}:{ms % 60000 / 1000:00}.{ms % 1000:000}";
+    }
 }
 
 /// <summary>(since 4.14.1) A pause in a session's log: samples <see cref="From"/> to <see cref="End"/> (not included),
@@ -72,6 +77,12 @@ internal sealed class SessionData
     public bool HasGear { get; private set; }
     /// <summary>(since 4.15.4) Has the engine's rpm.</summary>
     public bool HasRpm { get; private set; }
+    /// <summary>(since 4.21.2) Each lap's last row as logged (by its number): the time into it, and how far that clock
+    /// moved a frame (over the last 5). The frame that crosses the finish line isn't sent, so a lap the log stops in
+    /// ends a frame after its last row (this matched the game's own times to the millisecond).</summary>
+    private readonly Dictionary<int, (double Time, double Step)> ends = new();
+    /// <summary>The frames averaged for <see cref="ends"/>' step.</summary>
+    private const int StepFrames = 5;
 
     public Lap? BestLap => Laps.Where(l => l.Complete).MinBy(l => l.Seconds);
 
@@ -151,6 +162,15 @@ internal sealed class SessionData
             }
         }
         Rewinds(ms, cols);
+        var ends = new Dictionary<int, (double, double)>();
+        for (int k = 0; k < ms.Count; k++)
+        {
+            double lapNo = cols[8][k], at = cols[9][k];
+            if (double.IsNaN(lapNo) || double.IsNaN(at) || (k + 1 < ms.Count && cols[8][k + 1] == lapNo && !double.IsNaN(cols[9][k + 1]))) continue;
+            int b = k - StepFrames;
+            double step = b >= 0 && cols[8][b] == lapNo && at - cols[9][b] is > 0 and < 0.05 * StepFrames and var d ? d / StepFrames : 0;
+            ends[(int)lapNo] = (at, step);
+        }
         var pauses = new List<Pause>();
         for (int k = 1; k < ms.Count; k++)
         {
@@ -210,6 +230,7 @@ internal sealed class SessionData
         data.HasDistance = data.Distance.Any(v => !double.IsNaN(v));
         data.HasGear = data.Gear.Any(v => v >= 1) && data.Rpm.Any(v => v > 0);
         data.HasRpm = data.Rpm.Any(v => v > 0);
+        foreach (var (no, end) in ends) data.ends[no] = end;
         data.Pauses.AddRange(pauses);
         data.FindLaps(recorded);
         return data;
@@ -239,7 +260,9 @@ internal sealed class SessionData
     /// <summary>The laps, from the lap number the game sends: a run of the same number is a lap, complete when the next
     /// one follows it and it started at the line (the time into it near 0). Since 4.17.11 the last one too when the log
     /// stops in it (a race's finish: the log ends as the line's crossed) and the game recorded it (else, someone
-    /// else's, it's as long as a whole one, within 2%).</summary>
+    /// else's, it's as long as a whole one, within 2%). Since 4.21.2 a lap ends at its last row (not across the gap
+    /// after a finish, which made it the gap's length longer), one the data stopped in with its clock still running ends
+    /// a frame after it (<see cref="FrameStep"/>), and a lap the game recorded has the game's time.</summary>
     private void FindLaps(IReadOnlyDictionary<int, float>? recorded)
     {
         int i = 0, n = Count;
@@ -252,14 +275,28 @@ internal sealed class SessionData
             while (i + 1 < n && (LapNo[i + 1] == no || double.IsNaN(LapNo[i + 1]))) i++;
             int e = i;
             i++;
+            // (since 4.21.2) its last row with a time: not the gap after it and what comes then (the finish, then the
+            // next race loading, with no time into the lap, the lap's number or the next's)
+            int end = e;
+            while (e > s && double.IsNaN(LapNo[e])) e--;
+            int timed = e;
+            while (timed > s && double.IsNaN(LapTime[timed])) timed--;
+            if (!double.IsNaN(LapTime[timed])) e = timed;
+            bool stopped = e < end || i >= n;
             if (e - s < 5 * Hz) continue;
             bool next = i < n && LapNo[i] == no + 1;
             double startT = FirstKnown(LapTime, s, s + Hz);
             bool fromLine = !double.IsNaN(startT) ? startT < 1.0 : s > 0 && !double.IsNaN(LapNo[s - 1]);
             double time = LastKnown(LapTime, e - Hz, e);
             if (double.IsNaN(time)) time = (e - s) * Dt;
+            // (since 4.21.2) the frame that crossed the line has no time into the lap (the next lap's starts at 0), or
+            // wasn't sent (the finish: the data stops): a frame after its last row, the clock still running
+            else if ((next || stopped) && ends.TryGetValue((int)no, out var row) && row.Step > 0 && Math.Abs(row.Time - time) < 0.05
+                && LastKnown(LapTime, e - Hz, e - Hz / 5) is var before && time > before)
+                time = Math.Round(row.Time + row.Step, 3);
             // the line was crossed between the two samples: add what was left of the lap
             else if (next && !double.IsNaN(LapTime[e]) && !double.IsNaN(LapTime[i]) && LapTime[i] < Dt) time = LapTime[e] + Dt - LapTime[i];
+            if (recorded != null && recorded.TryGetValue((int)no + 1, out float kept) && kept > 0 && Math.Abs(kept - time) < 1) time = kept;
             double d0 = FirstKnown(Distance, s, s + Hz), d1 = LastKnown(Distance, e - Hz, e);
             Laps.Add(new Lap((int)no, s, e, time, double.IsNaN(d0) || double.IsNaN(d1) ? double.NaN : d1 - d0, next && fromLine));
             lastFromLine = fromLine;

@@ -3,6 +3,17 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.2**
+- **SimEffects → Analysis**: Forza Horizon's and Motorsport's race times are now the game's own, to the millisecond. A
+  sprint's time, and a circuit's last lap, were up to 0.17 s short: Forza stops sending at the finish line, and the
+  time was taken from the last of the 10 frames a second the lap tracker looked at (up to 0.1 s before the last one
+  sent), and the frame that crosses the line is never sent at all. Now every frame is followed, and the time is the
+  last one's plus a frame (Wind Farm Cross Country: 2:06.945 kept, the game's 2:07.056, now 2:07.056). Laps and races
+  kept before are mended once from their race logs. The **lap box** (Compare's Session 1 and 2) showed some laps far
+  longer than they were (2:37.000 for that race): the pause after the finish and the next race's loading counted as
+  part of the lap; each lap now ends at its last row, and shows the time kept for it. A race's other laps read from a
+  log (someone else's) are the game's too (a frame was missing). Times show to the nearest millisecond (2:07.056 read 2:07.055).
+
 **4.21.1**
 - **Tools → Keyboard** (new): any key made to send another. **Add…** opens a small window: press the key (nothing
   reaches Windows meanwhile), see what it sends, then keep it or pick what it sends instead: a key from the list or

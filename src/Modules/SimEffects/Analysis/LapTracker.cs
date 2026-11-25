@@ -146,6 +146,53 @@ public sealed class LapStore
         Changed?.Invoke();
     }
 
+    /// <summary>(since 4.21.2) Forza's games: their last lap's time is the tracker's own when the data stops at the line.</summary>
+    private static readonly HashSet<string> Forza = new(StringComparer.OrdinalIgnoreCase) { "FH4", "FH5", "FH6", "FM7", "FM8" };
+
+    /// <summary>(since 4.21.2, once; off the UI thread) Each race's last lap whose log has it later than it was kept: until
+    /// 4.21.2 a finish where the data stopped took the newest frame of the 10-a-second tick, up to 0.1 s before the last
+    /// one sent, and not the frame that crossed the line (never sent). Its time from the log (<see cref="Sessions.SessionData"/>)
+    /// when that's up to a quarter of a second more.</summary>
+    internal static List<(LapRecord Lap, float Time)> ShortLaps(IEnumerable<LapRecord> all)
+    {
+        var found = new List<(LapRecord, float)>();
+        foreach (var g in all.Where(l => l.Session != null && Forza.Contains(l.Game)).GroupBy(l => l.Session!, StringComparer.OrdinalIgnoreCase))
+        {
+            var last = g.MaxBy(l => l.Lap)!;
+            string path = System.IO.Path.Combine(SessionLog.Folder, g.Key);
+            if (!File.Exists(path)) continue;
+            try
+            {
+                var lap = Sessions.SessionData.Load(path).Laps.LastOrDefault(l => l.Number + 1 == last.Lap);
+                double more = lap == null ? 0 : lap.Seconds - last.Time;
+                if (more > 0.0005 && more < 0.25) found.Add((last, (float)Math.Round(lap!.Seconds, 3)));
+            }
+            catch (Exception ex) { Logging.Log.Here.Warn($"Analysis: reading {g.Key}", ex); }
+        }
+        return found;
+    }
+
+    /// <summary>(since 4.21.2) Laps' times mended (<see cref="ShortLaps"/>), their races' with them; saved.</summary>
+    public void Mend(IReadOnlyList<(LapRecord Lap, float Time)> mended)
+    {
+        if (mended.Count == 0) return;
+        foreach (var (lap, time) in mended)
+        {
+            float more = time - lap.Time;
+            Logging.Log.Here.Info($"Analysis: {lap.Session} lap {lap.Lap}: {Blocks.LapTime(lap.Time)} → {Blocks.LapTime(time)}");
+            foreach (var race in races.Where(r => r.Laps == lap.Lap && string.Equals(r.Session, lap.Session, StringComparison.OrdinalIgnoreCase)))
+                race.Time = (float)Math.Round(race.Time + more, 3);
+            lap.Time = time;
+        }
+        try
+        {
+            File.WriteAllLines(Path, laps.Select(l => JsonSerializer.Serialize(l)));
+            File.WriteAllLines(RacesPath, races.Select(r => JsonSerializer.Serialize(r)));
+        }
+        catch (Exception ex) { Logging.Log.Here.Warn("Analysis: saving the laps", ex); }
+        Changed?.Invoke();
+    }
+
     /// <summary>The fastest lap on a track (0: none yet), in a car and / or of a class (null: any);
     /// <paramref name="session"/>: since the app started.</summary>
     public float Best(string? track, int? car, int? carClass, bool session = false) =>
@@ -204,6 +251,11 @@ public sealed class LapTracker
     /// after the finish (the next race loading) with the clock as it was and the distance back near 0.</summary>
     private readonly TelemetryFrame furthest = new();
     private float furthestDriven;
+    /// <summary>(since 4.21.2) The race clock of the last frames <see cref="See"/> saw (a ring, <see cref="seenCount"/> of
+    /// them): Forza sends nothing from the frame that crosses the line, so its time is the last one sent plus a frame
+    /// (<see cref="FrameStep"/>: the average of the last 5; this matched the game's own times to the millisecond).</summary>
+    private readonly float[] seen = new float[6];
+    private int seenCount;
     /// <summary>The race clock when the last lap number went up.</summary>
     private float lapEndRaceTime;
     /// <summary>(since 4.10.12) Where the car last was in free roam, and when (0: not since the last race began).</summary>
@@ -344,6 +396,21 @@ public sealed class LapTracker
     /// <summary>Recording (the tool's on): otherwise races are followed, but no lap is kept and no track added.</summary>
     public bool Recording { get; set; }
 
+    /// <summary>(since 4.21.2) Every frame, from the reading thread (under the same lock as <see cref="Feed"/>, which gets
+    /// the newest only, 10 times a second): the frame furthest into the lap, so a finish where the data stops is judged on
+    /// the last frame sent, not the last one ticked (up to 0.1 s short), and the frame's step.</summary>
+    public void See(TelemetryFrame f)
+    {
+        if (!inRace || finished || f.Sessions || !f.HasRace || !f.Live || f.RaceTime <= 0 || f.LapNumber != lastLap) return;
+        if (seenCount > 0 && f.RaceTime <= seen[(seenCount - 1) % seen.Length]) seenCount = 0; // (still, or rewound)
+        seen[seenCount++ % seen.Length] = f.RaceTime;
+        if (f.Distance - lapStartDistance >= furthestDriven)
+        {
+            furthestDriven = f.Distance - lapStartDistance;
+            f.CopyTo(furthest);
+        }
+    }
+
     /// <param name="game">The game being read ("FH6"…): tracks and laps are its own.</param>
     public void Feed(TelemetryFrame f, string game)
     {
@@ -421,6 +488,7 @@ public sealed class LapTracker
             startLastLap = lapLastLap = f.LastLap;
             stillSince = 0;
             furthestDriven = 0;
+            seenCount = 0;
             f.CopyTo(furthest);
             var last = Track;
             bool lastByEntry = byEntry;
@@ -554,6 +622,20 @@ public sealed class LapTracker
         introAt = now;
     }
 
+    /// <summary>(since 4.21.2) How far the race clock moved a frame, over the last 5 seen (0: not known).</summary>
+    private float FrameStep
+    {
+        get
+        {
+            if (seenCount < seen.Length) return 0;
+            float step = (seen[(seenCount - 1) % seen.Length] - seen[seenCount % seen.Length]) / (seen.Length - 1);
+            return step is > 0 and < 0.05f ? step : 0;
+        }
+    }
+
+    /// <summary>(since 4.21.2) A time a frame on, to the millisecond (the games' own are).</summary>
+    private float AFrameOn(float time) => FrameStep > 0 ? MathF.Round(time + FrameStep, 3) : time;
+
     private void Judge(long now)
     {
         var f = furthest;
@@ -572,9 +654,11 @@ public sealed class LapTracker
             if (Track is { Length: > 0 } lapped && driven >= lapped.Length * FinishShare && f.CurrentLap > 0)
             {
                 finished = true;
-                Logging.Log.Here.Info($"Analysis: last lap ended ({why}) in {f.CurrentLap:0.00} s");
-                Record(f, lastLap + 1, f.CurrentLap, driven);
-                Result(f, lastLap + 1, f.RaceTime);
+                // (since 4.21.2) the frame that crossed the line wasn't sent: a frame on from the last one
+                float lap = AFrameOn(f.CurrentLap);
+                Logging.Log.Here.Info($"Analysis: last lap ended ({why}) in {lap:0.000} s (the last frame sent {f.CurrentLap:0.000} s, a frame {FrameStep * 1000:0.0} ms)");
+                Record(f, lastLap + 1, lap, driven);
+                Result(f, lastLap + 1, AFrameOn(f.RaceTime));
             }
             else if (Track is { Length: > 0 } after && driven < after.Length * (1 - FinishShare) && lapEndRaceTime > 0)
             {
@@ -589,7 +673,8 @@ public sealed class LapTracker
         if (!gap) { Logging.Log.Here.Info($"Analysis: not a finish, the data didn't stop ({why})"); return; }
         if (Track is { Length: > 0 } known && driven < known.Length * FinishShare)
             Logging.Log.Here.Info($"Analysis: not a finish ({driven:0} m of {settings.TrackName(known.Id)}'s {known.Length:0} m)");
-        else Finish(f, f.RaceTime, "the data stopped");
+        // (since 4.21.2) the frame that crossed the line wasn't sent: a frame on from the last one
+        else Finish(f, AFrameOn(f.RaceTime), $"the data stopped, the last frame sent {f.RaceTime:0.000} s, a frame {FrameStep * 1000:0.0} ms");
     }
 
     /// <summary>A circuit's last lap ended (the finish): recorded, nothing more until the next race.</summary>
@@ -605,7 +690,7 @@ public sealed class LapTracker
     private void Finish(TelemetryFrame f, float time, string why)
     {
         finished = true;
-        Logging.Log.Here.Info($"Analysis: sprint finished ({why}) in {time:0.00} s");
+        Logging.Log.Here.Info($"Analysis: sprint finished ({why}) in {time:0.000} s");
         Record(f, 1, time, f.Distance - lapStartDistance);
         Result(f, 1, time);
     }
