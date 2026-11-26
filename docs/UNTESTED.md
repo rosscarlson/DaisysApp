@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.14 (Naruto XC):** built, not in the game. To try: Naruto XC Circuit kept under its name; Airfield Trail
+  (867,-1218, 152 m off) still its own.
+
 - **4.21.13 (Stadium XC):** built, not in the game. To try: Stadium XC Circuit (start -7515,-2556) kept and shared
   under its name; Takashiro XC (2018,6807, 4.21.2's place, no lap yet) kept when driven.
 

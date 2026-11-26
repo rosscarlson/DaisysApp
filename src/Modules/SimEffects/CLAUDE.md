@@ -2,6 +2,14 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.14: Naruto XC (2026-11-25)
+
+- The user: Naruto XC Circuit at 21:27 (3 laps, 1:17-1:24, 8 racers) kept as Airfield Trail (start 867,-1218, 152 m
+  from the grid at 933.6,-1082.1); Tracks.json's Naruto place (1053,-799, a marker guess, no lap) was 307 m off.
+  Tracks.json: Naruto's start set to the race's, its lap 5960.3 (lap 2), 3 laps. The rig's 21:27 laps and race moved
+  onto Naruto by hand (jsonl; backups in `%LOCALAPPDATA%\Temp`); the rig's Airfield Trail keeps Laps 3 (Max). The
+  server's session keeps its name.
+
 ## 4.21.13: Stadium XC (2026-11-25)
 
 - The user: ran Stadium Cross Country Circuit at 20:39, kept as "Takashiro XC" (3 laps, 1:22-1:24). 4.21.2's

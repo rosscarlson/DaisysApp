@@ -4081,12 +4081,12 @@
       "Map": null,
       "Name": "Naruto Cross Country Circuit",
       "Type": null,
-      "X": 1053.9617,
-      "Y": 115.127815,
-      "Z": -799.0329,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
+      "X": 933.6,
+      "Y": 119,
+      "Z": -1082.1,
+      "Length": 5960.3,
+      "Laps": 3,
+      "Racers": 8,
       "Found": "2026-10-31T14:10:45.2056305-04:00"
     },
     {

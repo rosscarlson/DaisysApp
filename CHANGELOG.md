@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.14**
+- **SimEffects → Analysis**: Naruto Cross Country Circuit is recognised in Forza Horizon 6. The app had its start in
+  the wrong place, so its races were kept and shared as Airfield Trail, whose start is nearby. Sessions already shared
+  keep their old name.
+
 **4.21.13**
 - **SimEffects → Analysis**: Stadium Cross Country Circuit is named right in Forza Horizon 6. Since 4.21.3 its races
   were kept and shared as Takashiro Cross Country. Laps and races already kept are now under Stadium Cross Country
