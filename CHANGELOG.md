@@ -3,6 +3,18 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.15**
+- **SimEffects → Analysis**: Forza Horizon 6 races that start on the same grid as another track's are told apart by
+  their laps: Shimanoyama Sprint (2 laps) and Shimanoyama Circuit (3), Edogawa Cross Country Circuit (3) and City Docks
+  Cross Country Circuit (1), Ine Scramble (3) and Ito Trail (1), Shirakawa Circuit (4) and Oka Cross Country Circuit
+  (3). Until now such a race was kept as whichever was nearer; Shimanoyama Sprint's was kept as the Circuit.
+- **SimEffects → Analysis**: the starts of 14 Forza Horizon 6 tracks are where their races start (they were guesses,
+  up to 610 m off, so they could be taken for a nearby track on another PC): Bandai Asuma, Cedar Run, Edogawa Cross
+  Country Circuit, Electric Town Circuit, Nangan, Norikura Descent, Ruriko-ji, Shikisai Sprint, Shinjuku Gyoen,
+  Takashiro Cross Country, Soni Circuit, Takashiro Trail, The Titan and Yahikoyama. Four second copies of tracks are
+  gone (Kinkaku-ji Trail and Oyashirazu Trail, their laps moved onto the track; a Takashiro Trail and a Sekibe Scramble
+  that were no event's).
+
 **4.21.14**
 - **SimEffects → Analysis**: Naruto Cross Country Circuit is recognised in Forza Horizon 6. The app had its start in
   the wrong place, so its races were kept and shared as Airfield Trail, whose start is nearby. Sessions already shared

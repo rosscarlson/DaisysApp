@@ -2,6 +2,22 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.15: shared grids (2026-11-25)
+
+- The user's 21:48 Shimanoyama Sprint started on Shimanoyama Circuit's grid (-1862,1579, the same 1.08 km loop as
+  19:09's Circuit) and was kept as the Circuit: 2 laps vs 3. Tracks.json's Sprint place (-6282,-3782) was a guess.
+  FH6 grids shared (within 100 m): Shimanoyama Circuit 3 / Sprint 2, City Docks XC 1 / Edogawa XC 3 (one 4.6 km
+  loop, 6 m), Ine Scramble 3 / Ito Trail 1 (3 m), Oka XC 3 / Shirakawa 4 (11 m).
+- `LapTracker.Twin`: at a race's result, a track within `TwinRadius` (100 m) whose file laps (`KnownTracks.Laps`, not
+  the rig's Max-learnt `Track.Laps`) are nearer the race's: the race and its laps (`LapStore.Retrack`, since raceAt)
+  go on it. Shimanoyama Circuit's file laps 5 → 3 (races seen: 4 on 11-05, 3 at 19:09).
+- Tracks.json: 14 guessed FH6 starts set from the rig's races today (start, lap, laps, racers; Entry dropped: Cedar
+  Run's guess was Arashiyama Takao's marker); Edogawa from the log's race start (-2119,115,-4587). Taken off: second
+  Kinkaku-ji Trail (10-30 20:12, no lap) and Oyashirazu Trail (11-12 13:01, 5474 m) (laps moved: within 50 m), a
+  Takashiro Trail at -112,3448 (10-31 19:41, no event's) and a Sekibe Scramble of 20178 m (11-12 20:29) (their one race
+  each on Unknown track). FH6: 83 tracks, 83 names; only The Colossus, Gauntlet and Goliath without a lap.
+- The rig's 21:48 laps and race moved onto Shimanoyama Sprint by hand; the server's session keeps its name.
+
 ## 4.21.14: Naruto XC (2026-11-25)
 
 - The user: Naruto XC Circuit at 21:27 (3 laps, 1:17-1:24, 8 racers) kept as Airfield Trail (start 867,-1218, 152 m

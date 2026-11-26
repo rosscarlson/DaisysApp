@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 
 namespace DaisysApp.Applets.SimEffects.Analysis;
@@ -161,6 +161,18 @@ public sealed class LapStore
             File.WriteAllLines(RacesPath, races.Select(r => JsonSerializer.Serialize(r)));
             File.WriteAllLines(UnfinishedPath, unfinished.Select(r => JsonSerializer.Serialize(r)));
         }
+        catch (Exception ex) { Logging.Log.Here.Warn("Analysis: saving the laps", ex); }
+        Changed?.Invoke();
+    }
+
+    /// <summary>(since 4.21.15) A race's laps (kept since <paramref name="since"/>) moved to the track it turned out to be
+    /// on; saved.</summary>
+    public void Retrack(string from, string to, DateTime since)
+    {
+        int n = 0;
+        foreach (var l in laps) if (l.Track == from && l.At >= since) { l.Track = to; n++; }
+        if (n == 0) return;
+        try { File.WriteAllLines(Path, laps.Select(l => JsonSerializer.Serialize(l))); }
         catch (Exception ex) { Logging.Log.Here.Warn("Analysis: saving the laps", ex); }
         Changed?.Invoke();
     }
@@ -759,6 +771,12 @@ public sealed class LapTracker
             Logging.Log.Here.Info($"Analysis: race not kept ({(!Recording ? "not recording" : Track == null ? "no track" : "no time")})");
             return;
         }
+        if (Twin(laps) is { } twin)
+        {
+            Logging.Log.Here.Info($"Analysis: {laps} laps: {settings.TrackName(twin.Id)}, not {settings.TrackName(Track.Id)} (the same start)");
+            store.Retrack(Track.Id, twin.Id, raceAt);
+            Track = twin;
+        }
         var race = new RaceRecord
         {
             At = DateTime.Now, Game = game, Track = Track.Id, Car = f.CarOrdinal, Class = f.CarClass, Pi = f.CarPi,
@@ -767,6 +785,23 @@ public sealed class LapTracker
         };
         Logging.Log.Here.Info($"Analysis: race on {settings.TrackName(Track.Id)} finished in {Blocks.LapTime(time)}, started {race.Start}, finished {race.Finish} of {race.Racers}");
         store.Add(race);
+    }
+
+    /// <summary>(since 4.21.15) How far apart the starts of two of the app's tracks can be for them to be one grid.</summary>
+    private const float TwinRadius = 100;
+
+    /// <summary>(since 4.21.15) Another of the app's tracks starting on this one's grid whose laps (the file's) are nearer
+    /// <paramref name="laps"/> (null: none): events sharing a grid, told apart only by their laps (Shimanoyama Circuit 3
+    /// and Sprint 2, City Docks Cross Country Circuit 1 and Edogawa's 3, Ine Scramble 3 and Ito Trail 1).</summary>
+    private Track? Twin(int laps)
+    {
+        if (!Known || Track is not { Key: null } t) return null;
+        int own = KnownTracks.Laps(t);
+        if (own <= 0 || own == laps) return null;
+        var twin = settings.Tracks.Where(o => o != t && OnMap(o, game, t.Map) && o.Length > 0 && KnownTracks.Laps(o) > 0
+                && Flat(o.X - t.X, o.Z - t.Z) <= TwinRadius)
+            .OrderBy(o => Math.Abs(KnownTracks.Laps(o) - laps)).FirstOrDefault();
+        return twin != null && Math.Abs(KnownTracks.Laps(twin) - laps) < Math.Abs(own - laps) ? twin : null;
     }
 
     private void Record(TelemetryFrame f, int lapNo, float time, float length)

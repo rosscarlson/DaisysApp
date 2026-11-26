@@ -55,6 +55,13 @@ internal static class KnownTracks
         }
     }
 
+    /// <summary>(since 4.21.15) A track's laps in the file, found by its <see cref="Track.Found"/>, else its name (0: not
+    /// in it, or unknown): the event's, which a race on this PC (<see cref="Track.Laps"/>, the most seen) doesn't change.</summary>
+    public static int Laps(Track t) =>
+        file.Value.FirstOrDefault(e => e.Game == t.Game && e.Found != default && e.Found.ToUniversalTime() == t.Found.ToUniversalTime())?.Laps
+        ?? file.Value.FirstOrDefault(e => e.Game == t.Game && e.Map == t.Map && string.Equals(e.Name.Trim(), t.Name.Trim(), StringComparison.OrdinalIgnoreCase))?.Laps
+        ?? 0;
+
     /// <summary>The file's games' tracks made the file's; true when anything changed (the settings need saving).</summary>
     public static bool Merge(AnalysisSettings s)
     {

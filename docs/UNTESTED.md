@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.15 (shared grids):** built, not in the game. To try: Shimanoyama Sprint (2 laps) kept as itself, Shimanoyama
+  Circuit (3) still the Circuit; likewise City Docks XC (1) / Edogawa XC (3), Ito Trail (1) / Ine Scramble (3).
+
 - **4.21.14 (Naruto XC):** built, not in the game. To try: Naruto XC Circuit kept under its name; Airfield Trail
   (867,-1218, 152 m off) still its own.
 
