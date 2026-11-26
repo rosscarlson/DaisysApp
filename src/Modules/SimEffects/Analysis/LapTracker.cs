@@ -771,9 +771,9 @@ public sealed class LapTracker
             Logging.Log.Here.Info($"Analysis: race not kept ({(!Recording ? "not recording" : Track == null ? "no track" : "no time")})");
             return;
         }
-        if (Twin(laps) is { } twin)
+        if ((Twin(laps) ?? ByTime(laps, time)) is { } twin)
         {
-            Logging.Log.Here.Info($"Analysis: {laps} laps: {settings.TrackName(twin.Id)}, not {settings.TrackName(Track.Id)} (the same start)");
+            Logging.Log.Here.Info($"Analysis: {laps} laps in {Blocks.LapTime(time)}: {settings.TrackName(twin.Id)}, not {settings.TrackName(Track.Id)} (the same start)");
             store.Retrack(Track.Id, twin.Id, raceAt);
             Track = twin;
         }
@@ -802,6 +802,22 @@ public sealed class LapTracker
                 && Flat(o.X - t.X, o.Z - t.Z) <= TwinRadius)
             .OrderBy(o => Math.Abs(KnownTracks.Laps(o) - laps)).FirstOrDefault();
         return twin != null && Math.Abs(KnownTracks.Laps(twin) - laps) < Math.Abs(own - laps) ? twin : null;
+    }
+
+    /// <summary>(since 4.21.16) Another of the app's tracks on this one's grid with as many laps (the file's) whose race
+    /// time (the file's) is nearer <paramref name="time"/>, by ratio (null: none): The Goliath (26 min) was kept as
+    /// Legend Island Trail (2:18), one lap each, their grids 61 m apart on one road.</summary>
+    private Track? ByTime(int laps, float time)
+    {
+        if (!Known || Track is not { Key: null } t || !(time > 0)) return null;
+        float own = KnownTracks.Time(t);
+        if (own <= 0) return null;
+        static float Off(float a, float b) => MathF.Abs(MathF.Log(a / b));
+        var twin = settings.Tracks.Where(o => o != t && OnMap(o, game, t.Map) && o.Length > 0 && KnownTracks.Laps(o) == laps
+                && KnownTracks.Time(o) > 0 && Flat(o.X - t.X, o.Z - t.Z) <= TwinRadius)
+            .OrderBy(o => Off(time, KnownTracks.Time(o))).FirstOrDefault();
+        // (well nearer: a race a little slow or quick stays where it started)
+        return twin != null && Off(time, KnownTracks.Time(twin)) + 0.5f < Off(time, own) ? twin : null;
     }
 
     private void Record(TelemetryFrame f, int lapNo, float time, float length)

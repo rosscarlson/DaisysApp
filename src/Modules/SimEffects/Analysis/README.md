@@ -579,7 +579,9 @@ rig, built in; 333: FH4 98, FH5 147, FH6 88), the same on every PC. At each star
 (name, map, start, where its event is entered, type), each found by when it was found, then its name, then its start
 (within 1 m, or 50 m with a lap as long), its laps and races kept; one renamed, moved or deleted is put back; one the
 file hasn't got is taken off (its laps then "Unknown track"). A file track with no race yet keeps the start and lap
-learnt from its first race here. Nothing adds, renames or deletes them: Current Location's name box only shows the
+learnt from its first race here. Two starting on one grid are told apart at the finish by their laps (since
+4.21.15) or, with as many laps, by about how long their race takes (the file's `Time`, since 4.21.16: The Goliath and
+Legend Island Trail). Nothing adds, renames or deletes them: Current Location's name box only shows the
 track (Save and Add New went), Known Tracks is read-only, and a race on none of them stays unknown, its laps not kept
 (no "Track n"). The games that name their tracks (iRacing, the Assetto Corsas, FM 2023), and Forza Motorsport 7, still
 add theirs as before, but can't be renamed either.

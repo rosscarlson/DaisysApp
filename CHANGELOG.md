@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.16**
+- **SimEffects → Analysis**: The Goliath in Forza Horizon 6 is recognised (it was kept and shared as Legend Island
+  Trail, whose grid is 61 m away on the same road, one lap each): two tracks on one grid with as many laps are told
+  apart at the finish by how long their race takes (26 minutes against 2:18). The app's tracks: The Goliath's start
+  set to its grid, its lap and where its event is entered; The Goliath's and Legend Island Trail's race times.
+
 **4.21.15**
 - **SimEffects → Analysis**: Forza Horizon 6 races that start on the same grid as another track's are told apart by
   their laps: Shimanoyama Sprint (2 laps) and Shimanoyama Circuit (3), Edogawa Cross Country Circuit (3) and City Docks

@@ -29,6 +29,8 @@ internal static class KnownTracks
         public float Length { get; set; }
         public int Laps { get; set; }
         public int Racers { get; set; }
+        /// <summary>(since 4.21.16) About how long its race takes, seconds (0: not known).</summary>
+        public float Time { get; set; }
         public DateTime Found { get; set; }
         public float[]? Entry { get; set; }
     }
@@ -57,10 +59,15 @@ internal static class KnownTracks
 
     /// <summary>(since 4.21.15) A track's laps in the file, found by its <see cref="Track.Found"/>, else its name (0: not
     /// in it, or unknown): the event's, which a race on this PC (<see cref="Track.Laps"/>, the most seen) doesn't change.</summary>
-    public static int Laps(Track t) =>
-        file.Value.FirstOrDefault(e => e.Game == t.Game && e.Found != default && e.Found.ToUniversalTime() == t.Found.ToUniversalTime())?.Laps
-        ?? file.Value.FirstOrDefault(e => e.Game == t.Game && e.Map == t.Map && string.Equals(e.Name.Trim(), t.Name.Trim(), StringComparison.OrdinalIgnoreCase))?.Laps
-        ?? 0;
+    public static int Laps(Track t) => Of(t)?.Laps ?? 0;
+
+    /// <summary>(since 4.21.16) About how long a track's race takes in the file, seconds (0: not known): two events on one
+    /// grid with the same laps told apart by it (The Goliath and Legend Island Trail).</summary>
+    public static float Time(Track t) => Of(t)?.Time ?? 0;
+
+    private static FileTrack? Of(Track t) =>
+        file.Value.FirstOrDefault(e => e.Game == t.Game && e.Found != default && e.Found.ToUniversalTime() == t.Found.ToUniversalTime())
+        ?? file.Value.FirstOrDefault(e => e.Game == t.Game && e.Map == t.Map && string.Equals(e.Name.Trim(), t.Name.Trim(), StringComparison.OrdinalIgnoreCase));
 
     /// <summary>The file's games' tracks made the file's; true when anything changed (the settings need saving).</summary>
     public static bool Merge(AnalysisSettings s)

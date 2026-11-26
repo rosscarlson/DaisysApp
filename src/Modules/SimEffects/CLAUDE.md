@@ -2,6 +2,16 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.16: The Goliath (2026-11-26)
+
+- The user's 12:42 FH6 Goliath (26:10.969, 1 lap) kept and shared as Legend Island Trail: grids 61 m apart on one road
+  (Goliath 4190,-5481; Trail 4200,-5541), both 1 lap, Horizon's distance ~5,950 m for both; the start picked Trail by
+  its Entry. `LapTracker.ByTime`: at the result, a track within `TwinRadius` with the same file laps whose file `Time`
+  (`KnownTracks.Time`, new field) is nearer by ratio (+0.5 log margin) takes the race. Tracks.json: Goliath's grid,
+  lap 5953.9, Laps 1, Entry = its old marker; Time 1571 / 138.4. Data from the server (`flbfetch get 19183dc11fb631ef`).
+- Tested in DaisysDevX (FH profile Version 6, port 8123; `da-fakefh\replayk.py <log> 8123 <y> <speed>`): Trail stays
+  Trail; Goliath at 8x → The Goliath. Not done: the rig's 12:42 race and the server's session keep "Legend Island Trail".
+
 ## 4.21.15: shared grids (2026-11-25)
 
 - The user's 21:48 Shimanoyama Sprint started on Shimanoyama Circuit's grid (-1862,1579, the same 1.08 km loop as
