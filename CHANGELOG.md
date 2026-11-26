@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.22.0**
+- **SimEffects → Analysis**: Forza Horizon 6's tracks as driven on every one of them: The Colossus' and The Gauntlet's
+  starts set to their grids, with their laps; Stadium Cross Country Circuit's laps (3) and racers; each race's time
+  (two tracks on one grid told apart by it). The app's tracks now set every track's laps as well (a count learnt from
+  a race kept on the wrong track is put back), so every copy has the same Forza Horizon 6 tracks.
+
 **4.21.16**
 - **SimEffects → Analysis**: The Goliath in Forza Horizon 6 is recognised (it was kept and shared as Legend Island
   Trail, whose grid is 61 m away on the same road, one lap each): two tracks on one grid with as many laps are told

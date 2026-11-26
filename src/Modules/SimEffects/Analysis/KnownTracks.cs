@@ -6,7 +6,7 @@ namespace DaisysApp.Applets.SimEffects.Analysis;
 /// <summary>
 /// The tracks that come with the app (since 3.34.0; <c>Tracks.json</c>, embedded): every FH4, FH5 and FH6 race the
 /// developer mapped, as Export writes them. Since 4.18.9 they're the only tracks in those games, the same on every PC:
-/// on each start a game's tracks are made the file's (name, map, start, entry, type), each found by its
+/// on each start a game's tracks are made the file's (name, map, start, lap, laps, entry, type), each found by its
 /// <see cref="Track.Found"/>, then its name, then its start (its id kept, so its laps and races stay on it); one the
 /// file hasn't got is taken off (its laps then on "Unknown track"). Nothing in the app adds, renames or deletes them.
 /// </summary>
@@ -121,7 +121,8 @@ internal static class KnownTracks
                 if (e.Length > 0) t.Length = e.Length;
             }
             else t.Entry = e.Entry ?? new[] { e.X, e.Y, e.Z };
-            t.Laps = Math.Max(t.Laps, e.Laps); t.Racers = Math.Max(t.Racers, e.Racers);
+            // (since 4.22.0) the event's laps are the file's: one learnt here (a race kept on the wrong track) put back
+            t.Laps = e.Laps > 0 ? e.Laps : t.Laps; t.Racers = Math.Max(t.Racers, e.Racers);
         }
         foreach (var t in mine.Where(t => !claimed.ContainsValue(t)))
         {

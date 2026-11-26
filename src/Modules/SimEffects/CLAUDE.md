@@ -2,6 +2,16 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.22.0: FH6 from the rig (2026-11-26)
+
+- The user drove every FH6 track on GAMER11 and asked for its data to be everyone's. Tracks.json from the rig's
+  Analysis.json and AnalysisRaces.jsonl (rig on 4.21.15): The Colossus and Gauntlet's grids and laps (Entry = the old
+  markers), Stadium XC 3 laps / 7 racers (the 7-racer race; a solo 2-lap one too), Kinkaku-ji 11 racers, `Time` for
+  71 of 83 (median of the races with the file's laps; none for Irokawa, Nangan: their races look wrong). Every FH6
+  track now has a Length, so `Merge` sets them all. `Merge` sets Laps from the file (was Max: the rig's Shimanoyama
+  Circuit 5, Airfield Trail 3); Racers stays Max. Tested: DaisysDevT with the rig's files, 83 FH6 tracks = the file.
+  Not done: the rig's Goliath race (12:42) still on Legend Island Trail.
+
 ## 4.21.16: The Goliath (2026-11-26)
 
 - The user's 12:42 FH6 Goliath (26:10.969, 1 lap) kept and shared as Legend Island Trail: grids 61 m apart on one road
