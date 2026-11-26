@@ -4433,6 +4433,19 @@
     {
       "Game": "FH6",
       "Map": null,
+      "Name": "Takashiro Cross Country",
+      "Type": null,
+      "X": 2018.5583,
+      "Y": 612.8823,
+      "Z": 6807.379,
+      "Length": 0,
+      "Laps": 0,
+      "Racers": 0,
+      "Found": "2026-10-31T14:12:28.4724216-04:00"
+    },
+    {
+      "Game": "FH6",
+      "Map": null,
       "Name": "Soni Circuit",
       "Type": null,
       "X": 2552.4397,
@@ -4464,7 +4477,7 @@
     {
       "Game": "FH6",
       "Map": null,
-      "Name": "Takashiro Cross Country",
+      "Name": "Stadium Cross Country Circuit",
       "Type": null,
       "X": -7514.9546,
       "Y": 156.2,

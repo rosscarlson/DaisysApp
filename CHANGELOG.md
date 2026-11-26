@@ -3,6 +3,11 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.13**
+- **SimEffects → Analysis**: Stadium Cross Country Circuit is named right in Forza Horizon 6. Since 4.21.3 its races
+  were kept and shared as Takashiro Cross Country. Laps and races already kept are now under Stadium Cross Country
+  Circuit. Takashiro Cross Country is back at its own start. Sessions already shared keep their old name.
+
 **4.21.12**
 - **SimEffects → Analysis**: Soni Highlands Cross Country is named right in Forza Horizon 6. Its race was kept and
   shared as Stadium Cross Country Circuit (when the event was entered at its marker) or Snow Forest Cross Country

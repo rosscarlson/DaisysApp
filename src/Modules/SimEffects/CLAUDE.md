@@ -2,6 +2,13 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.13: Stadium XC (2026-11-25)
+
+- The user: ran Stadium Cross Country Circuit at 20:39, kept as "Takashiro XC" (3 laps, 1:22-1:24). 4.21.2's
+  Tracks.json had all three right (Stadium XC at -7529,-2541; Takashiro XC at 2018,6807; Soni at the 2384,4920
+  marker): 4.21.3 rotated the names. Tracks.json: Found 14:08:55 renamed Stadium XC Circuit (its id kept: the
+  15:32 and 20:39 races follow); 14:12:28 back as Takashiro XC (no lap). The server's sessions keep their names.
+
 ## 4.21.12: Soni Highlands XC (2026-11-25)
 
 - The user: raced and shared "Stadium Cross Country Circuit", really Soni Highlands Cross Country. Server: Ross's

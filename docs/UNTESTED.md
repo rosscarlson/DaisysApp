@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.13 (Stadium XC):** built, not in the game. To try: Stadium XC Circuit (start -7515,-2556) kept and shared
+  under its name; Takashiro XC (2018,6807, 4.21.2's place, no lap yet) kept when driven.
+
 - **4.21.12 (Soni Highlands XC):** tested in DaisysDev (laps moved), not in the game. To try: Soni Highlands XC kept
   and shared under its name; Snow Forest XC Circuit and Stadium XC wherever they really are (not known: not kept).
 
