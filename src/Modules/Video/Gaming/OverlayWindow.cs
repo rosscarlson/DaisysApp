@@ -52,6 +52,7 @@ internal sealed class OverlayWindow : Window
     public OverlayWindow(GamingSettings settings)
     {
         this.settings = settings;
+        Shell.ScreenRecordings.KeepOut(this, () => settings.HideFromCapture);
         Title = AppPaths.DisplayName + " – FPS";
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
@@ -108,7 +109,7 @@ internal sealed class OverlayWindow : Window
         if (IsHandleCreated)
         {
             WindowTools.SetClickThrough(this, settings.Locked);
-            WindowTools.ExcludeFromCapture(this, settings.HideFromCapture);
+            Shell.ScreenRecordings.Apply(this, () => settings.HideFromCapture);
         }
         panel.InvalidateVisual();
         Fit();

@@ -175,6 +175,8 @@
   "No voice chat, videos or other programs": "No voice chat, videos or other programs",
   "Record the microphone too (as a second audio track)": "Record the microphone too (as a second audio track)",
   "Record the mouse pointer": "Record the mouse pointer",
+  "Record overlays": "Record overlays",
+  "Off: widgets, overlays and mirrors left out of recordings": "Off: widgets, overlays and mirrors left out of recordings",
   "HDR monitors": "HDR monitors",
   "Record in SDR (plays right everywhere)": "Record in SDR (plays right everywhere)",
   "Record in HDR10 (HEVC or AV1, 10-bit)": "Record in HDR10 (HEVC or AV1, 10-bit)",

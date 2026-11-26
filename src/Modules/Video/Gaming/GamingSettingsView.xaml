@@ -182,7 +182,9 @@
                             <CheckBox x:Name="MicBox" Margin="0,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed">
                                 <TextBlock Text="{l:Tr 'Record the microphone too (as a second audio track)'}" TextWrapping="Wrap"/>
                             </CheckBox>
-                            <CheckBox x:Name="CursorBox" Content="{l:Tr 'Record the mouse pointer'}" Margin="0,0,0,10" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
+                            <CheckBox x:Name="CursorBox" Content="{l:Tr 'Record the mouse pointer'}" Margin="0,0,0,8" Checked="Recording_Changed" Unchecked="Recording_Changed"/>
+                            <CheckBox x:Name="OverlaysBox" Content="{l:Tr 'Record overlays'}" Margin="0,0,0,10" Checked="Recording_Changed" Unchecked="Recording_Changed"
+                                      ToolTip="{l:Tr 'Off: widgets, overlays and mirrors left out of recordings'}"/>
                         </StackPanel>
                         <TextBlock Grid.Row="2" Text="{l:Tr 'HDR monitors'}" Style="{StaticResource FieldLabel}"/>
                         <ComboBox Grid.Row="2" Grid.Column="1" x:Name="HdrBox" Margin="0,0,0,10" SelectionChanged="Recording_Changed">

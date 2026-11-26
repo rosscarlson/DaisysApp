@@ -41,6 +41,7 @@ internal sealed class MirrorWindow : Window
     {
         Definition = definition;
         this.hideFromCapture = hideFromCapture;
+        Shell.ScreenRecordings.KeepOut(this, () => this.hideFromCapture);
         Title = "Mini Mirror – " + definition.Name;
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
@@ -76,7 +77,6 @@ internal sealed class MirrorWindow : Window
             WindowTools.SetBounds(this, Definition.WindowBounds, silent: true);
             WindowTools.SetClickThrough(this, Definition.ClickThrough);
             WindowTools.MakeToolWindow(this);
-            if (this.hideFromCapture) WindowTools.ExcludeFromCapture(this);
             HwndSource.FromHwnd(WindowTools.Handle(this))?.AddHook(HoldLocked);
         };
         Loaded += (_, _) =>
@@ -266,7 +266,7 @@ internal sealed class MirrorWindow : Window
     public void SetHideFromCapture(bool hide)
     {
         hideFromCapture = hide;
-        WindowTools.ExcludeFromCapture(this, hide);
+        Shell.ScreenRecordings.Apply(this, () => hideFromCapture);
     }
 
     /// <summary>Sizes the window to the region's size × <see cref="MirrorDefinition.SizeScale"/>, keeping its centre where it is.</summary>

@@ -200,6 +200,8 @@ public class Widget : Window
             Body = null;
             if (open.Remove(this)) OpenChanged?.Invoke();
         };
+        // out of recordings while Video → Recording's Record overlays is off (since 4.21.11)
+        DaisysApp.Shell.ScreenRecordings.KeepOut(this);
         this.card = card;
         this.clickThrough = clickThrough;
         this.firstSize = firstSize ?? new Size(320, 150);

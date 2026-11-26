@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.11**
+- **Video → Recording**: **Record overlays** (Settings → Video → Recording; on to start). Off, a recording is the
+  screen alone: the app's widgets (SimEffects' overlays, Performance's graphs…), the FPS overlay and Mini Mirror's
+  mirrors are left out while it records (SimEffects → Analysis' race videos too), and back in screenshots and screen
+  shares when it ends. Windows leaves them out as it builds the picture, so it costs games and the recording nothing.
+
 **4.21.10**
 - **SimEffects → Analysis**: a Forza sprint's time matches the results screen again. When the game sent frames
   after the finish with the clock as it was, the app lost the finish's last frame and kept the time a frame short

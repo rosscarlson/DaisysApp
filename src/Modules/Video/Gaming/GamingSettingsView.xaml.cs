@@ -83,6 +83,7 @@ public partial class GamingSettingsView : UserControl
         GameSoundBox.IsEnabled = S.RecordSystemAudio;
         MicBox.IsChecked = S.RecordMicrophone;
         CursorBox.IsChecked = S.RecordCursor;
+        OverlaysBox.IsChecked = S.RecordOverlays;
         HdrBox.SelectedIndex = (int)S.Hdr;
         FillCodecs();
         FillProfiles();
@@ -187,6 +188,8 @@ public partial class GamingSettingsView : UserControl
         GameSoundBox.IsEnabled = S.RecordSystemAudio;
         S.RecordMicrophone = MicBox.IsChecked == true;
         S.RecordCursor = CursorBox.IsChecked == true;
+        S.RecordOverlays = OverlaysBox.IsChecked == true;
+        Shell.ScreenRecordings.RecordOverlays = S.RecordOverlays;
         S.Hdr = HdrBox.SelectedIndex == 1 ? HdrRecording.Hdr10 : HdrRecording.Sdr;
         S.Save();
     }

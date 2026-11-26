@@ -78,6 +78,7 @@ internal sealed class GamingService : IDisposable
     {
         log.Info($"Overlay {(Settings.OverlayVisible ? "on" : "off")} ({Settings.Mode}), history {(Settings.LogHistory ? "on" : "off")}, {Settings.Games.Count} games known, recording to {Settings.RecordingFolder}");
         GameLog.Prune(Settings.KeepHistoryMonths);
+        ScreenRecordings.RecordOverlays = Settings.RecordOverlays;
         RegisterHotkeys();
         Recorder.Stopped += error => dispatcher.BeginInvoke(() => OnRecordingStopped(error));
         Webcam.Failed += error => dispatcher.BeginInvoke(() => { WebcamError = error; Settings.WebcamOn = false; SaveNow(); log.Warn($"The virtual webcam stopped: {error}"); Flash(T("The virtual webcam stopped")); Changed?.Invoke(); });

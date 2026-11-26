@@ -1,3 +1,7 @@
+using System.Windows;
+using System.Windows.Interop;
+using DaisysApp.Shared.Win32;
+
 namespace DaisysApp.Shell;
 
 /// <summary>
@@ -53,8 +57,71 @@ public static class ScreenRecordings
     /// <summary>The recorder says it is (or no longer is) recording; any thread.</summary>
     public static void SetRecording(bool on)
     {
-        if (recording == on) return;
-        recording = on;
-        RecordingChanged?.Invoke();
+        starting = false;
+        if (recording != on)
+        {
+            recording = on;
+            RecordingChanged?.Invoke();
+        }
+        UpdateOverlays();
+    }
+
+    // ---------------------------------------------------------------- the app's overlays (since Core 0.68, 4.21.11)
+
+    private static volatile bool starting, recordOverlays = true, overlaysHidden;
+    private static readonly object overlayGate = new();
+
+    /// <summary>Video → Recording's Record overlays: off, the app's overlays (widgets, the FPS overlay, mirrors) are
+    /// left out of the picture while a recording runs (Windows' exclude-from-capture, set once at the start and end).</summary>
+    public static bool RecordOverlays
+    {
+        get => recordOverlays;
+        set { recordOverlays = value; UpdateOverlays(); }
+    }
+
+    /// <summary>The overlays are being left out now.</summary>
+    public static bool OverlaysHidden => overlaysHidden;
+
+    /// <summary>Raised (on any thread) when <see cref="OverlaysHidden"/> changes.</summary>
+    public static event Action? OverlaysHiddenChanged;
+
+    /// <summary>The recorder is about to start (any thread), so the overlays are out before its first frame;
+    /// <see cref="SetRecording"/> ends it.</summary>
+    public static void Starting()
+    {
+        starting = true;
+        UpdateOverlays();
+    }
+
+    private static void UpdateOverlays()
+    {
+        lock (overlayGate)
+        {
+            bool hide = (starting || recording) && !recordOverlays;
+            if (hide == overlaysHidden) return;
+            overlaysHidden = hide;
+        }
+        OverlaysHiddenChanged?.Invoke();
+    }
+
+    /// <summary>Leaves the window out of recordings while <see cref="OverlaysHidden"/>, and always while
+    /// <paramref name="always"/> says so (its own setting; call <see cref="Apply"/> after it changes).</summary>
+    public static void KeepOut(Window w, Func<bool>? always = null)
+    {
+        void Changed()
+        {
+            if (w.Dispatcher.CheckAccess()) Apply(w, always);
+            else w.Dispatcher.BeginInvoke(() => Apply(w, always));
+        }
+        w.SourceInitialized += (_, _) => Apply(w, always);
+        OverlaysHiddenChanged += Changed;
+        w.Closed += (_, _) => OverlaysHiddenChanged -= Changed;
+    }
+
+    /// <summary>Sets the window's exclusion from capture now (once it has a handle).</summary>
+    public static void Apply(Window w, Func<bool>? always = null)
+    {
+        if (new WindowInteropHelper(w).Handle == IntPtr.Zero) return;
+        WindowTools.ExcludeFromCapture(w, overlaysHidden || always?.Invoke() == true);
     }
 }

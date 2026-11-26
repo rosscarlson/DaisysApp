@@ -4,6 +4,12 @@ Past work on this part of Daisy's App (Claude Code reads this file only when it 
 
 ## Latest
 
+- **4.21.11 (asked 2026-11-25: "Record overlays", unticked records the screen clean; asked first whether it costs
+  performance: it doesn't):** Core 0.68 `ScreenRecordings.RecordOverlays`/`Starting`/`OverlaysHidden`/`KeepOut`/`Apply`:
+  `WDA_EXCLUDEFROMCAPTURE` on every Core `Widget`, the FPS overlay and mirrors while (starting or) recording, with their
+  own Hide-from-capture kept (`Apply(w, always)`). `Recorder.Start` calls `Starting()` before its thread (cleared by
+  `SetRecording`). `GamingSettings.RecordOverlays` (default on). Tested in DaisysDev via UIA: FPS overlay + a CPU widget
+  0x11 while recording with it off, 0x0 after and with it on. Not tested: a recorded frame looked at.
 - **4.18.12 (asked 2026-11-20):** Settings → Video → Recording's profile fields in an `Expander` (`ProfileEditor`,
   collapsed; New opens it); `Profile_Edited` only previews (note, max box) and enables `SaveProfileButton`;
   `SaveProfile_Click` → `Apply(p)` + save; Reset (ConfirmButton, all profiles) at the bottom. Tested in DaisysDev via

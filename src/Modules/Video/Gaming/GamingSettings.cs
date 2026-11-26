@@ -66,6 +66,9 @@ public sealed class GamingSettings
     public bool GameSoundOnly { get; set; } = AppPaths.Product?.Game != null;
     public bool RecordMicrophone { get; set; }
     public bool RecordCursor { get; set; } = true;
+    /// <summary>(since 4.21.11) The app's overlays (widgets, the FPS overlay, mirrors) in the recording; off, they're
+    /// left out while it runs (Core's <c>ScreenRecordings.RecordOverlays</c>).</summary>
+    public bool RecordOverlays { get; set; } = true;
     public HdrRecording Hdr { get; set; } = HdrRecording.Sdr;
     /// <summary>The recorded picture's shape: as captured, or the middle of it in 32:9, 21:9, 16:9, 4:3 or 9:16.</summary>
     public OutputAspect OutputAspect { get; set; } = OutputAspect.Captured;

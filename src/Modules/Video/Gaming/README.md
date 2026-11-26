@@ -133,6 +133,11 @@ jumps to Settings → Video → Gaming's recording options), named after the gam
 `Forza Horizon 6 2026-10-08 21-30-00.mp4`. The PC's sound is recorded (or, with **Only the game's sound**, only the recorded program's: Windows' process loopback, so no voice chat, videos or other programs), and optionally the microphone (the app's input in Settings → General → Audio, else
 Windows' communications microphone) as a **second
 audio track** (most editors show both; players play the first). The mouse pointer is recorded unless you untick it.
+**Record overlays** (Settings → Video → Recording, on to start; since 4.21.11): off, the app's own overlays (every
+widget, such as SimEffects' overlays and Performance's graphs, the FPS overlay and Mini Mirror's mirrors) are left out
+of the picture while a recording runs, so it's the screen alone. Windows leaves them out as it builds the picture
+(exclude-from-capture, set on each window as the recording starts and ends), so it costs nothing; while it records,
+they're out of the virtual webcam, screenshots and screen shares too.
 
 **For other modules** (since 4.8.0): SimEffects → [Analysis](../../SimEffects/Analysis/README.md) records each race
 with what Record has chosen (Core's `Shell/ScreenRecordings`, offered while Recording is switched on): a region's
@@ -292,7 +297,7 @@ matters, hide the overlay with its shortcut.
 
 - **FPS overlay:** show only while a game is in front; leave it out of recordings and screenshots; which graphs to
   show; justify left or right; background colour and opacity; text colour; size; lock in place.
-- **Recording:** folder; the PC's sound; the microphone as a second track; the mouse pointer; HDR as SDR or HDR10; the
+- **Recording:** folder; the PC's sound; the microphone as a second track; the mouse pointer; record overlays; HDR as SDR or HDR10; the
   quality profiles: pick one, New, Delete; its settings folded away in **Edit** (since 4.18.12), with **Save** (an edit
   waits for it; picking another profile drops it) and **Reset** (High, Medium and Low as they came) at the bottom.
 - **Shortcuts:** those above (but the benchmark's, set on its card).

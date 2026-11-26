@@ -68,6 +68,8 @@ internal sealed class Recorder : IDisposable
     {
         if (IsRecording) return null;
         stopping = false;
+        // the overlays left out (Record overlays off) before the first frame
+        Shell.ScreenRecordings.Starting();
         string? error = null;
         using var ready = new ManualResetEventSlim();
         thread = new Thread(() => Run(request, ready, e => error = e)) { IsBackground = true, Name = "Gaming-Recorder" };
