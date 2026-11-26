@@ -78,10 +78,10 @@ internal sealed class SessionData
     /// <summary>(since 4.15.4) Has the engine's rpm.</summary>
     public bool HasRpm { get; private set; }
     /// <summary>(since 4.21.2) Each lap's last row as logged (by its number): the time into it, and how far that clock
-    /// moved a frame (over the last 5). The frame that crosses the finish line isn't sent, so a lap the log stops in
+    /// moved a frame (the middle of the last 5 steps since 4.21.10, their average before). The frame that crosses the finish line isn't sent, so a lap the log stops in
     /// ends a frame after its last row (this matched the game's own times to the millisecond).</summary>
     private readonly Dictionary<int, (double Time, double Step)> ends = new();
-    /// <summary>The frames averaged for <see cref="ends"/>' step.</summary>
+    /// <summary>The frames looked at for <see cref="ends"/>' step.</summary>
     private const int StepFrames = 5;
 
     public Lap? BestLap => Laps.Where(l => l.Complete).MinBy(l => l.Seconds);
@@ -168,7 +168,15 @@ internal sealed class SessionData
             double lapNo = cols[8][k], at = cols[9][k];
             if (double.IsNaN(lapNo) || double.IsNaN(at) || (k + 1 < ms.Count && cols[8][k + 1] == lapNo && !double.IsNaN(cols[9][k + 1]))) continue;
             int b = k - StepFrames;
-            double step = b >= 0 && cols[8][b] == lapNo && at - cols[9][b] is > 0 and < 0.05 * StepFrames and var d ? d / StepFrames : 0;
+            double step = 0;
+            if (b >= 0 && cols[8][b] == lapNo && at - cols[9][b] is > 0 and < 0.05 * StepFrames)
+            {
+                // (since 4.21.10) the middle step: a row not logged made the average a fifth of a frame longer
+                var steps = new double[StepFrames];
+                for (int j = 0; j < StepFrames; j++) steps[j] = cols[9][b + j + 1] - cols[9][b + j];
+                Array.Sort(steps);
+                step = steps[StepFrames / 2] is > 0 and < 0.05 and var m ? m : 0;
+            }
             ends[(int)lapNo] = (at, step);
         }
         var pauses = new List<Pause>();

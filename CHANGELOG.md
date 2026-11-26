@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.10**
+- **SimEffects → Analysis**: a Forza sprint's time matches the results screen again. When the game sent frames
+  after the finish with the clock as it was, the app lost the finish's last frame and kept the time a frame short
+  (Festival Sprint's 2:03.540 was kept as 2:03.529). A dropped frame no longer makes it a few milliseconds long.
+  Sprints already kept are put right once, from their race logs. Sessions already shared keep their old time.
+
 **4.21.9**
 - **SimEffects → Analysis**: for now, a race the app doesn't keep (no track fits it, or it's left before a whole lap)
   keeps its race log and video in their folders instead of deleting them, so one recorded wrong can be put right

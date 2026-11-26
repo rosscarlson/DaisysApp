@@ -2,6 +2,10 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.10 (a sprint's last frame):** tested by replaying the rig's 18:55 Festival Sprint (2:03.529 kept, 2:03.540
+  on the results screen) → 2:03.540, not in the game. To try: a sprint's time against the results screen; the one-time
+  mend (`SprintFramesMended`) logs each sprint changed. Still an estimate (the crossing frame isn't sent): a few ms off
+  is possible; exact needs the results screen read (OCR), offered.
 - **4.21.9 (nothing deleted, for now):** built, not tried. To try: a race not kept leaves its log in ForzaSessions and
   its video in Videos\Daisy's App (not uploaded). Turn back off (`RaceLog.KeepAll`) once the user's track run is done.
 - **4.21.8 (Horizon's lengths don't decide):** tested by replaying a race made like Festival Sprint's, not in the game.

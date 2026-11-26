@@ -2,6 +2,17 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.10: a sprint's last frame (2026-11-25)
+
+- Festival Sprint 18:55: 2:03.529 kept, 2:03.540 on the results screen ("a frame 0.0 ms"). Back after the finish with
+  the clock as it was, `See` emptied the ring (`RaceTime <=` the last) before `Judge`: 11 of today's 16 sprint finishes
+  had no frame, two had 33 ms (from frames after). Fix: `furthestStep`, the step when `furthest` was seen; the middle
+  of the 5 steps, not the average (the tracker and `SessionData`: a frame dropped made it ~2 ms long). One-time
+  `ShortLaps(sprints: true)` (`SprintFramesMended`): one-lap sessions within 0.05 s of their log.
+- Not exact by nature: frames are 10-14 ms apart at 90 Hz, so tracker and log differ 2-3 ms on some races (Cedar
+  Run 161.424/161.421). Exact needs the results screen read (OCR of the race video): offered. lapreplay: `festival2`,
+  `file:<csv>` (any log, game clock), `logs` (SessionData's laps).
+
 ## 4.21.9: nothing deleted, for now (2026-11-25)
 
 - The user checks FH6 tracks one race at a time: `RaceLog.KeepAll` (true) leaves a race not kept in ForzaSessions and

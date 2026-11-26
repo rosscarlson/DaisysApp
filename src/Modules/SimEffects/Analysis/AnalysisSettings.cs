@@ -54,6 +54,9 @@ public sealed class AnalysisSettings
     /// <summary>(since 4.21.2) The races' last laps kept short before it were mended (<see cref="LapStore.ShortLaps"/>).</summary>
     public bool LastLapsMended { get; set; }
 
+    /// <summary>(since 4.21.10) The sprints kept without the finish's frame were mended (<see cref="LapStore.ShortLaps"/>).</summary>
+    public bool SprintFramesMended { get; set; }
+
     public AnalysisUnits Units { get; set; }
 
     /// <summary>Tyre temperatures in °F or °C (since 3.24.0); null: as <see cref="Units"/>.</summary>

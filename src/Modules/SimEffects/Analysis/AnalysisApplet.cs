@@ -106,6 +106,18 @@ public sealed class AnalysisApplet : IApplet
                 settings.Save();
             }));
         }
+        // (since 4.21.10, once) the sprints kept without the finish's frame (after 4.21.2 too)
+        if (!settings.SprintFramesMended)
+        {
+            var all = store.All.ToList();
+            var ui = Dispatcher.CurrentDispatcher;
+            Task.Run(() => LapStore.ShortLaps(all, sprints: true)).ContinueWith(t => ui.BeginInvoke(() =>
+            {
+                if (t.IsCompletedSuccessfully) store.Mend(t.Result);
+                settings.SprintFramesMended = true;
+                settings.Save();
+            }));
+        }
         // (since 4.18.0) "daisysapp://session/…", a website's Open in Daisy's App
         OpenFiles.Links["session"] = uri => Sessions.SessionLinks.Open(uri, view.RaceAnalysis);
         // (since SimEffects Analysis 0.3.0) the ForzaLeaderBoard account as a card on a product's Settings
