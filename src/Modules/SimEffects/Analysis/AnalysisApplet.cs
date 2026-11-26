@@ -94,6 +94,13 @@ public sealed class AnalysisApplet : IApplet
         timer.Tick += (_, _) => Tick();
         view.IsVisibleChanged += (_, _) => Reading();
         Current = this;
+        // (since 4.21.12) laps on a track the app's file took off, onto the one it was a second name for
+        if (settings.TracksMoved.Count > 0)
+        {
+            store.MoveTracks(settings.TracksMoved);
+            settings.TracksMoved.Clear();
+            settings.Save();
+        }
         // (since 4.21.2, once) the last laps kept short before
         if (!settings.LastLapsMended)
         {

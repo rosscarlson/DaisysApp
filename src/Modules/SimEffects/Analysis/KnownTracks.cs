@@ -75,6 +75,7 @@ internal static class KnownTracks
         Claim((e, t) => t.Map == e.Map && Math.Abs(t.X - e.X) < 50 && Math.Abs(t.Z - e.Z) < 50
             && (e.Length <= 0 || t.Length <= 0 || Math.Abs(t.Length - e.Length) <= e.Length * LapTracker.LengthTolerance));
         int added = 0, removed = 0;
+        var kept = new List<Track>();
         foreach (var e in tracks)
         {
             if (!claimed.TryGetValue(e, out var t))
@@ -83,6 +84,7 @@ internal static class KnownTracks
                 s.Tracks.Add(t);
                 added++;
             }
+            kept.Add(t);
             t.Name = e.Name; t.Map = e.Map; t.Type = e.Type; t.Found = e.Found == default ? t.Found : e.Found;
             // (since 4.21.3) a lap learnt here short of a whole one (a restart or quit taken for a finish) isn't kept
             if (e.Length <= 0 && t.Length > 0 && t.Length < LapTracker.HorizonWhole)
@@ -109,6 +111,13 @@ internal static class KnownTracks
         }
         foreach (var t in mine.Where(t => !claimed.ContainsValue(t)))
         {
+            // (since 4.21.12) one at another's start or event marker (a second name for it: Soni Highlands' marker was
+            // Stadium Cross Country) has its laps and races moved onto that one
+            if (kept.FirstOrDefault(k => k.Game == t.Game && k.Map == t.Map && Near(t, k)) is { } into)
+            {
+                s.TracksMoved[t.Id] = into.Id;
+                Logging.Log.Here.Info($"Analysis: {t.Name}'s laps moved to {into.Name}");
+            }
             s.Tracks.Remove(t);
             foreach (var a in s.Maps.Values.SelectMany(m => m.Anchors).Where(a => a.Track == t.Id).ToList())
                 s.Maps.Values.First(m => m.Anchors.Contains(a)).Anchors.Remove(a);
@@ -117,5 +126,13 @@ internal static class KnownTracks
         if (JsonSerializer.Serialize(s.Tracks) == before) return false;
         Logging.Log.Here.Info($"Analysis: the app's {tracks.Count} tracks: {added} added, {removed} not in it taken off");
         return true;
+    }
+
+    /// <summary>Either's start or event marker within 50 m of the other's.</summary>
+    private static bool Near(Track a, Track b)
+    {
+        static IEnumerable<(float X, float Z)> Places(Track t) =>
+            t.Entry is { Length: >= 3 } e ? new[] { (t.X, t.Z), (e[0], e[2]) } : new[] { (t.X, t.Z) };
+        return Places(a).Any(p => Places(b).Any(q => Math.Abs(p.X - q.X) < 50 && Math.Abs(p.Z - q.Z) < 50));
     }
 }

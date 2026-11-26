@@ -57,6 +57,10 @@ public sealed class AnalysisSettings
     /// <summary>(since 4.21.10) The sprints kept without the finish's frame were mended (<see cref="LapStore.ShortLaps"/>).</summary>
     public bool SprintFramesMended { get; set; }
 
+    /// <summary>(since 4.21.12) Tracks the app's file took off whose laps and races go on another (old id → new id;
+    /// <see cref="KnownTracks.Merge"/>): moved, then emptied, when the laps are read.</summary>
+    public Dictionary<string, string> TracksMoved { get; set; } = new();
+
     public AnalysisUnits Units { get; set; }
 
     /// <summary>Tyre temperatures in °F or °C (since 3.24.0); null: as <see cref="Units"/>.</summary>

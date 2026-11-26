@@ -146,6 +146,25 @@ public sealed class LapStore
         Changed?.Invoke();
     }
 
+    /// <summary>(since 4.21.12) Laps and races moved from tracks taken off onto the ones they were on (old id → new);
+    /// saved.</summary>
+    public void MoveTracks(IReadOnlyDictionary<string, string> moved)
+    {
+        int n = 0;
+        foreach (var l in laps) if (moved.TryGetValue(l.Track, out var to)) { l.Track = to; n++; }
+        foreach (var r in races.Concat(unfinished)) if (moved.TryGetValue(r.Track, out var to)) { r.Track = to; n++; }
+        if (n == 0) return;
+        Logging.Log.Here.Info($"Analysis: {n} laps and races moved to their tracks");
+        try
+        {
+            File.WriteAllLines(Path, laps.Select(l => JsonSerializer.Serialize(l)));
+            File.WriteAllLines(RacesPath, races.Select(r => JsonSerializer.Serialize(r)));
+            File.WriteAllLines(UnfinishedPath, unfinished.Select(r => JsonSerializer.Serialize(r)));
+        }
+        catch (Exception ex) { Logging.Log.Here.Warn("Analysis: saving the laps", ex); }
+        Changed?.Invoke();
+    }
+
     /// <summary>(since 4.21.2) Forza's games: their last lap's time is the tracker's own when the data stops at the line.</summary>
     private static readonly HashSet<string> Forza = new(StringComparer.OrdinalIgnoreCase) { "FH4", "FH5", "FH6", "FM7", "FM8" };
 

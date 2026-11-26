@@ -3,6 +3,12 @@
 What changed in each release, newest first. (The [README](README.md) describes the app as it is now, and each
 module's guide describes that module.)
 
+**4.21.12**
+- **SimEffects → Analysis**: Soni Highlands Cross Country is named right in Forza Horizon 6. Its race was kept and
+  shared as Stadium Cross Country Circuit (when the event was entered at its marker) or Snow Forest Cross Country
+  Circuit (when it wasn't). The place wrongly named Soni Highlands is gone too. Laps and races already kept under those
+  names are moved onto Soni Highlands. Sessions already shared keep their old name.
+
 **4.21.11**
 - **Video → Recording**: **Record overlays** (Settings → Video → Recording; on to start). Off, a recording is the
   screen alone: the app's widgets (SimEffects' overlays, Performance's graphs…), the FPS overlay and Mini Mirror's

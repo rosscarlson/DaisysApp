@@ -4415,7 +4415,7 @@
     {
       "Game": "FH6",
       "Map": null,
-      "Name": "Snow Forest Cross Country Circuit",
+      "Name": "Soni Highlands Cross Country",
       "Type": null,
       "X": 2475.9172,
       "Y": 441.6348,
@@ -4442,19 +4442,6 @@
       "Laps": 0,
       "Racers": 0,
       "Found": "2026-10-30T22:17:20.8014137-04:00"
-    },
-    {
-      "Game": "FH6",
-      "Map": null,
-      "Name": "Stadium Cross Country Circuit",
-      "Type": null,
-      "X": 2384.7178,
-      "Y": 435.1422,
-      "Z": 4920.2393,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T14:12:53.7500593-04:00"
     },
     {
       "Game": "FH6",
@@ -4535,19 +4522,6 @@
       "Laps": 2,
       "Racers": 1,
       "Found": "2026-10-31T14:05:42.1605143-04:00"
-    },
-    {
-      "Game": "FH6",
-      "Map": null,
-      "Name": "Soni Highlands Cross Country",
-      "Type": null,
-      "X": 2018.5583,
-      "Y": 612.8823,
-      "Z": 6807.379,
-      "Length": 0,
-      "Laps": 0,
-      "Racers": 0,
-      "Found": "2026-10-31T14:12:28.4724216-04:00"
     },
     {
       "Game": "FH6",

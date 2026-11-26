@@ -2,6 +2,17 @@
 
 Read only when working in this folder. Current state and lessons; history is in git and `CHANGELOG.md`. Keep under ~8 KB.
 
+## 4.21.12: Soni Highlands XC (2026-11-25)
+
+- The user: raced and shared "Stadium Cross Country Circuit", really Soni Highlands Cross Country. Server: Ross's
+  (Entered at the marker 2384.7,4920 = 4.21.3's "Stadium XC" place, which until 4.21.3 was "Soni Highlands") and
+  Nacho's (by start: "Snow Forest XC Circuit", 9 racers, the same route, 2476,4948 → -118,1271, a sprint). Tracks.json:
+  Found 14:12:13 renamed Soni Highlands XC; 14:12:53 (Stadium XC at the marker) and 14:12:28 (4.21.3's guessed Soni at
+  2018,6807, once "Takashiro XC") taken off. Real Snow Forest and Stadium XC places unknown (a race there isn't kept;
+  KeepAll keeps its log). `KnownTracks.Merge`: a track taken off within 50 m (start or Entry) of a kept one →
+  `AnalysisSettings.TracksMoved`, applied by `LapStore.MoveTracks` at the applet's start. Tested in DaisysDev (a lap
+  and race on the Stadium place moved, the 2018 one's lap left orphaned). The server's sessions keep their names.
+
 ## 4.21.10: a sprint's last frame (2026-11-25)
 
 - Festival Sprint 18:55: 2:03.529 kept, 2:03.540 on the results screen ("a frame 0.0 ms"). Back after the finish with
@@ -79,7 +90,8 @@ Read only when working in this folder. Current state and lessons; history is in 
   (`LastLapsMended`): last laps 0.0005–0.25 s short of their log. `Blocks.LapTime`/`LapClock` truncated floats.
 - Data: the rig's sign-ins had all expired (remote copy failed); Nacho's 139 shared sessions fetched anonymously from
   ForzaLeaderBoard (`%LOCALAPPDATA%\Temp\da-flb`: `flbfetch list|get`, `cmp.py`). Tested in DaisysDev: the mend
-  (128.637 → 128.705) and a replay of the race (`da-fakefheplay.py`, port 8123, Playing on) → 127.056.
+  (128.637 → 128.705) and a replay of the race (`da-fakefh
+eplay.py`, port 8123, Playing on) → 127.056.
 - Not done: sessions already on the server keep their old `lapTimes`/`best` (no op to change them; the user has the
   server's session on it). Old records far from their logs (0.4.x, some 4.18) left alone.
 

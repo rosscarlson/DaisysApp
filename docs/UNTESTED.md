@@ -2,6 +2,9 @@
 
 The full list of what is waiting on the user to try or report, newest first, moved out of the root CLAUDE.md on 2026-10-26 (it isn't loaded by itself; read it when a release's follow-up comes up).
 
+- **4.21.12 (Soni Highlands XC):** tested in DaisysDev (laps moved), not in the game. To try: Soni Highlands XC kept
+  and shared under its name; Snow Forest XC Circuit and Stadium XC wherever they really are (not known: not kept).
+
 - **4.21.11 (Record overlays):** tested in DaisysDev (the windows' capture flag while recording), not a recording
   watched. To try: untick it, record with SimEffects' overlays up: the video has none, the screen still shows them.
 
